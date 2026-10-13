@@ -1,0 +1,754 @@
+{
+  "melee.annihil.annihil_inspect_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_inspect_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_inspect_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_inspect_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_melee_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_melee_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_rotate_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_rotate_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_melee_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_melee_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_rotate_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_rotate_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_melee_3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_melee_3",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_rotate_3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_rotate_3",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.annihil.annihil_draw_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/annihil/annihil_draw_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cobra_vanguard.cobra_vanguard_draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cobra_vanguard/cobra_vanguard_draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cobra_vanguard.cobra_vanguard_draw_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cobra_vanguard/cobra_vanguard_draw_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cobra_vanguard.cobra_vanguard_inspect": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cobra_vanguard/cobra_vanguard_inspect",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cobra_vanguard.cobra_vanguard_inspect_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cobra_vanguard/cobra_vanguard_inspect_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cobra_vanguard.cobra_vanguard_melee_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cobra_vanguard/cobra_vanguard_melee_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cobra_vanguard.cobra_vanguard_melee_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cobra_vanguard/cobra_vanguard_melee_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cobra_vanguard.cobra_vanguard_melee_3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cobra_vanguard/cobra_vanguard_melee_3",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_draw_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_draw_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_inspect": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_inspect",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_inspect_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_inspect_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_swing_a": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_swing_a",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_rotate_a": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_rotate_a",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_swing_b": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_swing_b",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_rotate_b": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_rotate_b",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_swing_c": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_swing_c",
+        "stream": false
+      }
+    ]
+  },
+  "melee.executor.executor_rotate_c": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/executor/executor_rotate_c",
+        "stream": false
+      }
+    ]
+  },
+  "melee.mercy.draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/mercy/draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.mercy.draw_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/mercy/draw_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.mercy.inspect": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/mercy/inspect",
+        "stream": false
+      }
+    ]
+  },
+  "melee.mercy.melee_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/mercy/melee_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.mercy.melee_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/mercy/melee_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.mercy.melee_3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/mercy/melee_3",
+        "stream": false
+      }
+    ]
+  },
+  "melee.polaris.melee_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/polaris/melee_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.polaris.polaris_rotate_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/polaris/polaris_rotate_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.polaris.draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/polaris/draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.polaris.draw_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/polaris/draw_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.polaris.melee_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/polaris/melee_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.polaris.polaris_rotate_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/polaris/polaris_rotate_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.polaris.polaris_rotate_3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/polaris/polaris_rotate_3",
+        "stream": false
+      }
+    ]
+  },
+  "melee.polaris.inspect": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/polaris/inspect",
+        "stream": false
+      }
+    ]
+  },
+  "melee.quenching.quenching_inpsect_a": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/quenching/quenching_inpsect_a",
+        "stream": false
+      }
+    ]
+  },
+  "melee.quenching.quenching_rotate_a": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/quenching/quenching_rotate_a",
+        "stream": false
+      }
+    ]
+  },
+  "melee.quenching.quenching_raise_a": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/quenching/quenching_raise_a",
+        "stream": false
+      }
+    ]
+  },
+  "melee.quenching.quenching_swing_a": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/quenching/quenching_swing_a",
+        "stream": false
+      }
+    ]
+  },
+  "melee.quenching.quenching_swing_b": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/quenching/quenching_swing_b",
+        "stream": false
+      }
+    ]
+  },
+  "melee.quenching.quenching_rotate_b": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/quenching/quenching_rotate_b",
+        "stream": false
+      }
+    ]
+  },
+  "melee.quenching.quenching_swing_c": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/quenching/quenching_swing_c",
+        "stream": false
+      }
+    ]
+  },
+  "melee.quenching.quenching_rotate_c": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/quenching/quenching_rotate_c",
+        "stream": false
+      }
+    ]
+  },
+  "melee.shadowkiller.shadowkiller_inspect": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/shadowkiller/shadowkiller_inspect",
+        "stream": false
+      }
+    ]
+  },
+  "melee.shadowkiller.shadowkiller_deploy_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/shadowkiller/shadowkiller_deploy_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.shadowkiller.shadowkiller_deploy": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/shadowkiller/shadowkiller_deploy",
+        "stream": false
+      }
+    ]
+  },
+  "melee.shadowkiller.shadowkiller_miss1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/shadowkiller/shadowkiller_miss1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.shadowkiller.shadowkiller_miss2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/shadowkiller/shadowkiller_miss2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.silencefd.inspect": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/silencefd/inspect",
+        "stream": false
+      }
+    ]
+  },
+  "melee.silencefd.draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/silencefd/draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.silencefd.melee_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/silencefd/melee_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.silencefd.melee_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/silencefd/melee_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.thieve_sea.draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/thieve_sea/draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.thieve_sea.draw_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/thieve_sea/draw_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.thieve_sea.melee_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/thieve_sea/melee_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.thieve_sea.melee_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/thieve_sea/melee_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.thieve_sea.melee_3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/thieve_sea/melee_3",
+        "stream": false
+      }
+    ]
+  },
+  "melee.thieve_sea.inspect": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/thieve_sea/inspect",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_draw_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_draw_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_melee_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_melee_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_melee_r_1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_melee_r_1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_melee_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_melee_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_melee_r_2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_melee_r_2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_melee_3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_melee_3",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_melee_r_3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_melee_r_3",
+        "stream": false
+      }
+    ]
+  },
+  "melee.treasure_kn.treasure_kn_inspect": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/treasure_kn/treasure_kn_inspect",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_draw01": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_draw01",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_draw02": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_draw02",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_look01_a": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_look01_a",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_look01_ab": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_look01_ab",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_look01_b": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_look01_b",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_look02_a": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_look02_a",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_look02_ab": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_look02_ab",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_look02_b": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_look02_b",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.bknife_look03_ab": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/bknife_look03_ab",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.knife_deploy1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/knife_deploy1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.knife_push_attack1_heavy_01": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/knife_push_attack1_heavy_01",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.knife_push_draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/knife_push_draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.knife_push_lookat_end": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/knife_push_lookat_end",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.knife_push_lookat_start": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/knife_push_lookat_start",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.knife_slash1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/knife_slash1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.knife_slash2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/knife_slash2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.stilletto_draw_01": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/stilletto_draw_01",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.stilletto_flip_01": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/stilletto_flip_01",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.stilletto_flip_02": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/stilletto_flip_02",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.stilletto_flip_03": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/stilletto_flip_03",
+        "stream": false
+      }
+    ]
+  },
+  "melee.cs2.stilletto_flip_04": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/cs2/stilletto_flip_04",
+        "stream": false
+      }
+    ]
+  }
+}

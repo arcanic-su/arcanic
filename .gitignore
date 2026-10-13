@@ -1,0 +1,17 @@
+# Gradle and build output
+.gradle/
+build/
+*.jar
+!libs/*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# the development game folder: logs, settings, the names of players that were met
+run/
+
+# IDE and OS
+.idea/
+*.iml
+.vscode/
+out/
+Thumbs.db
+.DS_Store

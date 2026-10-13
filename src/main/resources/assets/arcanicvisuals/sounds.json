@@ -1,0 +1,258 @@
+{
+ "ui.click": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/click",
+    "stream": false
+   }
+  ]
+ },
+ "ui.hover": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/hover",
+    "stream": false
+   }
+  ]
+ },
+ "ui.tick": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/tick",
+    "stream": false
+   }
+  ]
+ },
+ "ui.toggle_on": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/toggle_on",
+    "stream": false
+   }
+  ]
+ },
+ "ui.toggle_off": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/toggle_off",
+    "stream": false
+   }
+  ]
+ },
+ "ui.open": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/open",
+    "stream": false
+   }
+  ]
+ },
+ "ui.close": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/close",
+    "stream": false
+   }
+  ]
+ },
+ "ui.page": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/page",
+    "stream": false
+   }
+  ]
+ },
+ "ui.pop": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/pop",
+    "stream": false
+   }
+  ]
+ },
+ "ui.select": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/select",
+    "stream": false
+   }
+  ]
+ },
+ "ui.grab": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/grab",
+    "stream": false
+   }
+  ]
+ },
+ "ui.drop": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/drop",
+    "stream": false
+   }
+  ]
+ },
+ "ui.type": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/type",
+    "stream": false
+   }
+  ]
+ },
+ "ui.reset": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/reset",
+    "stream": false
+   }
+  ]
+ },
+ "ui.charge": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/charge",
+    "stream": false
+   }
+  ]
+ },
+ "ui.drain": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/drain",
+    "stream": false
+   }
+  ]
+ },
+ "ui.tab": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/tab",
+    "stream": false
+   }
+  ]
+ },
+ "kill.what_a_kill": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:kill/what_a_kill",
+    "stream": false
+   }
+  ]
+ },
+ "kill.excellent": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:kill/excellent",
+    "stream": false
+   }
+  ]
+ },
+ "kill.godlike": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:kill/godlike",
+    "stream": false
+   }
+  ]
+ },
+ "kill.too_easy": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:kill/too_easy",
+    "stream": false
+   }
+  ]
+ },
+ "kill.victory": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:kill/victory",
+    "stream": false
+   }
+  ]
+ },
+ "hit.pop": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/pop",
+    "stream": false
+   }
+  ]
+ },
+ "hit.click": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/click",
+    "stream": false
+   }
+  ]
+ },
+ "hit.bell": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/bell",
+    "stream": false
+   }
+  ]
+ },
+ "hit.bubble": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/bubble",
+    "stream": false
+   }
+  ]
+ },
+ "hit.punch": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/punch",
+    "stream": false
+   }
+  ]
+ },
+ "hit.crystal": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/crystal",
+    "stream": false
+   }
+  ]
+ },
+ "hit.coin": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/coin",
+    "stream": false
+   }
+  ]
+ },
+ "hit.wood": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/wood",
+    "stream": false
+   }
+  ]
+ },
+ "hit.gamesense": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/gamesense",
+    "stream": false
+   }
+  ]
+ },
+ "hit.neverlose": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:hit/neverlose",
+    "stream": false
+   }
+  ]
+ }
+}

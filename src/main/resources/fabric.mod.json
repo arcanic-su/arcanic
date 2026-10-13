@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "arcanicvisuals",
+  "version": "${version}",
+  "name": "Arcanic Visuals",
+  "description": "Визуальный клиент Arcanic: меню, HUD, эффекты ударов, следы, прицел и анимации рук. Только визуал — механика боя не меняется.",
+  "authors": ["Arcanic"],
+  "contact": {
+    "homepage": "https://arcanic.su",
+    "sources": "https://github.com/arcanic-su/arcanic",
+    "issues": "https://github.com/arcanic-su/arcanic/issues"
+  },
+  "license": "GPL-3.0-or-later",
+  "icon": "assets/arcanicvisuals/icon.png",
+  "environment": "client",
+  "entrypoints": { "client": ["net.arcanic.visuals.ArcanicVisuals"] },
+  "mixins": ["arcanicvisuals.mixins.json"],
+  "depends": { "fabricloader": ">=0.17.0", "minecraft": "~1.21.11", "java": ">=21", "fabric-api": "*" }
+}

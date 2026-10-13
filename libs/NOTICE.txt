@@ -1,0 +1,3 @@
+optimizermod-1.0.3.jar is the Arcanic optimiser mod, nested into the client's jar as it is.
+It is licensed under the GNU Lesser General Public License v3.0; the licence texts are inside the jar
+(COPYING, COPYING.LESSER, NOTICE).

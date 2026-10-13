@@ -1,0 +1,13 @@
+In-Game Account Switcher 9.0.8 for Minecraft 1.21.11 Fabric
+Copyright its respective contributors. Licensed under GNU LGPL v3.
+Official binary distributed unchanged as a separate nested Fabric mod.
+Project and corresponding source releases:
+https://github.com/The-Fireplace-Minecraft-Mods/In-Game-Account-Switcher
+https://modrinth.com/mod/in-game-account-switcher/version/MwO8YI2m
+License: IAS-LICENSE.txt
+
+Arcanic opens IAS's own account screen. IAS handles browser authentication,
+storage and switching. IAS accounts are separate from Arcanic launcher's accounts.
+Users may replace the IAS nested jar in META-INF/jars with a compatible modified
+version for their own use; this integration does not prohibit reverse engineering
+needed to debug such modifications.
