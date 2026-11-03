@@ -19,24 +19,27 @@
 package net.arcanic.visuals.core;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.WebSocket;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import net.arcanic.visuals.arc.Capes;
 import net.arcanic.visuals.cosmetic.Wearables;
@@ -50,28 +53,47 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.Entity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Emotes, capes and everything else worn (wings, backpacks, companions, headwear) seen by other players with the
- * client.
- */
 public final class Sync {
-    private Sync() {}
-
-    /** What another player with the client is showing. */
-    public record Remote(String emote, String cape, Map<String, String> wear) {
-        public String worn(String slot) {
-            return wear == null ? null : wear.get(slot);
-        }
-    }
-
     private static final String API = System.getProperty("arcanic.api", "https://arcanic.su");
-    // from the launcher, or from a sign-in made in the game (the Arcanic Social screen)
     private static volatile String TOKEN = launcherOrSaved();
+    private static final Map<UUID, Remote> REMOTE = new ConcurrentHashMap<>();
+    private static final Map<String, Remote> BY_NAME = new ConcurrentHashMap<>();
+    private static final Map<UUID, String> NAMES = new ConcurrentHashMap<>();
+    private static final Map<UUID, String> PLAYING = new HashMap<>();
+    private static HttpClient http;
+    private static volatile boolean inFlight;
+    private static volatile boolean refused;
+    private static int ticks;
+    private static String emoteName;
+    private static long emoteAt;
+    // the sync line: the entry server (its name, then its address), which passes it on to the main server; see SyncLine
+    private static final List<String> LINE_HOSTS = Arrays.asList(
+            System.getProperty("arcanic.line", "ru.arcanic.su,5.83.140.174").split(","));
+    private static final int LINE_PORT = Integer.getInteger("arcanic.linePort", 8447);
+    private static volatile SyncLine socket;
+    private static volatile boolean connecting;
+    private static volatile long retryAt;
+    private static volatile int fails;
+    private static volatile long pingAt;
+    private static final Logger LOGGER = LoggerFactory.getLogger("arcanicvisuals");
+    private static SyncLine greeted;
+    private static String sentWho;
+    private static String sentState;
+    private static String sentSee;
+    private static String sentEmote;
+    private static final Component LOGO;
+
+    private Sync() {}
 
     private static String launcherOrSaved() {
         String t = System.getenv("ARCANIC_TOKEN");
-        if (t == null || t.isEmpty()) t = System.getProperty("arcanic.token", "");
+        if (t == null || t.isEmpty()) {
+            t = System.getProperty("arcanic.token", "");
+        }
+
         return t.isEmpty() ? ArcanicAccount.savedToken() : t;
     }
 
@@ -89,27 +111,6 @@ public final class Sync {
         Minecraft.getInstance().execute(Sync::leave);
     }
 
-    private static final Map<UUID, Remote> REMOTE = new ConcurrentHashMap<>();
-    private static final Map<String, Remote> BY_NAME =
-            new ConcurrentHashMap<>(); // some networks show a player under another UUID
-    private static final Map<UUID, String> NAMES =
-            new ConcurrentHashMap<>(); // whose nick is whose, to forget both together
-    private static final Map<UUID, String> PLAYING = new HashMap<>();
-    private static HttpClient http;
-    private static volatile boolean inFlight, refused;
-    private static int ticks;
-    private static String emoteName;
-    private static long emoteAt;
-
-    // ---- the live line
-    private static volatile WebSocket socket;
-    private static volatile boolean connecting;
-    private static volatile long retryAt;
-    private static volatile int fails;
-    private static WebSocket greeted; // the socket our hello went to
-    private static String sentWho, sentState, sentSee, sentEmote;
-    private static CompletableFuture<?> tail = CompletableFuture.completedFuture(null); // sends go one after another
-
     public static boolean signedIn() {
         return !TOKEN.isEmpty();
     }
@@ -119,37 +120,90 @@ public final class Sync {
     }
 
     public static Remote of(UUID id) {
-        return REMOTE.get(id);
+        return (Remote) REMOTE.get(id);
     }
 
     public static Remote of(Entity e) {
-        Remote r = REMOTE.get(e.getUUID());
-        return r != null ? r : BY_NAME.get(lower(e.getName().getString()));
+        Remote r = (Remote) REMOTE.get(e.getUUID());
+        return r != null ? r : (Remote) BY_NAME.get(lower(e.getName().getString()));
     }
 
-    /** Every client tick: our own changes go out, and the remote emotes are started or stopped on their players. */
     public static void tick(Minecraft mc) {
-        if (!on() || mc.player == null || mc.level == null) {
+        if (!on()) {
             leave();
             return;
         }
-        var playing = Modules.EMOTES.playing();
-        String now = playing == null ? null : playing.name();
-        if (!Objects.equals(now, emoteName)) {
-            emoteName = now;
-            emoteAt = System.currentTimeMillis();
-            ticks = 20;
-        } // send a change at once
-        WebSocket w = socket;
-        if (w != null) live(mc, w);
-        else {
-            if (!connecting && System.currentTimeMillis() >= retryAt) connect();
-            if (++ticks >= 20 && !inFlight) {
+        SyncLine w = socket;
+        if (w != null && !w.open()) {
+            socket = null;
+            w = null;
+        }
+        // the line stays open in the menu too: friends see each other there
+        if (w == null && !connecting && System.currentTimeMillis() >= retryAt) {
+            connect();
+        }
+
+        if (mc.player != null && mc.level != null) {
+            Emotes.Emote playing = Modules.EMOTES.playing();
+            String now = playing == null ? null : playing.name();
+            if (!Objects.equals(now, emoteName)) {
+                emoteName = now;
+                emoteAt = System.currentTimeMillis();
+                ticks = 20;
+            }
+
+            if (w != null) {
+                live(mc, w);
+            } else if (++ticks >= 20 && !inFlight) {
                 ticks = 0;
                 send(mc);
-            } // no line (yet): once a second over HTTP
+            }
+
+            apply(mc);
+        } else {
+            outOfWorld(w);
         }
-        apply(mc);
+
+        if (w != null) {
+            Social.tick(mc, w);
+            // every 5 s a ping of our own, answered by the service with a pong: the game's network stack does not
+            // answer the service's pings, so this is how both ends know the line is alive
+            if (System.currentTimeMillis() - pingAt > 5000L) {
+                pingAt = System.currentTimeMillis();
+                JsonObject o = new JsonObject();
+                o.addProperty("t", "ping");
+                push(w, o);
+            }
+        }
+    }
+
+    /** Back in the menu: nobody is around, and the service hears that this game left its world. */
+    private static void outOfWorld(SyncLine w) {
+        REMOTE.clear();
+        BY_NAME.clear();
+        NAMES.clear();
+        PLAYING.clear();
+        if (w != null && greeted == w && sentWho != null) {
+            JsonObject o = new JsonObject();
+            o.addProperty("t", "bye");
+            push(w, o);
+        }
+        sentWho = null;
+    }
+
+    /** Sends a message on the open line, for the helpers outside this package; false when there is none. */
+    public static boolean post(JsonObject o) {
+        return send(o);
+    }
+
+    /** Sends a message on the open line; false when there is none. */
+    static boolean send(JsonObject o) {
+        SyncLine w = socket;
+        if (w == null) {
+            return false;
+        }
+        push(w, o);
+        return true;
     }
 
     private static void leave() {
@@ -157,137 +211,135 @@ public final class Sync {
         BY_NAME.clear();
         NAMES.clear();
         PLAYING.clear();
-        WebSocket w = socket;
+        SyncLine w = socket;
         if (w != null) {
             socket = null;
             greeted = null;
-            try {
-                w.sendClose(WebSocket.NORMAL_CLOSURE, "");
-            } catch (RuntimeException ignored) {
-            }
+            Social.lost();
+            w.close();
         }
     }
 
     private static JsonObject state() {
         JsonObject o = new JsonObject();
-        String cape = Modules.CAPES.enabled() ? Capes.id(Modules.CAPES.design.get()) : null;
-        if (cape != null) o.addProperty("cape", cape);
-        else o.add("cape", JsonNull.INSTANCE);
-        // everything else worn: the wearable models by their number
-        JsonObject wear = new JsonObject();
-        String[][] slots = {{"wings", "w"}, {"backpack", "b"}, {"companion", "c"}, {"headwear", "h"}};
-        Wearables[] mods = {Modules.WINGS, Modules.BACKPACKS, Modules.COMPANIONS, Modules.HEADWEAR};
-        for (int i = 0; i < mods.length; i++) {
-            var m = mods[i];
-            var it = m != null && m.enabled() ? m.current() : null;
-            if (it != null) wear.addProperty(slots[i][0], String.valueOf(it.n()));
+        String cape = Modules.CAPES.enabled() ? Capes.id((String) Modules.CAPES.design.get()) : null;
+        if (cape != null) {
+            o.addProperty("cape", cape);
+        } else {
+            o.add("cape", JsonNull.INSTANCE);
         }
+
+        JsonObject wear = new JsonObject();
+        String[][] slots = new String[][] {{"wings", "w"}, {"backpack", "b"}, {"companion", "c"}, {"headwear", "h"}};
+        Wearables[] mods = new Wearables[] {Modules.WINGS, Modules.BACKPACKS, null, Modules.HEADWEAR};
+
+        for (int i = 0; i < mods.length; ++i) {
+            Wearables m = mods[i];
+            Wearables.Item it = m != null && m.enabled() ? m.current() : null;
+            if (it != null) {
+                wear.addProperty(slots[i][0], String.valueOf(it.n()));
+            }
+        }
+
         o.add("wear", wear);
         return o;
     }
 
     private static JsonArray around(Minecraft mc) {
         JsonArray see = new JsonArray();
-        for (var pl : mc.level.players()) {
-            if (pl == mc.player || see.size() >= 200) continue;
-            JsonObject p = new JsonObject();
-            p.addProperty("uuid", pl.getUUID().toString());
-            p.addProperty("name", pl.getName().getString());
-            see.add(p);
+
+        for (AbstractClientPlayer pl : mc.level.players()) {
+            if (pl != mc.player && see.size() < 200) {
+                JsonObject p = new JsonObject();
+                p.addProperty("uuid", pl.getUUID().toString());
+                p.addProperty("name", pl.getName().getString());
+                see.add(p);
+            }
         }
+
         return see;
     }
 
     private static HttpClient client() {
-        if (http == null)
-            http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+        if (http == null) {
+            http = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(5L))
+                    .build();
+        }
+
         return http;
     }
 
     private static void connect() {
         connecting = true;
-        try {
-            URI uri = URI.create(
-                    (API.startsWith("https") ? "wss" + API.substring(5) : "ws" + API.substring(4)) + "/api/v1/ws");
-            client().newWebSocketBuilder()
-                    .header("Authorization", "Bearer " + TOKEN)
-                    .connectTimeout(Duration.ofSeconds(8))
-                    .buildAsync(uri, new Line())
-                    .whenComplete((w, err) -> {
+        String token = TOKEN;
+        Thread t = new Thread(
+                () -> {
+                    try {
+                        SyncLine line = SyncLine.open(LINE_HOSTS, LINE_PORT, token, Sync::heard, Sync::lost);
+                        fails = 0;
+                        if (line.open()) {
+                            socket = line;
+                            LOGGER.info("Arcanic Social line open");
+                        }
+                    } catch (IOException | RuntimeException e) {
+                        LOGGER.info("Arcanic Social line could not open: {}", String.valueOf(e));
+                        failed();
+                    } finally {
                         connecting = false;
-                        if (err != null) failed();
-                    });
-        } catch (RuntimeException e) {
-            connecting = false;
-            failed();
+                    }
+                },
+                "Arcanic line connect");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    static void log(String text) {
+        LOGGER.info(text);
+    }
+
+    /** A message from the service, on the line's reader thread. */
+    private static void heard(String text) {
+        try {
+            handle(text);
+        } catch (RuntimeException ignored) {
+            // a broken message changes nothing
         }
     }
 
     private static void failed() {
-        fails++;
-        retryAt = System.currentTimeMillis() + Math.min(60_000L, 2000L << Math.min(fails, 5));
+        ++fails;
+        retryAt = System.currentTimeMillis() + Math.min(60000L, 2000L << Math.min(fails, 5));
     }
 
-    private static final class Line implements WebSocket.Listener {
-        private final StringBuilder buf = new StringBuilder();
-
-        @Override
-        public void onOpen(WebSocket w) {
-            fails = 0;
-            socket = w;
-            w.request(1);
-        }
-
-        @Override
-        public CompletionStage<?> onText(WebSocket w, CharSequence data, boolean last) {
-            buf.append(data);
-            if (last) {
-                String s = buf.toString();
-                buf.setLength(0);
-                try {
-                    handle(s);
-                } catch (RuntimeException ignored) {
-                }
-            } else if (buf.length() > 1 << 20) buf.setLength(0);
-            w.request(1);
-            return null;
-        }
-
-        @Override
-        public CompletionStage<?> onClose(WebSocket w, int code, String reason) {
-            lost(w);
-            return null;
-        }
-
-        @Override
-        public void onError(WebSocket w, Throwable e) {
-            lost(w);
-        }
-    }
-
-    private static void lost(WebSocket w) {
+    private static void lost(SyncLine w) {
         if (socket == w) {
             socket = null;
+            Social.lost();
             failed();
+            retryAt = Math.min(retryAt, System.currentTimeMillis() + 1000L); // a line that worked comes back at once
         }
+        w.close();
     }
 
-    private static synchronized void push(WebSocket w, JsonObject o) {
-        String s = o.toString();
-        tail = tail.handle((a, b) -> null).thenCompose(x -> w.sendText(s, true)).exceptionally(e -> null);
+    private static void push(SyncLine w, JsonObject o) {
+        w.send(o.toString());
     }
 
-    private static void live(Minecraft mc, WebSocket w) {
+    private static void live(Minecraft mc, SyncLine w) {
         boolean second = ++ticks >= 20;
         if (greeted != w) {
             greeted = w;
             sentWho = null;
         }
-        String who = mc.player.getUUID() + "|" + mc.player.getName().getString();
-        if (!who.equals(sentWho)) { // a new line, or a server that gave us another UUID
+
+        String var10000 = String.valueOf(mc.player.getUUID());
+        String who = var10000 + "|" + mc.player.getName().getString();
+        if (!who.equals(sentWho)) {
             sentWho = who;
-            sentState = sentSee = null;
-            sentEmote = "\0";
+            sentSee = null;
+            sentState = null;
+            sentEmote = "\u0000";
             second = true;
             JsonObject o = new JsonObject();
             o.addProperty("t", "hello");
@@ -295,93 +347,123 @@ public final class Sync {
             o.addProperty("name", mc.player.getName().getString());
             push(w, o);
         }
+
         if (!Objects.equals(emoteName, sentEmote)) {
             sentEmote = emoteName;
             JsonObject o = new JsonObject();
             o.addProperty("t", "emote");
-            if (emoteName != null) o.addProperty("name", emoteName);
-            else o.add("name", JsonNull.INSTANCE);
+            if (emoteName != null) {
+                o.addProperty("name", emoteName);
+            } else {
+                o.add("name", JsonNull.INSTANCE);
+            }
+
             push(w, o);
         }
-        if (!second) return;
-        ticks = 0;
-        JsonObject st = state();
-        String s = st.toString();
-        if (!s.equals(sentState)) {
-            sentState = s;
-            st.addProperty("t", "state");
-            push(w, st);
-        }
-        JsonArray see = around(mc);
-        String k = see.toString();
-        if (!k.equals(sentSee)) {
-            sentSee = k;
-            JsonObject o = new JsonObject();
-            o.addProperty("t", "see");
-            o.add("players", see);
-            push(w, o);
-        }
-        // whoever left our view is forgotten: when they come back the service tells us afresh what they show
-        Set<UUID> ids = new HashSet<>();
-        Set<String> names = new HashSet<>();
-        for (var pl : mc.level.players()) {
-            ids.add(pl.getUUID());
-            names.add(lower(pl.getName().getString()));
-        }
-        for (var it = NAMES.entrySet().iterator(); it.hasNext(); ) {
-            var e = it.next();
-            if (!ids.contains(e.getKey()) && !names.contains(e.getValue())) {
-                REMOTE.remove(e.getKey());
-                BY_NAME.remove(e.getValue());
-                it.remove();
+
+        if (second) {
+            ticks = 0;
+            JsonObject st = state();
+            String s = st.toString();
+            if (!s.equals(sentState)) {
+                sentState = s;
+                st.addProperty("t", "state");
+                push(w, st);
+            }
+
+            JsonArray see = around(mc);
+            String k = see.toString();
+            if (!k.equals(sentSee)) {
+                sentSee = k;
+                JsonObject o = new JsonObject();
+                o.addProperty("t", "see");
+                o.add("players", see);
+                push(w, o);
+            }
+
+            Set<UUID> ids = new HashSet<>();
+            Set<String> names = new HashSet<>();
+
+            for (AbstractClientPlayer pl : mc.level.players()) {
+                ids.add(pl.getUUID());
+                names.add(lower(pl.getName().getString()));
+            }
+
+            Iterator<Map.Entry<UUID, String>> it = NAMES.entrySet().iterator();
+
+            while (it.hasNext()) {
+                Map.Entry<UUID, String> e = (Map.Entry) it.next();
+                if (!ids.contains(e.getKey()) && !names.contains(e.getValue())) {
+                    REMOTE.remove(e.getKey());
+                    BY_NAME.remove(e.getValue());
+                    it.remove();
+                }
             }
         }
     }
 
     private static void handle(String text) {
         JsonObject p = JsonParser.parseString(text).getAsJsonObject();
-        String t = str(p, "t"), uuid = str(p, "uuid");
-        if (t == null || uuid == null) return;
-        UUID id = UUID.fromString(uuid);
-        switch (t) {
-            case "player" -> remember(id, str(p, "name"), remote(p));
-            case "emote" -> {
-                Remote old = REMOTE.get(id);
-                remember(
-                        id,
-                        null,
-                        old == null
-                                ? new Remote(str(p, "name"), null, Map.of())
-                                : new Remote(str(p, "name"), old.cape(), old.wear()));
+        String t = str(p, "t");
+        if ("denied".equals(t)) { // the token is no account's any more: stop until a new sign-in
+            refused = true;
+            return;
+        }
+        if (t != null && Social.handle(t, p)) {
+            return;
+        }
+        String uuid = str(p, "uuid");
+        if (t != null && uuid != null) {
+            UUID id = UUID.fromString(uuid);
+            switch (t) {
+                case "player":
+                    remember(id, str(p, "name"), remote(p));
+                    break;
+                case "emote":
+                    Remote old = (Remote) REMOTE.get(id);
+                    remember(
+                            id,
+                            (String) null,
+                            old == null
+                                    ? new Remote(str(p, "name"), (String) null, Map.of())
+                                    : new Remote(str(p, "name"), old.cape(), old.wear()));
+                    break;
+                case "gone":
+                    REMOTE.remove(id);
+                    String n = (String) NAMES.remove(id);
+                    if (n != null) {
+                        BY_NAME.remove(n);
+                    }
             }
-            case "gone" -> {
-                REMOTE.remove(id);
-                String n = NAMES.remove(id);
-                if (n != null) BY_NAME.remove(n);
-            }
-            default -> {}
         }
     }
 
     private static Remote remote(JsonObject p) {
         Map<String, String> wear = new HashMap<>();
-        if (p.has("wear") && p.get("wear").isJsonObject())
-            for (var e : p.getAsJsonObject("wear").entrySet())
-                if (e.getValue().isJsonPrimitive())
-                    wear.put(e.getKey(), e.getValue().getAsString());
+        if (p.has("wear") && p.get("wear").isJsonObject()) {
+            for (Map.Entry<String, JsonElement> e : p.getAsJsonObject("wear").entrySet()) {
+                if (((JsonElement) e.getValue()).isJsonPrimitive()) {
+                    wear.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsString());
+                }
+            }
+        }
+
         return new Remote(str(p, "emote"), str(p, "cape"), Map.copyOf(wear));
     }
 
     private static void remember(UUID id, String name, Remote r) {
         REMOTE.put(id, r);
-        String n = name == null ? NAMES.get(id) : lower(name);
-        if (n == null || n.isEmpty()) return;
-        String was = NAMES.put(id, n);
-        if (was != null && !was.equals(n)) BY_NAME.remove(was);
-        BY_NAME.put(n, r);
+        String n = name == null ? (String) NAMES.get(id) : lower(name);
+        if (n != null && !n.isEmpty()) {
+            String was = (String) NAMES.put(id, n);
+            if (was != null && !was.equals(n)) {
+                BY_NAME.remove(was);
+            }
+
+            BY_NAME.put(n, r);
+        }
     }
 
-    // (no line)
     private static void send(Minecraft mc) {
         JsonObject o = state();
         o.addProperty("uuid", mc.player.getUUID().toString());
@@ -390,55 +472,58 @@ public final class Sync {
             o.addProperty("emote", emoteName);
             o.addProperty("emoteAt", emoteAt);
         }
+
         o.add("see", around(mc));
         HttpRequest req = HttpRequest.newBuilder(URI.create(API + "/api/v1/sync"))
-                .timeout(Duration.ofSeconds(6))
+                .timeout(Duration.ofSeconds(6L))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + TOKEN)
-                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
+                .POST(BodyPublishers.ofString(o.toString()))
                 .build();
         inFlight = true;
-        client().sendAsync(req, HttpResponse.BodyHandlers.ofString()).whenComplete((res, err) -> {
+        client().sendAsync(req, BodyHandlers.ofString()).whenComplete((res, err) -> {
             inFlight = false;
-            if (err != null || res == null) return; // offline for a moment: keep what we have
-            if (res.statusCode() == 401 || res.statusCode() == 403) {
-                refused = true;
-                REMOTE.clear();
-                BY_NAME.clear();
-                NAMES.clear();
-                return;
-            }
-            if (res.statusCode() != 200 || socket != null) return;
-            try {
-                Map<UUID, Remote> fresh = new HashMap<>();
-                Map<UUID, String> names = new HashMap<>();
-                for (var e :
-                        JsonParser.parseString(res.body()).getAsJsonObject().getAsJsonArray("players")) {
-                    JsonObject p = e.getAsJsonObject();
-                    UUID id = UUID.fromString(p.get("uuid").getAsString());
-                    fresh.put(id, remote(p));
-                    if (str(p, "name") != null) names.put(id, lower(str(p, "name")));
+            if (err == null && res != null) {
+                if (res.statusCode() != 401 && res.statusCode() != 403) {
+                    if (res.statusCode() == 200 && socket == null) {
+                        try {
+                            Map<UUID, Remote> fresh = new HashMap<>();
+                            Map<UUID, String> names = new HashMap<>();
+
+                            for (JsonElement e : JsonParser.parseString((String) res.body())
+                                    .getAsJsonObject()
+                                    .getAsJsonArray("players")) {
+                                JsonObject p = e.getAsJsonObject();
+                                UUID id = UUID.fromString(p.get("uuid").getAsString());
+                                fresh.put(id, remote(p));
+                                if (str(p, "name") != null) {
+                                    names.put(id, lower(str(p, "name")));
+                                }
+                            }
+
+                            REMOTE.keySet().retainAll(fresh.keySet());
+                            REMOTE.putAll(fresh);
+                            NAMES.keySet().retainAll(names.keySet());
+                            NAMES.putAll(names);
+                            BY_NAME.keySet().retainAll(new HashSet(names.values()));
+                            names.forEach((idx, n) -> BY_NAME.put(n, (Remote) fresh.get(idx)));
+                        } catch (RuntimeException ignored) {
+                        }
+                    }
+                } else {
+                    refused = true;
+                    REMOTE.clear();
+                    BY_NAME.clear();
+                    NAMES.clear();
                 }
-                REMOTE.keySet().retainAll(fresh.keySet());
-                REMOTE.putAll(fresh);
-                NAMES.keySet().retainAll(names.keySet());
-                NAMES.putAll(names);
-                BY_NAME.keySet().retainAll(new HashSet<>(names.values()));
-                names.forEach((id, n) -> BY_NAME.put(n, fresh.get(id)));
-            } catch (RuntimeException ignored) {
             }
         });
     }
 
-    private static final Component LOGO = Component.literal("")
-            .withStyle(Style.EMPTY
-                    .withFont(
-                            new FontDescription.Resource(Identifier.fromNamespaceAndPath("arcanicvisuals", "nametag")))
-                    .withColor(0xFFFFFF));
-
     public static void badge(Avatar entity, AvatarRenderState s) {
-        if (s.nameTag == null || REMOTE.isEmpty() || of(entity) == null) return;
-        s.nameTag = Component.empty().append(LOGO).append(" ").append(s.nameTag);
+        if (s.nameTag != null && !REMOTE.isEmpty() && of((Entity) entity) != null) {
+            s.nameTag = Component.empty().append(LOGO).append(" ").append(s.nameTag);
+        }
     }
 
     private static String str(JsonObject o, String k) {
@@ -451,15 +536,34 @@ public final class Sync {
 
     private static void apply(Minecraft mc) {
         for (AbstractClientPlayer p : mc.level.players()) {
-            if (p == mc.player) continue;
-            Remote r = of(p);
-            String want = r == null ? null : r.emote(), had = PLAYING.get(p.getUUID());
-            if (Objects.equals(want, had)) continue;
-            if (Emotes.playOn(p, want)) {
-                if (want == null) PLAYING.remove(p.getUUID());
-                else PLAYING.put(p.getUUID(), want);
+            if (p != mc.player) {
+                Remote r = of((Entity) p);
+                String want = r == null ? null : r.emote();
+                String had = (String) PLAYING.get(p.getUUID());
+                if (!Objects.equals(want, had) && Emotes.playOn(p, want)) {
+                    if (want == null) {
+                        PLAYING.remove(p.getUUID());
+                    } else {
+                        PLAYING.put(p.getUUID(), want);
+                    }
+                }
             }
         }
-        PLAYING.keySet().removeIf(id -> mc.level.getPlayerByUUID(id) == null);
+
+        PLAYING.keySet().removeIf((id) -> mc.level.getPlayerByUUID(id) == null);
+    }
+
+    static {
+        LOGO = Component.literal("\ue100")
+                .withStyle(Style.EMPTY
+                        .withFont(new FontDescription.Resource(
+                                Identifier.fromNamespaceAndPath("arcanicvisuals", "nametag")))
+                        .withColor(0xFFFFFF));
+    }
+
+    public static record Remote(String emote, String cape, Map<String, String> wear) {
+        public String worn(String slot) {
+            return this.wear == null ? null : (String) this.wear.get(slot);
+        }
     }
 }

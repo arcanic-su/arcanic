@@ -18,10 +18,12 @@
  */
 package net.arcanic.visuals.fx;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -38,26 +40,26 @@ import net.arcanic.visuals.core.Setting;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
+import net.minecraft.client.Options;
 import net.minecraft.client.PrioritizeChunkUpdates;
 import net.minecraft.server.level.ParticleStatus;
 
-/** Optimizer: for weak computers. */
 public final class Optimizer extends Module {
-    public final Setting.Mode profile =
-            add(new Setting.Mode("profile", "Режим", "Максимум FPS", "Ультра", "Максимум FPS", "Баланс"));
+    public final Setting.Mode profile = this.add(
+            new Setting.Mode("profile", "Режим", "Максимум FPS", new String[] {"Ультра", "Максимум FPS", "Баланс"}));
     public final Setting.Num distance =
-            add(new Setting.Num("distance", "Дальность прорисовки", 6, 2, 16, 1, " чанков"));
-    public final Setting.Bool particles = add(new Setting.Bool("particles", "Меньше частиц", true));
-    public final Setting.Bool effects = add(new Setting.Bool("effects", "Упростить эффекты Arcanic", true));
-    public final Setting.Bool unlock = add(new Setting.Bool("unlock", "Снять ограничение FPS", true));
-    private String applied; // which combination of settings is in force
+            this.add(new Setting.Num("distance", "Дальность прорисовки", 6.0, 2.0, 16.0, 1.0, " чанков"));
+    public final Setting.Bool particles = this.add(new Setting.Bool("particles", "Меньше частиц", true));
+    public final Setting.Bool effects = this.add(new Setting.Bool("effects", "Упростить эффекты Arcanic", true));
+    public final Setting.Bool unlock = this.add(new Setting.Bool("unlock", "Снять ограничение FPS", true));
+    private String applied;
+    private static final String MODULES = "_modules";
 
     public Optimizer() {
         super(
                 "optimizer",
                 "Оптимайзер",
-                "Для слабых ПК: снижает настройки графики и упрощает тяжёлые эффекты, чтобы "
-                        + "поднять FPS. Выключишь — всё вернётся как было.",
+                "Для слабых ПК: снижает настройки графики и упрощает тяжёлые эффекты, чтобы поднять FPS. Выключишь — всё вернётся как было.",
                 Category.WORLD,
                 true);
     }
@@ -67,17 +69,18 @@ public final class Optimizer extends Module {
         return o != null && o.enabled() && o.effects.on();
     }
 
-    private interface Slot {
-        String get();
-
-        void set(String v);
-    }
-
-    private static <T> Slot slot(OptionInstance<T> o, Function<String, T> parse) {
+    private static <T> Slot slot(final OptionInstance<T> o, final Function<String, T> parse) {
         return new Slot() {
             public String get() {
                 T v = o.get();
-                return v instanceof Enum<?> e ? e.name() : String.valueOf(v);
+                String var10000;
+                if (v instanceof Enum<?> e) {
+                    var10000 = e.name();
+                } else {
+                    var10000 = String.valueOf(v);
+                }
+
+                return var10000;
             }
 
             public void set(String v) {
@@ -87,7 +90,7 @@ public final class Optimizer extends Module {
     }
 
     private static Map<String, Slot> slots() {
-        var o = Minecraft.getInstance().options;
+        Options o = Minecraft.getInstance().options;
         Map<String, Slot> m = new LinkedHashMap<>();
         m.put("renderDistance", slot(o.renderDistance(), Integer::valueOf));
         m.put("simulationDistance", slot(o.simulationDistance(), Integer::valueOf));
@@ -117,26 +120,34 @@ public final class Optimizer extends Module {
     }
 
     private Map<String, String> wanted(Map<String, String> before) {
-        boolean ultra = ultra(), max = ultra || profile.is("Максимум FPS");
+        boolean ultra = this.ultra();
+        boolean max = ultra || this.profile.is("Максимум FPS");
         Map<String, String> w = new LinkedHashMap<>();
-        int had = parse(before.get("renderDistance"), 12), sim = parse(before.get("simulationDistance"), 12);
+        int had = parse((String) before.get("renderDistance"), 12);
+        int sim = parse((String) before.get("simulationDistance"), 12);
         w.put(
                 "renderDistance",
                 String.valueOf(Math.max(
                         2,
                         Math.min(
                                 had,
-                                ultra ? Math.min(distance.i(), 4) : max ? distance.i() : Math.max(distance.i(), 8)))));
+                                ultra
+                                        ? Math.min(this.distance.i(), 4)
+                                        : (max ? this.distance.i() : Math.max(this.distance.i(), 8))))));
         w.put("simulationDistance", String.valueOf(Math.max(5, Math.min(sim, max ? 5 : 8))));
         w.put("entityDistanceScaling", max ? "0.5" : "0.75");
         w.put("cloudStatus", max ? "OFF" : "FAST");
-        if (particles.on() || ultra) w.put("particles", max ? "MINIMAL" : "DECREASED");
+        if (this.particles.on() || ultra) {
+            w.put("particles", max ? "MINIMAL" : "DECREASED");
+        }
+
         if (ultra) {
             w.put("mipmapLevels", "0");
             w.put("bobView", "false");
             w.put("screenEffectScale", "0.0");
             w.put("fovEffectScale", "0.0");
         }
+
         w.put("entityShadows", "false");
         w.put("ambientOcclusion", max ? "false" : "true");
         w.put("biomeBlendRadius", max ? "0" : "1");
@@ -147,24 +158,26 @@ public final class Optimizer extends Module {
             w.put("chunkSectionFadeInTime", "0.0");
             w.put("menuBackgroundBlurriness", "0");
         }
+
         w.put("prioritizeChunkUpdates", "NONE");
-        if (unlock.on() || ultra) {
+        if (this.unlock.on() || ultra) {
             w.put("enableVsync", "false");
             w.put("framerateLimit", "260");
         }
+
         return w;
     }
 
     private static int parse(String s, int def) {
         try {
             return Integer.parseInt(s);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException var3) {
             return def;
         }
     }
 
     public boolean ultra() {
-        return profile.is("Ультра");
+        return this.profile.is("Ультра");
     }
 
     private static boolean visual(Module m) {
@@ -175,24 +188,38 @@ public final class Optimizer extends Module {
                 && m.category != Category.HUD;
     }
 
-    private static final String MODULES = "_modules"; // in the backup: the visual modules that were on
-
     private void visuals(Map<String, String> before) throws IOException {
-        if (enabled() && ultra()) {
-            if (!before.containsKey(MODULES)) {
+        if (this.enabled() && this.ultra()) {
+            if (!before.containsKey("_modules")) {
                 StringBuilder on = new StringBuilder();
-                for (Module m : Modules.ALL)
-                    if (visual(m) && m.enabled())
+
+                for (Module m : Modules.ALL) {
+                    if (visual(m) && m.enabled()) {
                         on.append(on.length() > 0 ? "," : "").append(m.id);
-                before.put(MODULES, on.toString());
+                    }
+                }
+
+                before.put("_modules", on.toString());
                 write(before);
             }
-            for (Module m : Modules.ALL) if (visual(m) && m.enabled()) m.setEnabled(false);
-        } else if (before.containsKey(MODULES)) {
-            Set<String> ids = new HashSet<>(Arrays.asList(before.remove(MODULES).split(",")));
-            for (Module m : Modules.ALL) if (ids.contains(m.id) && !m.enabled()) m.setEnabled(true);
+
+            for (Module m : Modules.ALL) {
+                if (visual(m) && m.enabled()) {
+                    m.setEnabled(false);
+                }
+            }
+        } else if (before.containsKey("_modules")) {
+            Set<String> ids = new HashSet(Arrays.asList(((String) before.remove("_modules")).split(",")));
+
+            for (Module m : Modules.ALL) {
+                if (ids.contains(m.id) && !m.enabled()) {
+                    m.setEnabled(true);
+                }
+            }
+
             write(before);
         }
+
         Config.dirty();
     }
 
@@ -205,25 +232,25 @@ public final class Optimizer extends Module {
     }
 
     private String signature() {
-        return profile.get() + "|" + distance.i() + "|" + particles.on() + "|" + unlock.on();
+        String var10000 = (String) this.profile.get();
+        return var10000 + "|" + this.distance.i() + "|" + this.particles.on() + "|" + this.unlock.on();
     }
 
-    @Override
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
         OptimizerMod.set(true);
-        if (mc.options == null || mc.level == null) return;
-        String now = signature();
-        if (!now.equals(applied)) {
-            apply();
-            applied = now;
+        if (mc.options != null && mc.level != null) {
+            String now = this.signature();
+            if (!now.equals(this.applied)) {
+                this.apply();
+                this.applied = now;
+            }
         }
     }
 
-    @Override
     protected void onDisable() {
-        restore();
-        applied = null;
+        this.restore();
+        this.applied = null;
         OptimizerMod.set(false);
     }
 
@@ -231,70 +258,109 @@ public final class Optimizer extends Module {
         try {
             Map<String, Slot> slots = slots();
             Map<String, String> before = readBackup();
-            if (before == null) { // the first time: remember what the player had
+            if (before == null) {
                 before = new LinkedHashMap<>();
-                for (var e : slots.entrySet())
-                    before.put(e.getKey(), e.getValue().get());
+
+                for (Map.Entry<String, Slot> e : slots.entrySet()) {
+                    before.put((String) e.getKey(), ((Slot) e.getValue()).get());
+                }
+
                 write(before);
             }
-            for (var e : slots.entrySet())
-                before.putIfAbsent(e.getKey(), e.getValue().get());
-            visuals(before);
-            Map<String, String> want = wanted(before);
-            for (var e : slots.entrySet()) { // every option: the optimised value, or the player's own
-                String v = want.getOrDefault(e.getKey(), before.get(e.getKey()));
-                if (v == null || v.equals(e.getValue().get())) continue;
-                try {
-                    e.getValue().set(v);
-                } catch (RuntimeException ex) {
-                    System.err.println("[ArcanicVisuals] optimizer " + e.getKey() + ": " + ex);
+
+            for (Map.Entry<String, Slot> e : slots.entrySet()) {
+                before.putIfAbsent((String) e.getKey(), ((Slot) e.getValue()).get());
+            }
+
+            this.visuals(before);
+            Map<String, String> want = this.wanted(before);
+
+            for (Map.Entry<String, Slot> e : slots.entrySet()) {
+                String v = (String) want.getOrDefault(e.getKey(), (String) before.get(e.getKey()));
+                if (v != null && !v.equals(((Slot) e.getValue()).get())) {
+                    try {
+                        ((Slot) e.getValue()).set(v);
+                    } catch (RuntimeException ex) {
+                        PrintStream var10000 = System.err;
+                        String var10001 = (String) e.getKey();
+                        var10000.println("[ArcanicVisuals] optimizer " + var10001 + ": " + String.valueOf(ex));
+                    }
                 }
             }
         } catch (Exception e) {
-            System.err.println("[ArcanicVisuals] optimizer: " + e);
+            System.err.println("[ArcanicVisuals] optimizer: " + String.valueOf(e));
         }
     }
 
     private void restore() {
         try {
             Minecraft mc = Minecraft.getInstance();
-            if (mc.options == null) return;
+            if (mc.options == null) {
+                return;
+            }
+
             Map<String, String> before = readBackup();
-            if (before == null) return;
+            if (before == null) {
+                return;
+            }
+
             Map<String, Slot> slots = slots();
-            if (before.containsKey(MODULES)) { // the visuals Ultra switched off come back
-                Set<String> ids =
-                        new HashSet<>(Arrays.asList(before.get(MODULES).split(",")));
-                for (Module m : Modules.ALL) if (ids.contains(m.id) && !m.enabled()) m.setEnabled(true);
+            if (before.containsKey("_modules")) {
+                Set<String> ids = new HashSet(Arrays.asList(((String) before.get("_modules")).split(",")));
+
+                for (Module m : Modules.ALL) {
+                    if (ids.contains(m.id) && !m.enabled()) {
+                        m.setEnabled(true);
+                    }
+                }
+
                 Config.dirty();
             }
-            for (var e : before.entrySet()) {
-                Slot s = slots.get(e.getKey());
-                if (s == null || e.getValue().equals(s.get())) continue;
-                try {
-                    s.set(e.getValue());
-                } catch (RuntimeException ex) {
-                    System.err.println("[ArcanicVisuals] optimizer " + e.getKey() + ": " + ex);
+
+            for (Map.Entry<String, String> e : before.entrySet()) {
+                Slot s = (Slot) slots.get(e.getKey());
+                if (s != null && !((String) e.getValue()).equals(s.get())) {
+                    try {
+                        s.set((String) e.getValue());
+                    } catch (RuntimeException ex) {
+                        PrintStream var10000 = System.err;
+                        String var10001 = (String) e.getKey();
+                        var10000.println("[ArcanicVisuals] optimizer " + var10001 + ": " + String.valueOf(ex));
+                    }
                 }
             }
+
             Files.deleteIfExists(backupFile().toPath());
             mc.options.save();
         } catch (Exception e) {
-            System.err.println("[ArcanicVisuals] optimizer: " + e);
+            System.err.println("[ArcanicVisuals] optimizer: " + String.valueOf(e));
         }
     }
 
     private static Map<String, String> readBackup() {
         File f = backupFile();
-        if (!f.isFile()) return null;
-        try {
-            JsonObject o = JsonParser.parseString(Files.readString(f.toPath(), StandardCharsets.UTF_8))
-                    .getAsJsonObject();
-            Map<String, String> m = new LinkedHashMap<>();
-            for (var e : o.entrySet()) m.put(e.getKey(), e.getValue().getAsString());
-            return m;
-        } catch (Exception e) {
+        if (!f.isFile()) {
             return null;
+        } else {
+            try {
+                JsonObject o = JsonParser.parseString(Files.readString(f.toPath(), StandardCharsets.UTF_8))
+                        .getAsJsonObject();
+                Map<String, String> m = new LinkedHashMap<>();
+
+                for (Map.Entry<String, JsonElement> e : o.entrySet()) {
+                    m.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsString());
+                }
+
+                return m;
+            } catch (Exception var5) {
+                return null;
+            }
         }
+    }
+
+    private interface Slot {
+        String get();
+
+        void set(String var1);
     }
 }

@@ -23,7 +23,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -42,16 +44,329 @@ import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import org.joml.Matrix4f;
+import org.joml.Quaternionfc;
 import org.joml.Vector3f;
 
-/** Wings, backpacks, companions and headwear made for Arcanic. */
 public final class Wearables extends Module {
-    /** One entry of the catalogue (assets/arcanicvisuals/wear/index.json). */
-    public record Item(
+    private static final List<Item> CATALOGUE = loadCatalogue();
+    private static final int FULL_BRIGHT = 15728880;
+    public final Setting.Mode design;
+    private final List<Item> items = new ArrayList<>();
+    private static final String[] SLOTS = new String[] {"wings", "backpack", "companion", "headwear"};
+    private static final Map<Integer, Motion> MOTION = new HashMap<>();
+    private static long sweptAt;
+
+    public static Identifier icon(Item it) {
+        return Identifier.fromNamespaceAndPath("arcanicvisuals", "textures/wear/icon_" + it.n() + ".png");
+    }
+
+    public Wearables(String id, String name, String description, String type) {
+        super(id, name, description, Category.COSMETICS, false);
+
+        for (Item it : CATALOGUE) {
+            if (it.type().equals(type)) {
+                this.items.add(it);
+            }
+        }
+
+        String[] names = (String[]) this.items.stream().map(Item::name).toArray((x$0) -> new String[x$0]);
+        this.design = this.add(new Setting.Mode(
+                "design", "Модель", names.length > 0 ? names[0] : "—", names.length > 0 ? names : new String[] {"—"}));
+    }
+
+    public List<Item> items() {
+        return this.items;
+    }
+
+    public static Item byNumber(String n) {
+        if (n == null) {
+            return null;
+        } else {
+            for (Item it : CATALOGUE) {
+                if (String.valueOf(it.n()).equals(n)) {
+                    return it;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    public Item current() {
+        for (Item it : this.items) {
+            if (this.design.is(it.name())) {
+                return it;
+            }
+        }
+
+        return this.items.isEmpty() ? null : (Item) this.items.get(0);
+    }
+
+    private static List<Item> loadCatalogue() {
+        List<Item> out = new ArrayList<>();
+
+        try {
+            InputStream in = Wearables.class.getResourceAsStream("/assets/arcanicvisuals/wear/index.json");
+
+            Object var8;
+            label71:
+            {
+                try {
+                    if (in == null) {
+                        var8 = out;
+                        break label71;
+                    }
+
+                    for (JsonElement e : JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
+                            .getAsJsonArray()) {
+                        JsonObject o = e.getAsJsonObject();
+                        out.add(new Item(
+                                o.get("n").getAsInt(),
+                                o.get("name").getAsString(),
+                                o.get("type").getAsString(),
+                                num(o, "pos", 1.0F) < 0.0F ? 1 : (int) num(o, "pos", 1.0F),
+                                (int) num(o, "cat", 1.0F),
+                                num(o, "scale", 1.0F),
+                                num(o, "x", 0.0F),
+                                num(o, "y", 0.0F),
+                                num(o, "z", 0.0F),
+                                num(o, "yaw", 0.0F),
+                                num(o, "pitch", 0.0F),
+                                num(o, "roll", 0.0F)));
+                    }
+                } catch (Throwable var6) {
+                    if (in != null) {
+                        try {
+                            in.close();
+                        } catch (Throwable var5) {
+                            var6.addSuppressed(var5);
+                        }
+                    }
+
+                    throw var6;
+                }
+
+                if (in != null) {
+                    in.close();
+                }
+
+                return out;
+            }
+
+            if (in != null) {
+                in.close();
+            }
+
+            return (List<Item>) var8;
+        } catch (Exception e) {
+            System.err.println("[ArcanicVisuals] wearables: " + String.valueOf(e));
+            return out;
+        }
+    }
+
+    private static float num(JsonObject o, String k, float def) {
+        return o.has(k) && o.get(k).isJsonPrimitive() ? o.get(k).getAsFloat() : def;
+    }
+
+    public static void afterBody(
+            EntityModel<?> model, LivingEntityRenderState state, PoseStack pose, SubmitNodeCollector collector) {
+        if (state instanceof AvatarRenderState a) {
+            if (model instanceof PlayerModel pm) {
+                if (!a.isInvisible && !a.isSpectator) {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player == null) {
+                        return;
+                    }
+
+                    Item[] worn = new Item[SLOTS.length];
+                    boolean any = false;
+                    Entity entity;
+                    if (a.id == mc.player.getId()) {
+                        entity = mc.player;
+                        Wearables[] mods = new Wearables[] {Modules.WINGS, Modules.BACKPACKS, null, Modules.HEADWEAR};
+
+                        for (int i = 0; i < mods.length; ++i) {
+                            if (mods[i] != null && mods[i].enabled()) {
+                                any |= (worn[i] = mods[i].current()) != null;
+                            }
+                        }
+                    } else {
+                        entity = mc.level == null ? null : mc.level.getEntity(a.id);
+                        Sync.Remote remote = entity == null ? null : Sync.of(entity);
+                        if (remote == null) {
+                            return;
+                        }
+
+                        for (int i = 0; i < SLOTS.length; ++i) {
+                            if (!SLOTS[i].equals("companion")) {
+                                any |= (worn[i] = byNumber(remote.worn(SLOTS[i]))) != null;
+                            }
+                        }
+                    }
+
+                    if (!any) {
+                        return;
+                    }
+
+                    Motion mo = motion(a, entity);
+                    long ms = System.currentTimeMillis();
+                    Drive d = new Drive(
+                            (double) (ms % 3600000L) / 1000.0 + (double) mo.phase,
+                            a.walkAnimationPos,
+                            mo.walk,
+                            mo.air,
+                            mo.sneak,
+                            Mth.clamp(a.capeLean / 2.0F + a.capeFlap, -10.0F, 90.0F),
+                            a.capeLean2 / 2.0F,
+                            ms);
+
+                    for (Item it : worn) {
+                        if (it != null) {
+                            render(it, pm, pose, collector, a.lightCoords, d, mo.posed, a);
+                        }
+                    }
+
+                    return;
+                }
+            }
+        }
+    }
+
+    private static Motion motion(AvatarRenderState a, Entity e) {
+        long now = System.nanoTime();
+        if (now - sweptAt > 5000000000L) {
+            sweptAt = now;
+            MOTION.values().removeIf((m) -> now - m.seen > 10000000000L);
+        }
+
+        Motion mo;
+        float dt;
+        boolean var10000;
+        label54:
+        {
+            mo = (Motion) MOTION.computeIfAbsent(a.id, Motion::new);
+            dt = mo.at == 0L ? 1.0F : Math.min(0.25F, (float) (now - mo.at) / 1.0E9F);
+            mo.at = mo.seen = now;
+            if (!a.isFallFlying) {
+                label49:
+                {
+                    if (e != null && !e.onGround() && !e.isInWater() && !e.isPassenger()) {
+                        if (!(e instanceof LivingEntity)) {
+                            break label49;
+                        }
+
+                        LivingEntity le = (LivingEntity) e;
+                        if (!le.onClimbable()) {
+                            break label49;
+                        }
+                    }
+
+                    var10000 = false;
+                    break label54;
+                }
+            }
+
+            var10000 = true;
+        }
+
+        boolean airborne = var10000;
+        mo.walk += (Mth.clamp(a.walkAnimationSpeed * 1.6F, 0.0F, 1.0F) - mo.walk)
+                * (1.0F - (float) Math.exp((double) (-dt * 6.0F)));
+        mo.air += ((float) (airborne ? 1 : 0) - mo.air) * (1.0F - (float) Math.exp((double) (-dt * 5.0F)));
+        mo.sneak += ((float) (a.isCrouching ? 1 : 0) - mo.sneak) * (1.0F - (float) Math.exp((double) (-dt * 8.0F)));
+        return mo;
+    }
+
+    static void render(
+            Item it,
+            PlayerModel pm,
+            PoseStack pose,
+            SubmitNodeCollector collector,
+            int light,
+            Drive d,
+            Map<Integer, float[]> posed,
+            AvatarRenderState a) {
+        Geo geo = Wearables.Geo.get(it.n());
+        if (geo != null && geo.quadCount != 0) {
+            pose.pushPose();
+            float lift = 0.0F;
+            float push = 0.0F;
+            switch (it.pos()) {
+                case 1:
+                    pm.body.translateAndRotate(pose);
+                    lift = -0.3F;
+                    if (a != null && !a.chestEquipment.isEmpty()) {
+                        push = 0.0625F;
+                    }
+                    break;
+                case 2:
+                    pm.head.translateAndRotate(pose);
+                    lift = it.category() == 3 ? 0.5F : 0.0F;
+                    if (a != null && !a.headEquipment.isEmpty()) {
+                        lift += 0.0625F;
+                    }
+                    break;
+                case 3:
+                    lift = 0.75F;
+                    break;
+                case 4:
+                    pm.rightArm.translateAndRotate(pose);
+                    lift = -0.25F;
+                    break;
+                case 5:
+                    pm.leftArm.translateAndRotate(pose);
+                    lift = -0.25F;
+                    break;
+                case 6:
+                    pm.rightLeg.translateAndRotate(pose);
+                    lift = -0.35F;
+                    break;
+                case 7:
+                    pm.leftLeg.translateAndRotate(pose);
+                    lift = -0.35F;
+            }
+
+            pose.mulPose((Quaternionfc) Axis.ZP.rotationDegrees(180.0F));
+            pose.translate(it.x(), it.y() + lift, it.z() + push);
+            if (it.yaw() != 0.0F) {
+                pose.mulPose((Quaternionfc) Axis.YP.rotationDegrees(it.yaw()));
+            }
+
+            if (it.pitch() != 0.0F) {
+                pose.mulPose((Quaternionfc) Axis.XP.rotationDegrees(it.pitch()));
+            }
+
+            if (it.roll() != 0.0F) {
+                pose.mulPose((Quaternionfc) Axis.ZP.rotationDegrees(it.roll()));
+            }
+
+            pose.scale(it.scale(), it.scale(), it.scale());
+            float[] quads = (float[]) posed.computeIfAbsent(it.n(), (k) -> new float[geo.quadCount * 32]);
+            geo.pose(d, quads);
+            long ms = d.millis();
+
+            for (int mode = 0; mode < 4; ++mode) {
+                if (geo.hasMode[mode]) {
+                    int l = mode != 1 && mode != 3 ? light : 15728880;
+                    int m = mode;
+                    collector.submitCustomGeometry(
+                            pose, geo.renderType(mode), (pp, vc) -> geo.emit(quads, m, ms, l, pp, vc));
+                }
+            }
+
+            pose.popPose();
+        }
+    }
+
+    public static record Item(
             int n,
             String name,
             String type,
@@ -65,584 +380,929 @@ public final class Wearables extends Module {
             float pitch,
             float roll) {}
 
-    private static final List<Item> CATALOGUE = loadCatalogue();
+    static final class Motion {
+        float walk;
+        float air;
+        float sneak;
+        long at;
+        long seen;
+        final float phase;
+        final Map<Integer, float[]> posed = new HashMap<>();
 
-    public static Identifier icon(Item it) {
-        return Identifier.fromNamespaceAndPath("arcanicvisuals", "textures/wear/icon_" + it.n() + ".png");
-    }
-
-    public final Setting.Mode design;
-    private final List<Item> items = new ArrayList<>();
-
-    public Wearables(String id, String name, String description, String type) {
-        super(id, name, description, Category.COSMETICS, false);
-        for (Item it : CATALOGUE) if (it.type().equals(type)) items.add(it);
-        String[] names = items.stream().map(Item::name).toArray(String[]::new);
-        design = add(new Setting.Mode(
-                "design", "Модель", names.length > 0 ? names[0] : "—", names.length > 0 ? names : new String[] {"—"}));
-    }
-
-    public List<Item> items() {
-        return items;
-    }
-
-    public static Item byNumber(String n) {
-        if (n == null) return null;
-        for (Item it : CATALOGUE) if (String.valueOf(it.n()).equals(n)) return it;
-        return null;
-    }
-
-    public Item current() {
-        for (Item it : items) if (design.is(it.name())) return it;
-        return items.isEmpty() ? null : items.get(0);
-    }
-
-    private static List<Item> loadCatalogue() {
-        List<Item> out = new ArrayList<>();
-        try (var in = Wearables.class.getResourceAsStream("/assets/arcanicvisuals/wear/index.json")) {
-            if (in == null) return out;
-            for (JsonElement e : JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
-                    .getAsJsonArray()) {
-                JsonObject o = e.getAsJsonObject();
-                out.add(new Item(
-                        o.get("n").getAsInt(),
-                        o.get("name").getAsString(),
-                        o.get("type").getAsString(),
-                        num(o, "pos", 1) < 0 ? 1 : (int) num(o, "pos", 1),
-                        (int) num(o, "cat", 1),
-                        num(o, "scale", 1),
-                        num(o, "x", 0),
-                        num(o, "y", 0),
-                        num(o, "z", 0),
-                        num(o, "yaw", 0),
-                        num(o, "pitch", 0),
-                        num(o, "roll", 0)));
-            }
-        } catch (Exception e) {
-            System.err.println("[ArcanicVisuals] wearables: " + e);
-        }
-        return out;
-    }
-
-    private static float num(JsonObject o, String k, float def) {
-        return o.has(k) && o.get(k).isJsonPrimitive() ? o.get(k).getAsFloat() : def;
-    }
-
-    private static final String[] SLOTS = {"wings", "backpack", "companion", "headwear"};
-
-    /** Called with the model's root pose right after a player's body is submitted. */
-    public static void afterBody(
-            EntityModel<?> model, LivingEntityRenderState state, PoseStack pose, SubmitNodeCollector collector) {
-        if (!(state instanceof AvatarRenderState a) || !(model instanceof PlayerModel pm) || a.isInvisible) return;
-        var mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-        if (a.id == mc.player.getId()) {
-            renderAll(pm, pose, collector, state.lightCoords);
-            return;
-        }
-        var entity = mc.level == null ? null : mc.level.getEntity(a.id);
-        var remote = entity == null ? null : Sync.of(entity);
-        if (remote == null) return;
-        for (String slot : SLOTS) {
-            Item it = byNumber(remote.worn(slot));
-            if (it != null) render(it, pm, pose, collector, state.lightCoords);
+        Motion(int id) {
+            this.phase = (float) id * 0.618034F % 1.0F * 10.0F;
         }
     }
 
-    public static void renderAll(PlayerModel pm, PoseStack pose, SubmitNodeCollector collector, int light) {
-        for (Wearables w : new Wearables[] {Modules.WINGS, Modules.BACKPACKS, Modules.COMPANIONS, Modules.HEADWEAR}) {
-            if (w == null || !w.enabled()) continue;
-            Item it = w.current();
-            if (it != null) render(it, pm, pose, collector, light);
-        }
-    }
+    static record Drive(
+            double seconds, float walkPos, float walk, float air, float sneak, float lean, float side, long millis) {}
 
-    public static void render(Item it, PlayerModel pm, PoseStack pose, SubmitNodeCollector collector, int light) {
-        Geo geo = Geo.get(it.n());
-        if (geo == null) return;
-        pose.pushPose();
-        float lift = 0;
-        switch (it.pos()) {
-            case 1 -> {
-                pm.body.translateAndRotate(pose);
-                lift = -.3f;
-            }
-            case 2 -> {
-                pm.head.translateAndRotate(pose);
-                lift = it.category() == 3 ? .5f : 0;
-            }
-            case 3 -> lift = .75f;
-            case 4 -> {
-                pm.rightArm.translateAndRotate(pose);
-                lift = -.25f;
-            }
-            case 5 -> {
-                pm.leftArm.translateAndRotate(pose);
-                lift = -.25f;
-            }
-            case 6 -> {
-                pm.rightLeg.translateAndRotate(pose);
-                lift = -.35f;
-            }
-            case 7 -> {
-                pm.leftLeg.translateAndRotate(pose);
-                lift = -.35f;
-            }
-            default -> {}
-        }
-        pose.mulPose(Axis.ZP.rotationDegrees(180)); // the model space is y down; the cosmetics are drawn y up
-        pose.translate(it.x(), it.y() + lift, it.z());
-        if (it.yaw() != 0) pose.mulPose(Axis.YP.rotationDegrees(it.yaw()));
-        if (it.pitch() != 0) pose.mulPose(Axis.XP.rotationDegrees(it.pitch()));
-        if (it.roll() != 0) pose.mulPose(Axis.ZP.rotationDegrees(it.roll()));
-        pose.scale(it.scale(), it.scale(), it.scale());
-        float[] quads = geo.pose(System.currentTimeMillis());
-        float dv = geo.frameShift(System.currentTimeMillis());
-        collector.submitCustomGeometry(pose, RenderTypes.entityCutoutNoCull(geo.texture), (pp, vc) -> {
-            for (int i = 0; i + 22 < quads.length; i += 23) {
-                float nx = quads[i + 20], ny = quads[i + 21], nz = quads[i + 22];
-                for (int k = 0; k < 4; k++) {
-                    int o = i + k * 5;
-                    vc.addVertex(pp, quads[o], quads[o + 1], quads[o + 2])
-                            .setColor(-1)
-                            .setUv(quads[o + 3], quads[o + 4] + dv)
-                            .setOverlay(OverlayTexture.NO_OVERLAY)
-                            .setLight(light)
-                            .setNormal(pp, nx, ny, nz);
-                }
-            }
-        });
-        pose.popPose();
-    }
-
-    /** A Bedrock geometry with its (first) animation. */
     static final class Geo {
         private static final Map<Integer, Geo> CACHE = new HashMap<>();
-
-        static Geo get(int n) {
-            if (!CACHE.containsKey(n)) CACHE.put(n, load(n));
-            return CACHE.get(n);
-        }
-
-        static final class Bone {
-            String name, parentName;
-            final List<Bone> kids = new ArrayList<>();
-            final List<Cube> cubes = new ArrayList<>();
-            float px, py, pz, rx, ry, rz; // the pivot (blocks) and the rest rotation (radians)
-            Track rot, pos, scl; // its animation, each null if it has none
-        }
-        /**
-         * Corner positions before the cube's own turn: 6 faces x 4 corners x (x, y, z, u, v), a missing face marked
-         * by NaN.
-         */
-        static final class Cube {
-            float px, py, pz, rx, ry, rz;
-            final float[] v = new float[6 * 4 * 5];
-            final boolean[] has = new boolean[6];
-        }
-        /** Keyframes of one channel: times in seconds, a vector for each. */
-        record Track(float[] t, float[][] v) {
-            void at(float time, float[] out) {
-                int n = t.length;
-                if (n == 0) {
-                    out[0] = out[1] = out[2] = Float.NaN;
-                    return;
-                }
-                if (time <= t[0]) {
-                    System.arraycopy(v[0], 0, out, 0, 3);
-                    return;
-                }
-                if (time >= t[n - 1]) {
-                    System.arraycopy(v[n - 1], 0, out, 0, 3);
-                    return;
-                }
-                int i = 1;
-                while (t[i] < time) i++;
-                float k = (time - t[i - 1]) / Math.max(1e-6f, t[i] - t[i - 1]);
-                for (int c = 0; c < 3; c++) out[c] = v[i - 1][c] + (v[i][c] - v[i - 1][c]) * k;
-            }
-        }
-
+        static final int SOLID = 0;
+        static final int GLOW = 1;
+        static final int CLEAR = 2;
+        static final int SHINE = 3;
+        static final int MODES = 4;
+        static final int IDLE = 0;
+        static final int WALK = 1;
+        static final int AIR = 2;
+        static final int SNEAK = 3;
+        static final int LAYERS = 4;
+        static final float STRIDE = 9.43138F;
+        static final int Q = 32;
         Identifier texture;
         final List<Bone> roots = new ArrayList<>();
         int quadCount;
-        boolean animated, loop = true;
-        float length = 1;
+        float textureHeight = 64.0F;
+        final float[] length = new float[4];
+        final boolean[] has = new boolean[4];
+        final boolean[] stride = new boolean[4];
+        final boolean[] hasMode = new boolean[4];
         int frames = 1;
-        float frameMs = 150; // the texture as a strip of frames, top to bottom
-        private float[] buffer; // the posed quads: 4 x (x, y, z, u, v) and a normal each
+        float frameMs = 150.0F;
+        int[] quadMode;
+        int[] quadFrames;
+        float[] quadTicks;
+        float[] quadBand;
+        private float[] bounds;
         private final Matrix4f[] stack = new Matrix4f[48];
         private final Vector3f tmp = new Vector3f();
         private final float[] key = new float[3];
+        private final float[] times = new float[4];
+        private final float[] weights = new float[4];
+        private final float[] r = new float[3];
+        private final float[] p = new float[3];
+        private final float[] s = new float[3];
+        private static final String[] FACES = new String[] {"west", "east", "down", "up", "north", "south"};
+        private static final float[][] NORMALS = new float[][] {
+            {-1.0F, 0.0F, 0.0F},
+            {1.0F, 0.0F, 0.0F},
+            {0.0F, -1.0F, 0.0F},
+            {0.0F, 1.0F, 0.0F},
+            {0.0F, 0.0F, -1.0F},
+            {0.0F, 0.0F, 1.0F}
+        };
 
-        float frameShift(long now) {
-            return frames <= 1 ? 0 : (float) ((now / (long) Math.max(1, frameMs)) % frames) / frames;
+        static Geo get(int n) {
+            if (!CACHE.containsKey(n)) {
+                CACHE.put(n, load(n));
+            }
+
+            return (Geo) CACHE.get(n);
         }
 
-        float[] pose(long now) {
-            if (buffer != null && !animated) return buffer;
-            if (buffer == null) buffer = new float[quadCount * 23];
-            float time = length <= 0 ? 0 : (now % (long) Math.max(1, length * 1000)) / 1000f;
-            int[] at = {0};
-            Matrix4f root = matrix(0).identity();
-            for (Bone b : roots) bone(b, root, 1, time, at);
-            return buffer;
+        float frameShift(long ms) {
+            return this.frames <= 1
+                    ? 0.0F
+                    : (float) (ms / (long) Math.max(1.0F, this.frameMs) % (long) this.frames) / (float) this.frames;
+        }
+
+        float shift(int k, long ms) {
+            int f = this.quadFrames[k];
+            return f <= 1
+                    ? 0.0F
+                    : (float) ((int) (ms / (long) Math.max(1.0F, this.quadTicks[k] * 50.0F) % (long) f))
+                            * this.quadBand[k];
+        }
+
+        RenderType renderType(int mode) {
+            RenderType var10000;
+            switch (mode) {
+                case 2 -> var10000 = RenderTypes.entityTranslucent(this.texture);
+                case 3 -> var10000 = RenderTypes.entityTranslucentEmissive(this.texture);
+                default -> var10000 = RenderTypes.entityCutoutNoCull(this.texture);
+            }
+
+            return var10000;
+        }
+
+        void emit(float[] q, int mode, long ms, int light, PoseStack.Pose pp, VertexConsumer vc) {
+            float all = this.frameShift(ms);
+            int k = 0;
+
+            for (int i = 0; k < this.quadCount; i += 32) {
+                if (this.quadMode[k] == mode) {
+                    float dv = all + this.shift(k, ms);
+
+                    for (int c = 0; c < 4; ++c) {
+                        int o = i + c * 8;
+                        vc.addVertex(pp, q[o], q[o + 1], q[o + 2])
+                                .setColor(-1)
+                                .setUv(q[o + 3], q[o + 4] + dv)
+                                .setOverlay(OverlayTexture.NO_OVERLAY)
+                                .setLight(light)
+                                .setNormal(pp, q[o + 5], q[o + 6], q[o + 7]);
+                    }
+                }
+
+                ++k;
+            }
+        }
+
+        float[] bounds() {
+            if (this.bounds != null) {
+                return this.bounds;
+            } else {
+                float[] q = new float[this.quadCount * 32];
+                this.pose(new Drive(0.0, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0L), q);
+                float[] b = new float[] {
+                    Float.MAX_VALUE,
+                    Float.MAX_VALUE,
+                    Float.MAX_VALUE,
+                    -Float.MAX_VALUE,
+                    -Float.MAX_VALUE,
+                    -Float.MAX_VALUE
+                };
+
+                for (int i = 0; i < q.length; i += 32) {
+                    for (int c = 0; c < 4; ++c) {
+                        int o = i + c * 8;
+                        float x = -q[o];
+                        float y = q[o + 1];
+                        float z = q[o + 2];
+                        b[0] = Math.min(b[0], x);
+                        b[1] = Math.min(b[1], y);
+                        b[2] = Math.min(b[2], z);
+                        b[3] = Math.max(b[3], x);
+                        b[4] = Math.max(b[4], y);
+                        b[5] = Math.max(b[5], z);
+                    }
+                }
+
+                return this.bounds = b;
+            }
+        }
+
+        void pose(Drive d, float[] out) {
+            this.weights[0] = 1.0F;
+            this.weights[1] = d.walk();
+            this.weights[2] = d.air();
+            this.weights[3] = d.sneak();
+
+            for (int l = 0; l < 4; ++l) {
+                if (this.has[l]) {
+                    double t = this.stride[l] ? (double) (d.walkPos() / 9.43138F * this.length[l]) : d.seconds();
+                    this.times[l] =
+                            (float) ((t % (double) this.length[l] + (double) this.length[l]) % (double) this.length[l]);
+                }
+            }
+
+            int[] at = new int[] {0};
+            Matrix4f root = this.matrix(0).identity();
+
+            for (Bone b : this.roots) {
+                this.bone(b, root, 1, d, at, out);
+            }
         }
 
         private Matrix4f matrix(int depth) {
-            if (stack[depth] == null) stack[depth] = new Matrix4f();
-            return stack[depth];
+            if (this.stack[depth] == null) {
+                this.stack[depth] = new Matrix4f();
+            }
+
+            return this.stack[depth];
         }
 
-        private void bone(Bone b, Matrix4f parent, int depth, float time, int[] at) {
-            if (depth >= stack.length - 2) return;
-            Matrix4f m = matrix(depth).set(parent);
-            float rx = b.rx, ry = b.ry, rz = b.rz, sx = 1, sy = 1, sz = 1;
-            if (animated) {
-                if (b.pos != null) {
-                    b.pos.at(time, key);
-                    if (key[0] == key[0]) m.translate(-key[0] / 16f, key[1] / 16f, key[2] / 16f);
-                }
-                if (b.rot != null) {
-                    b.rot.at(time, key);
-                    if (key[0] == key[0]) {
-                        rx += (float) Math.toRadians(-key[0]);
-                        ry += (float) Math.toRadians(-key[1]);
-                        rz += (float) Math.toRadians(key[2]);
-                    }
-                }
-                if (b.scl != null) {
-                    b.scl.at(time, key);
-                    if (key[0] == key[0]) {
-                        sx = key[0];
-                        sy = key[1];
-                        sz = key[2];
+        private void channel(Track t, float time, float w, float[] v) {
+            if (t != null) {
+                t.at(time, this.key);
+                if (this.key[0] == this.key[0]) {
+                    for (int c = 0; c < 3; ++c) {
+                        v[c] += (this.key[c] - v[c]) * w;
                     }
                 }
             }
-            m.translate(b.px, b.py, b.pz);
-            if (rz != 0) m.rotateZ(rz);
-            if (ry != 0) m.rotateY(ry);
-            if (rx != 0) m.rotateX(rx);
-            if (sx != 1 || sy != 1 || sz != 1) m.scale(sx, sy, sz);
-            m.translate(-b.px, -b.py, -b.pz);
-            for (Cube c : b.cubes) {
-                Matrix4f cm = m;
-                if (c.rx != 0 || c.ry != 0 || c.rz != 0) {
-                    cm = matrix(depth + 1).set(m).translate(c.px, c.py, c.pz);
-                    if (c.rz != 0) cm.rotateZ(c.rz);
-                    if (c.ry != 0) cm.rotateY(c.ry);
-                    if (c.rx != 0) cm.rotateX(c.rx);
-                    cm.translate(-c.px, -c.py, -c.pz);
-                }
-                for (int f = 0; f < 6; f++) {
-                    if (!c.has[f]) continue;
-                    int o = at[0];
-                    at[0] += 23;
-                    for (int k = 0; k < 4; k++) {
-                        int s = (f * 4 + k) * 5;
-                        cm.transformPosition(c.v[s], c.v[s + 1], c.v[s + 2], tmp);
-                        buffer[o + k * 5] = tmp.x;
-                        buffer[o + k * 5 + 1] = tmp.y;
-                        buffer[o + k * 5 + 2] = tmp.z;
-                        buffer[o + k * 5 + 3] = c.v[s + 3];
-                        buffer[o + k * 5 + 4] = c.v[s + 4];
-                    }
-                    cm.transformDirection(NORMALS[f][0], NORMALS[f][1], NORMALS[f][2], tmp);
-                    if (tmp.lengthSquared() > 1e-10f) tmp.normalize();
-                    buffer[o + 20] = tmp.x;
-                    buffer[o + 21] = tmp.y;
-                    buffer[o + 22] = tmp.z;
-                }
-            }
-            for (Bone k : b.kids) bone(k, m, depth + 1, time, at);
         }
 
-        // ---- reading
-        private static final String[] FACES = {"west", "east", "down", "up", "north", "south"};
-        private static final float[][] NORMALS = {{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
+        private void bone(Bone b, Matrix4f parent, int depth, Drive d, int[] at, float[] out) {
+            if (depth < this.stack.length - 2) {
+                Matrix4f m = this.matrix(depth).set(parent);
+                this.r[0] = this.r[1] = this.r[2] = this.p[0] = this.p[1] = this.p[2] = 0.0F;
+                this.s[0] = this.s[1] = this.s[2] = 1.0F;
+
+                for (int l = 0; l < 4; ++l) {
+                    Track[] tr = b.tracks[l];
+                    float w = this.weights[l];
+                    if (tr != null && !(w <= 0.001F)) {
+                        this.channel(tr[0], this.times[l], w, this.r);
+                        this.channel(tr[1], this.times[l], w, this.p);
+                        this.channel(tr[2], this.times[l], w, this.s);
+                    }
+                }
+
+                float[] var10000 = this.r;
+                var10000[0] += b.swingX * d.lean();
+                var10000 = this.r;
+                var10000[2] += b.swingZ * d.side();
+                if (this.p[0] != 0.0F || this.p[1] != 0.0F || this.p[2] != 0.0F) {
+                    m.translate(-this.p[0] / 16.0F, this.p[1] / 16.0F, this.p[2] / 16.0F);
+                }
+
+                float rx = b.rx + (float) Math.toRadians((double) (-this.r[0]));
+                float ry = b.ry + (float) Math.toRadians((double) (-this.r[1]));
+                float rz = b.rz + (float) Math.toRadians((double) this.r[2]);
+                float sx = this.s[0];
+                float sy = this.s[1];
+                float sz = this.s[2];
+                m.translate(b.px, b.py, b.pz);
+                if (rz != 0.0F) {
+                    m.rotateZ(rz);
+                }
+
+                if (ry != 0.0F) {
+                    m.rotateY(ry);
+                }
+
+                if (rx != 0.0F) {
+                    m.rotateX(rx);
+                }
+
+                if (sx != 1.0F || sy != 1.0F || sz != 1.0F) {
+                    m.scale(sx, sy, sz);
+                }
+
+                m.translate(-b.px, -b.py, -b.pz);
+
+                for (Cube c : b.cubes) {
+                    Matrix4f cm = m;
+                    if (c.rx != 0.0F || c.ry != 0.0F || c.rz != 0.0F) {
+                        cm = this.matrix(depth + 1).set(m).translate(c.px, c.py, c.pz);
+                        if (c.rz != 0.0F) {
+                            cm.rotateZ(c.rz);
+                        }
+
+                        if (c.ry != 0.0F) {
+                            cm.rotateY(c.ry);
+                        }
+
+                        if (c.rx != 0.0F) {
+                            cm.rotateX(c.rx);
+                        }
+
+                        cm.translate(-c.px, -c.py, -c.pz);
+                    }
+
+                    for (int f = 0; f < 6; ++f) {
+                        if (c.has[f]) {
+                            int o = at[0];
+                            at[0] += 32;
+                            cm.transformDirection(NORMALS[f][0], NORMALS[f][1], NORMALS[f][2], this.tmp);
+                            if (this.tmp.lengthSquared() > 1.0E-10F) {
+                                this.tmp.normalize();
+                            }
+
+                            float nx = this.tmp.x;
+                            float ny = this.tmp.y;
+                            float nz = this.tmp.z;
+
+                            for (int k = 0; k < 4; ++k) {
+                                int s0 = (f * 4 + k) * 5;
+                                int w = o + k * 8;
+                                cm.transformPosition(c.v[s0], c.v[s0 + 1], c.v[s0 + 2], this.tmp);
+                                out[w] = this.tmp.x;
+                                out[w + 1] = this.tmp.y;
+                                out[w + 2] = this.tmp.z;
+                                out[w + 3] = c.v[s0 + 3];
+                                out[w + 4] = c.v[s0 + 4];
+                                out[w + 5] = nx;
+                                out[w + 6] = ny;
+                                out[w + 7] = nz;
+                            }
+                        }
+                    }
+                }
+
+                for (Mesh me : b.meshes) {
+                    for (int q = 0; q < me.quads; ++q) {
+                        int o = at[0];
+                        at[0] += 32;
+
+                        for (int k = 0; k < 4; ++k) {
+                            int s0 = (q * 4 + k) * 8;
+                            int w = o + k * 8;
+                            m.transformPosition(me.v[s0], me.v[s0 + 1], me.v[s0 + 2], this.tmp);
+                            out[w] = this.tmp.x;
+                            out[w + 1] = this.tmp.y;
+                            out[w + 2] = this.tmp.z;
+                            out[w + 3] = me.v[s0 + 3];
+                            out[w + 4] = me.v[s0 + 4];
+                            m.transformDirection(me.v[s0 + 5], me.v[s0 + 6], me.v[s0 + 7], this.tmp);
+                            if (this.tmp.lengthSquared() > 1.0E-10F) {
+                                this.tmp.normalize();
+                            }
+
+                            out[w + 5] = this.tmp.x;
+                            out[w + 6] = this.tmp.y;
+                            out[w + 7] = this.tmp.z;
+                        }
+                    }
+                }
+
+                for (Bone k : b.kids) {
+                    this.bone(k, m, depth + 1, d, at, out);
+                }
+            }
+        }
 
         private static Geo load(int n) {
-            try (var in = Wearables.class.getResourceAsStream("/assets/arcanicvisuals/wear/cosmetic_" + n + ".json")) {
-                if (in == null) return null;
-                JsonObject root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
-                        .getAsJsonObject();
-                JsonObject g = root.getAsJsonObject("model")
-                        .getAsJsonArray("minecraft:geometry")
-                        .get(0)
-                        .getAsJsonObject();
-                JsonObject d = g.getAsJsonObject("description");
-                float tw = num(d, "texture_width", 64), th = num(d, "texture_height", 64);
-                Geo geo = new Geo();
-                geo.texture = Identifier.fromNamespaceAndPath("arcanicvisuals", "textures/wear/cosmetic_" + n + ".png");
-                Map<String, Bone> byName = new HashMap<>();
-                List<Bone> all = new ArrayList<>();
-                if (g.has("bones"))
-                    for (JsonElement be : g.getAsJsonArray("bones")) {
-                        JsonObject bo = be.getAsJsonObject();
-                        Bone b = new Bone();
-                        b.name = bo.get("name").getAsString();
-                        b.parentName = bo.has("parent") ? bo.get("parent").getAsString() : null;
-                        float[] p = vec(bo, "pivot", 0, 0, 0), r = vec(bo, "rotation", 0, 0, 0);
-                        b.px = -p[0] / 16f;
-                        b.py = p[1] / 16f;
-                        b.pz = p[2] / 16f;
-                        b.rx = (float) Math.toRadians(-r[0]);
-                        b.ry = (float) Math.toRadians(-r[1]);
-                        b.rz = (float) Math.toRadians(r[2]);
-                        if (bo.has("cubes"))
-                            for (JsonElement ce : bo.getAsJsonArray("cubes")) {
-                                Cube c = cube(ce.getAsJsonObject(), tw, th);
-                                b.cubes.add(c);
-                                for (boolean h : c.has) if (h) geo.quadCount++;
+            try {
+                InputStream in =
+                        Wearables.class.getResourceAsStream("/assets/arcanicvisuals/wear/cosmetic_" + n + ".json");
+
+                Object var27;
+                label139:
+                {
+                    Geo var33;
+                    try {
+                        if (in == null) {
+                            var27 = null;
+                            break label139;
+                        }
+
+                        JsonObject root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
+                                .getAsJsonObject();
+                        JsonObject g = root.getAsJsonObject("model")
+                                .getAsJsonArray("minecraft:geometry")
+                                .get(0)
+                                .getAsJsonObject();
+                        JsonObject d = g.getAsJsonObject("description");
+                        float tw = Wearables.num(d, "texture_width", 64.0F);
+                        float th = Wearables.num(d, "texture_height", 64.0F);
+                        Geo geo = new Geo();
+                        geo.textureHeight = th;
+                        geo.texture = Identifier.fromNamespaceAndPath(
+                                "arcanicvisuals", "textures/wear/cosmetic_" + n + ".png");
+                        Map<String, Bone> byName = new HashMap<>();
+                        List<Bone> all = new ArrayList<>();
+                        if (g.has("bones")) {
+                            for (JsonElement be : g.getAsJsonArray("bones")) {
+                                JsonObject bo = be.getAsJsonObject();
+                                Bone b = new Bone();
+                                b.name = bo.get("name").getAsString();
+                                b.parentName =
+                                        bo.has("parent") ? bo.get("parent").getAsString() : null;
+                                float[] p = vec(bo, "pivot", 0.0F, 0.0F, 0.0F);
+                                float[] r = vec(bo, "rotation", 0.0F, 0.0F, 0.0F);
+                                b.px = -p[0] / 16.0F;
+                                b.py = p[1] / 16.0F;
+                                b.pz = p[2] / 16.0F;
+                                b.rx = (float) Math.toRadians((double) (-r[0]));
+                                b.ry = (float) Math.toRadians((double) (-r[1]));
+                                b.rz = (float) Math.toRadians((double) r[2]);
+                                float[] sw = vec(bo, "swing", 0.0F, 0.0F);
+                                b.swingX = sw[0];
+                                b.swingZ = sw[1];
+                                if (bo.has("cubes")) {
+                                    for (JsonElement ce : bo.getAsJsonArray("cubes")) {
+                                        Cube c = cube(ce.getAsJsonObject(), tw, th);
+                                        b.cubes.add(c);
+
+                                        for (boolean h : c.has) {
+                                            if (h) {
+                                                ++geo.quadCount;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (bo.has("meshes")) {
+                                    for (JsonElement me : bo.getAsJsonArray("meshes")) {
+                                        Mesh mesh = mesh(me.getAsJsonObject(), tw, th);
+                                        b.meshes.add(mesh);
+                                        geo.quadCount += mesh.quads;
+                                    }
+                                }
+
+                                byName.put(b.name, b);
+                                all.add(b);
                             }
-                        byName.put(b.name, b);
-                        all.add(b);
+                        }
+
+                        for (Bone b : all) {
+                            Bone parent = b.parentName == null ? null : (Bone) byName.get(b.parentName);
+                            if (parent != null && parent != b) {
+                                parent.kids.add(b);
+                            } else {
+                                geo.roots.add(b);
+                            }
+                        }
+
+                        geo.quadMode = new int[geo.quadCount];
+                        geo.quadFrames = new int[geo.quadCount];
+                        geo.quadTicks = new float[geo.quadCount];
+                        geo.quadBand = new float[geo.quadCount];
+                        int[] k = new int[] {0};
+
+                        for (Bone b : geo.roots) {
+                            geo.index(b, k);
+                        }
+
+                        if (root.has("textureAnimation")) {
+                            JsonObject ta = root.getAsJsonObject("textureAnimation");
+                            geo.frames = Math.max(1, (int) Wearables.num(ta, "frameCount", 1.0F));
+                            geo.frameMs = Math.max(1.0F, Wearables.num(ta, "frameTime", 3.0F)) * 50.0F;
+                        }
+
+                        if (root.has("animation")) {
+                            animation(geo, root.getAsJsonObject("animation"), byName);
+                        }
+
+                        var33 = geo;
+                    } catch (Throwable var25) {
+                        if (in != null) {
+                            try {
+                                in.close();
+                            } catch (Throwable var24) {
+                                var25.addSuppressed(var24);
+                            }
+                        }
+
+                        throw var25;
                     }
-                for (Bone b : all) {
-                    Bone parent = b.parentName == null ? null : byName.get(b.parentName);
-                    if (parent != null && parent != b) parent.kids.add(b);
-                    else geo.roots.add(b);
+
+                    if (in != null) {
+                        in.close();
+                    }
+
+                    return var33;
                 }
-                if (root.has("textureAnimation")) {
-                    JsonObject ta = root.getAsJsonObject("textureAnimation");
-                    geo.frames = Math.max(1, (int) num(ta, "frameCount", 1));
-                    geo.frameMs = Math.max(1, num(ta, "frameTime", 3)) * 50;
+
+                if (in != null) {
+                    in.close();
                 }
-                if (root.has("animation")) animation(geo, root.getAsJsonObject("animation"), byName);
-                return geo;
+
+                return (Geo) var27;
             } catch (Exception e) {
-                System.err.println("[ArcanicVisuals] wearable " + n + ": " + e);
+                System.err.println("[ArcanicVisuals] wearable " + n + ": " + String.valueOf(e));
                 return null;
             }
         }
 
+        private void index(Bone b, int[] k) {
+            for (Cube c : b.cubes) {
+                for (int f = 0; f < 6; ++f) {
+                    if (c.has[f]) {
+                        int var10004 = k[0];
+                        int var10001 = k[0];
+                        k[0] = var10004 + 1;
+                        this.part(var10001, c.mode, c.frames, c.ticks, c.band);
+                    }
+                }
+            }
+
+            for (Mesh me : b.meshes) {
+                for (int f = 0; f < me.quads; ++f) {
+                    int var12 = k[0];
+                    int var11 = k[0];
+                    k[0] = var12 + 1;
+                    this.part(var11, me.mode, me.frames, me.ticks, me.band);
+                }
+            }
+
+            for (Bone kid : b.kids) {
+                this.index(kid, k);
+            }
+        }
+
+        private void part(int q, int mode, int frames, float ticks, float band) {
+            this.quadMode[q] = mode;
+            this.quadFrames[q] = frames;
+            this.quadTicks[q] = ticks;
+            this.quadBand[q] = band / this.textureHeight;
+            this.hasMode[mode] = true;
+        }
+
+        private static int mode(JsonObject o) {
+            if (o.has("mode") && o.get("mode").isJsonPrimitive()) {
+                byte var10000;
+                switch (o.get("mode").getAsString()) {
+                    case "glow" -> var10000 = 1;
+                    case "clear" -> var10000 = 2;
+                    case "shine" -> var10000 = 3;
+                    default -> var10000 = 0;
+                }
+
+                return var10000;
+            } else {
+                return 0;
+            }
+        }
+
+        private static Mesh mesh(JsonObject o, float tw, float th) {
+            Mesh me = new Mesh();
+            me.mode = mode(o);
+            float[] fr = vec(o, "frames", 1.0F, 1.0F, 0.0F);
+            me.frames = Math.max(1, (int) fr[0]);
+            me.ticks = Math.max(1.0F, fr[1]);
+            me.band = fr[2];
+            JsonArray a = o.getAsJsonArray("v");
+            me.quads = a.size() / 32;
+            me.v = new float[me.quads * 32];
+
+            for (int i = 0; i < me.quads * 4; ++i) {
+                int s = i * 8;
+                me.v[s] = -a.get(s).getAsFloat() / 16.0F;
+                me.v[s + 1] = a.get(s + 1).getAsFloat() / 16.0F;
+                me.v[s + 2] = a.get(s + 2).getAsFloat() / 16.0F;
+                me.v[s + 3] = a.get(s + 3).getAsFloat() / tw;
+                me.v[s + 4] = a.get(s + 4).getAsFloat() / th;
+                me.v[s + 5] = -a.get(s + 5).getAsFloat();
+                me.v[s + 6] = a.get(s + 6).getAsFloat();
+                me.v[s + 7] = a.get(s + 7).getAsFloat();
+            }
+
+            return me;
+        }
+
         private static Cube cube(JsonObject o, float tw, float th) {
-            float[] origin = vec(o, "origin", 0, 0, 0),
-                    size = vec(o, "size", 1, 1, 1),
-                    pivot = vec(o, "pivot", origin[0], origin[1], origin[2]),
-                    rot = vec(o, "rotation", 0, 0, 0);
-            float inflate = num(o, "inflate", 0);
+            float[] origin = vec(o, "origin", 0.0F, 0.0F, 0.0F);
+            float[] size = vec(o, "size", 1.0F, 1.0F, 1.0F);
+            float[] pivot = vec(o, "pivot", origin[0], origin[1], origin[2]);
+            float[] rot = vec(o, "rotation", 0.0F, 0.0F, 0.0F);
+            float inflate = Wearables.num(o, "inflate", 0.0F);
             Cube c = new Cube();
-            c.px = -pivot[0] / 16f;
-            c.py = pivot[1] / 16f;
-            c.pz = pivot[2] / 16f;
-            c.rx = (float) Math.toRadians(-rot[0]);
-            c.ry = (float) Math.toRadians(-rot[1]);
-            c.rz = (float) Math.toRadians(rot[2]);
-            float x = origin[0] - inflate,
-                    y = origin[1] - inflate,
-                    z = origin[2] - inflate,
-                    w = size[0] + inflate * 2,
-                    h = size[1] + inflate * 2,
-                    dp = size[2] + inflate * 2;
-            float x0 = -(x + w) / 16f,
-                    y0 = y / 16f,
-                    z0 = z / 16f,
-                    x1 = -x / 16f,
-                    y1 = (y + h) / 16f,
-                    z1 = (z + dp) / 16f;
+            c.px = -pivot[0] / 16.0F;
+            c.py = pivot[1] / 16.0F;
+            c.pz = pivot[2] / 16.0F;
+            c.rx = (float) Math.toRadians((double) (-rot[0]));
+            c.ry = (float) Math.toRadians((double) (-rot[1]));
+            c.rz = (float) Math.toRadians((double) rot[2]);
+            c.mode = mode(o);
+            float[] fr = vec(o, "frames", 1.0F, 1.0F, 0.0F);
+            c.frames = Math.max(1, (int) fr[0]);
+            c.ticks = Math.max(1.0F, fr[1]);
+            c.band = fr[2];
+            float x = origin[0] - inflate;
+            float y = origin[1] - inflate;
+            float z = origin[2] - inflate;
+            float w = size[0] + inflate * 2.0F;
+            float h = size[1] + inflate * 2.0F;
+            float dp = size[2] + inflate * 2.0F;
+            float x0 = -(x + w) / 16.0F;
+            float y0 = y / 16.0F;
+            float z0 = z / 16.0F;
+            float x1 = -x / 16.0F;
+            float y1 = (y + h) / 16.0F;
+            float z1 = (z + dp) / 16.0F;
             JsonElement uv = o.get("uv");
-            for (int f = 0; f < 6; f++) {
-                float u, v, du, dv;
+
+            for (int f = 0; f < 6; ++f) {
+                float u;
+                float v;
+                float du;
+                float dv;
                 if (uv != null && uv.isJsonObject()) {
                     JsonObject face = uv.getAsJsonObject().has(FACES[f])
                             ? uv.getAsJsonObject().getAsJsonObject(FACES[f])
                             : null;
-                    if (face == null || !face.has("uv")) continue;
-                    float[] a = vec(face, "uv", 0, 0), s = vec(face, "uv_size", 0, 0);
+                    if (face == null || !face.has("uv")) {
+                        continue;
+                    }
+
+                    float[] a = vec(face, "uv", 0.0F, 0.0F);
+                    float[] s = vec(face, "uv_size", 0.0F, 0.0F);
                     u = a[0] / tw;
                     v = a[1] / th;
                     du = s[0] / tw;
                     dv = s[1] / th;
                 } else {
-                    // the classic box layout: the top and the bottom above, the four sides in a row under them
-                    float bu = 0, bv = 0;
+                    float bu = 0.0F;
+                    float bv = 0.0F;
                     if (uv != null && uv.isJsonArray()) {
                         bu = uv.getAsJsonArray().get(0).getAsFloat();
                         bv = uv.getAsJsonArray().get(1).getAsFloat();
                     }
-                    float sw = size[0], sh = size[1], sd = size[2];
+
+                    float sw = size[0];
+                    float sh = size[1];
+                    float sd = size[2];
                     switch (f) {
-                        case 0 -> {
+                        case 0:
                             u = bu + sd + sw;
                             v = bv + sd;
                             du = sd;
                             dv = sh;
-                        } // west
-                        case 1 -> {
+                            break;
+                        case 1:
                             u = bu;
                             v = bv + sd;
                             du = sd;
                             dv = sh;
-                        } // east
-                        case 2 -> {
+                            break;
+                        case 2:
                             u = bu + sd + sw;
                             v = bv;
                             du = sw;
                             dv = sd;
-                        } // down
-                        case 3 -> {
+                            break;
+                        case 3:
                             u = bu + sd;
                             v = bv;
                             du = sw;
                             dv = sd;
-                        } // up
-                        case 4 -> {
+                            break;
+                        case 4:
                             u = bu + sd;
                             v = bv + sd;
                             du = sw;
                             dv = sh;
-                        } // north
-                        default -> {
+                            break;
+                        default:
                             u = bu + sd + sw + sd;
                             v = bv + sd;
                             du = sw;
                             dv = sh;
-                        } // south
                     }
+
                     u /= tw;
                     v /= th;
                     du /= tw;
                     dv /= th;
                 }
-                float u1 = u + du, v1 = v + dv;
-                float[][] p =
-                        switch (f) {
-                            case 0 ->
-                                new float[][] {
-                                    {x0, y1, z0, u, v}, {x0, y1, z1, u1, v}, {x0, y0, z1, u1, v1}, {x0, y0, z0, u, v1}
-                                };
-                            case 1 ->
-                                new float[][] {
-                                    {x1, y1, z1, u, v}, {x1, y1, z0, u1, v}, {x1, y0, z0, u1, v1}, {x1, y0, z1, u, v1}
-                                };
-                            case 2 ->
-                                new float[][] {
-                                    {x1, y0, z0, u, v}, {x1, y0, z1, u, v1}, {x0, y0, z1, u1, v1}, {x0, y0, z0, u1, v}
-                                };
-                            case 3 ->
-                                new float[][] {
-                                    {x0, y1, z0, u, v}, {x0, y1, z1, u, v1}, {x1, y1, z1, u1, v1}, {x1, y1, z0, u1, v}
-                                };
-                            case 4 ->
-                                new float[][] {
-                                    {x1, y1, z0, u, v}, {x0, y1, z0, u1, v}, {x0, y0, z0, u1, v1}, {x1, y0, z0, u, v1}
-                                };
-                            default ->
-                                new float[][] {
-                                    {x0, y1, z1, u, v}, {x1, y1, z1, u1, v}, {x1, y0, z1, u1, v1}, {x0, y0, z1, u, v1}
-                                };
+
+                float u1 = u + du;
+                float v1 = v + dv;
+                float[][] var10000;
+                switch (f) {
+                    case 0 ->
+                        var10000 = new float[][] {
+                            {x0, y1, z0, u, v}, {x0, y1, z1, u1, v}, {x0, y0, z1, u1, v1}, {x0, y0, z0, u, v1}
                         };
-                for (int k = 0; k < 4; k++) System.arraycopy(p[k], 0, c.v, (f * 4 + k) * 5, 5);
+                    case 1 ->
+                        var10000 = new float[][] {
+                            {x1, y1, z1, u, v}, {x1, y1, z0, u1, v}, {x1, y0, z0, u1, v1}, {x1, y0, z1, u, v1}
+                        };
+                    case 2 ->
+                        var10000 = new float[][] {
+                            {x1, y0, z0, u, v}, {x1, y0, z1, u, v1}, {x0, y0, z1, u1, v1}, {x0, y0, z0, u1, v}
+                        };
+                    case 3 ->
+                        var10000 = new float[][] {
+                            {x0, y1, z0, u, v}, {x0, y1, z1, u, v1}, {x1, y1, z1, u1, v1}, {x1, y1, z0, u1, v}
+                        };
+                    case 4 ->
+                        var10000 = new float[][] {
+                            {x1, y1, z0, u, v}, {x0, y1, z0, u1, v}, {x0, y0, z0, u1, v1}, {x1, y0, z0, u, v1}
+                        };
+                    default ->
+                        var10000 = new float[][] {
+                            {x0, y1, z1, u, v}, {x1, y1, z1, u1, v}, {x1, y0, z1, u1, v1}, {x0, y0, z1, u, v1}
+                        };
+                }
+
+                float[][] p = var10000;
+
+                for (int k = 0; k < 4; ++k) {
+                    System.arraycopy(p[k], 0, c.v, (f * 4 + k) * 5, 5);
+                }
+
                 c.has[f] = true;
             }
+
             return c;
         }
 
+        private static int layer(String name) {
+            int var10000;
+            switch (name) {
+                case "walk" -> var10000 = 1;
+                case "air" -> var10000 = 2;
+                case "sneak" -> var10000 = 3;
+                default -> var10000 = name.contains("idle") ? 0 : -1;
+            }
+
+            return var10000;
+        }
+
         private static void animation(Geo geo, JsonObject anim, Map<String, Bone> byName) {
-            if (!anim.has("animations") || !anim.get("animations").isJsonObject()) return;
-            // the standing animation: "idle", or the first one that is not the menu's pose
-            JsonObject a = null, first = null;
-            for (var e : anim.getAsJsonObject("animations").entrySet()) {
-                if (!e.getValue().isJsonObject()) continue;
-                String name = e.getKey().toLowerCase(Locale.ROOT);
-                if (name.contains("gui")) continue;
-                if (first == null) first = e.getValue().getAsJsonObject();
-                if (name.contains("idle")) {
-                    a = e.getValue().getAsJsonObject();
-                    break;
+            if (anim.has("animations") && anim.get("animations").isJsonObject()) {
+                JsonObject[] picked = new JsonObject[4];
+                JsonObject first = null;
+
+                for (Map.Entry<String, JsonElement> e :
+                        anim.getAsJsonObject("animations").entrySet()) {
+                    if (((JsonElement) e.getValue()).isJsonObject()) {
+                        String name = ((String) e.getKey()).toLowerCase(Locale.ROOT);
+                        if (!name.contains("gui")) {
+                            if (first == null) {
+                                first = ((JsonElement) e.getValue()).getAsJsonObject();
+                            }
+
+                            int l = layer(name);
+                            if (l >= 0 && picked[l] == null) {
+                                picked[l] = ((JsonElement) e.getValue()).getAsJsonObject();
+                            }
+                        }
+                    }
+                }
+
+                if (picked[0] == null) {
+                    picked[0] = first;
+                }
+
+                for (int l = 0; l < 4; ++l) {
+                    JsonObject a = picked[l];
+                    if (a != null && a.has("bones") && a.get("bones").isJsonObject()) {
+                        float longest = 0.0F;
+                        boolean any = false;
+
+                        for (Map.Entry<String, JsonElement> e :
+                                a.getAsJsonObject("bones").entrySet()) {
+                            Bone b = (Bone) byName.get(e.getKey());
+                            if (b != null && ((JsonElement) e.getValue()).isJsonObject()) {
+                                JsonObject ch = ((JsonElement) e.getValue()).getAsJsonObject();
+                                Track[] tr = new Track[] {
+                                    track(ch.get("rotation")), track(ch.get("position")), track(ch.get("scale"))
+                                };
+
+                                for (Track t : tr) {
+                                    if (t != null) {
+                                        any = true;
+                                        longest = Math.max(longest, t.t()[t.t().length - 1]);
+                                    }
+                                }
+
+                                if (tr[0] != null || tr[1] != null || tr[2] != null) {
+                                    b.tracks[l] = tr;
+                                }
+                            }
+                        }
+
+                        float length = Wearables.num(a, "animation_length", 0.0F);
+                        if (length <= 0.0F) {
+                            length = longest;
+                        }
+
+                        if (any && !(length <= 0.0F)) {
+                            geo.has[l] = true;
+                            geo.length[l] = length;
+                            geo.stride[l] = a.has("stride")
+                                    && a.get("stride").isJsonPrimitive()
+                                    && a.get("stride").getAsBoolean();
+                        } else {
+                            for (Bone b : byName.values()) {
+                                b.tracks[l] = null;
+                            }
+                        }
+                    }
                 }
             }
-            if (a == null) a = first;
-            if (a == null) return;
-            geo.loop = !a.has("loop")
-                    || !a.get("loop").isJsonPrimitive()
-                    || !a.get("loop").getAsJsonPrimitive().isBoolean()
-                    || a.get("loop").getAsBoolean();
-            geo.length = num(a, "animation_length", 0);
-            if (!a.has("bones") || !a.get("bones").isJsonObject()) return;
-            float longest = 0;
-            for (var e : a.getAsJsonObject("bones").entrySet()) {
-                Bone b = byName.get(e.getKey());
-                if (b == null || !e.getValue().isJsonObject()) continue;
-                JsonObject ch = e.getValue().getAsJsonObject();
-                b.rot = track(ch.get("rotation"));
-                b.pos = track(ch.get("position"));
-                b.scl = track(ch.get("scale"));
-                for (Track t : new Track[] {b.rot, b.pos, b.scl})
-                    if (t != null) {
-                        geo.animated = true;
-                        longest = Math.max(longest, t.t()[t.t().length - 1]);
-                    }
-            }
-            if (geo.length <= 0) geo.length = longest;
-            if (geo.length <= 0) geo.animated = false;
         }
 
         private static Track track(JsonElement e) {
-            if (e == null || e.isJsonNull()) return null;
-            List<float[]> keys = new ArrayList<>(); // {time, x, y, z}
-            if (e.isJsonObject()
-                    && !e.getAsJsonObject().has("vector")
-                    && !e.getAsJsonObject().has("post")) {
-                for (var k : e.getAsJsonObject().entrySet()) {
-                    float[] v = value(k.getValue());
-                    if (v == null) continue;
-                    try {
-                        keys.add(new float[] {Float.parseFloat(k.getKey()), v[0], v[1], v[2]});
-                    } catch (NumberFormatException ignored) {
+            if (e != null && !e.isJsonNull()) {
+                List<float[]> keys = new ArrayList<>();
+                if (e.isJsonObject()
+                        && !e.getAsJsonObject().has("vector")
+                        && !e.getAsJsonObject().has("post")) {
+                    for (Map.Entry<String, JsonElement> k : e.getAsJsonObject().entrySet()) {
+                        float[] v = value((JsonElement) k.getValue());
+                        if (v != null) {
+                            try {
+                                keys.add(new float[] {Float.parseFloat((String) k.getKey()), v[0], v[1], v[2]});
+                            } catch (NumberFormatException ignored) {
+                            }
+                        }
+                    }
+                } else {
+                    float[] v = value(e);
+                    if (v != null) {
+                        keys.add(new float[] {0.0F, v[0], v[1], v[2]});
                     }
                 }
+
+                if (keys.isEmpty()) {
+                    return null;
+                } else {
+                    keys.sort((p, q) -> Float.compare(p[0], q[0]));
+                    float[] t = new float[keys.size()];
+                    float[][] v = new float[keys.size()][];
+
+                    for (int i = 0; i < t.length; ++i) {
+                        t[i] = ((float[]) keys.get(i))[0];
+                        v[i] = new float[] {
+                            ((float[]) keys.get(i))[1], ((float[]) keys.get(i))[2], ((float[]) keys.get(i))[3]
+                        };
+                    }
+
+                    return new Track(t, v);
+                }
             } else {
-                float[] v = value(e);
-                if (v != null) keys.add(new float[] {0, v[0], v[1], v[2]});
+                return null;
             }
-            if (keys.isEmpty()) return null;
-            keys.sort((p, q) -> Float.compare(p[0], q[0]));
-            float[] t = new float[keys.size()];
-            float[][] v = new float[keys.size()][];
-            for (int i = 0; i < t.length; i++) {
-                t[i] = keys.get(i)[0];
-                v[i] = new float[] {keys.get(i)[1], keys.get(i)[2], keys.get(i)[3]};
-            }
-            return new Track(t, v);
         }
 
         private static float[] value(JsonElement e) {
             try {
                 if (e.isJsonObject()) {
                     JsonObject o = e.getAsJsonObject();
-                    e = o.has("vector") ? o.get("vector") : o.has("post") ? o.get("post") : null;
-                    if (e == null) return null;
+                    e = o.has("vector") ? o.get("vector") : (o.has("post") ? o.get("post") : null);
+                    if (e == null) {
+                        return null;
+                    }
                 }
+
                 if (e.isJsonArray()) {
                     JsonArray a = e.getAsJsonArray();
-                    if (a.size() < 3) return null;
+                    if (a.size() < 3) {
+                        return null;
+                    }
+
                     return new float[] {
                         a.get(0).getAsFloat(), a.get(1).getAsFloat(), a.get(2).getAsFloat()
                     };
                 }
+
                 if (e.isJsonPrimitive()) {
                     float f = e.getAsFloat();
                     return new float[] {f, f, f};
                 }
             } catch (RuntimeException ignored) {
             }
+
             return null;
         }
 
         private static float[] vec(JsonObject o, String k, float... def) {
-            if (!o.has(k) || !o.get(k).isJsonArray()) return def;
-            JsonArray a = o.getAsJsonArray(k);
-            float[] v = def.clone();
-            for (int i = 0; i < v.length && i < a.size(); i++) {
-                try {
-                    v[i] = a.get(i).getAsFloat();
-                } catch (RuntimeException ignored) {
+            if (o.has(k) && o.get(k).isJsonArray()) {
+                JsonArray a = o.getAsJsonArray(k);
+                float[] v = def.clone();
+
+                for (int i = 0; i < v.length && i < a.size(); ++i) {
+                    try {
+                        v[i] = a.get(i).getAsFloat();
+                    } catch (RuntimeException ignored) {
+                    }
+                }
+
+                return v;
+            } else {
+                return def;
+            }
+        }
+
+        static final class Bone {
+            String name;
+            String parentName;
+            final List<Bone> kids = new ArrayList<>();
+            final List<Cube> cubes = new ArrayList<>();
+            final List<Mesh> meshes = new ArrayList<>();
+            float px;
+            float py;
+            float pz;
+            float rx;
+            float ry;
+            float rz;
+            float swingX;
+            float swingZ;
+            final Track[][] tracks = new Track[4][];
+        }
+
+        static final class Cube {
+            float px;
+            float py;
+            float pz;
+            float rx;
+            float ry;
+            float rz;
+            final float[] v = new float[120];
+            final boolean[] has = new boolean[6];
+            int mode;
+            int frames = 1;
+            float ticks = 1.0F;
+            float band;
+        }
+
+        static final class Mesh {
+            float[] v;
+            int quads;
+            int mode;
+            int frames = 1;
+            float ticks = 1.0F;
+            float band;
+        }
+
+        static record Track(float[] t, float[][] v) {
+            void at(float time, float[] out) {
+                int n = this.t.length;
+                if (n == 0) {
+                    out[0] = out[1] = out[2] = Float.NaN;
+                } else if (time <= this.t[0]) {
+                    System.arraycopy(this.v[0], 0, out, 0, 3);
+                } else if (time >= this.t[n - 1]) {
+                    System.arraycopy(this.v[n - 1], 0, out, 0, 3);
+                } else {
+                    int i;
+                    for (i = 1; this.t[i] < time; ++i) {}
+
+                    float k = (time - this.t[i - 1]) / Math.max(1.0E-6F, this.t[i] - this.t[i - 1]);
+
+                    for (int c = 0; c < 3; ++c) {
+                        out[c] = this.v[i - 1][c] + (this.v[i][c] - this.v[i - 1][c]) * k;
+                    }
                 }
             }
-            return v;
         }
     }
 }

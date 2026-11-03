@@ -22,99 +22,147 @@ import net.arcanic.visuals.core.Category;
 import net.arcanic.visuals.core.Module;
 import net.arcanic.visuals.core.Setting;
 import net.arcanic.visuals.core.Theme;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.ItemStack;
 
-/** Weapon colour and Armour colour: paint the held weapon and the worn armour with a colour, gradient or shimmer. */
 public final class Paint {
-    private Paint() {}
-
     static final long T0 = System.nanoTime();
 
+    private Paint() {}
+
     public static float time() {
-        return (System.nanoTime() - T0) / 1e9f;
+        return (float) (System.nanoTime() - T0) / 1.0E9F;
+    }
+
+    static float clamp(float v) {
+        return Math.max(0.0F, Math.min(1.0F, v));
+    }
+
+    static float frac(float v) {
+        return v - (float) Math.floor((double) v);
+    }
+
+    static int lerp(int a, int b, float t) {
+        int ar = a >> 16 & 255;
+        int ag = a >> 8 & 255;
+        int ab = a & 255;
+        int aa = a >>> 24;
+        int br = b >> 16 & 255;
+        int bg = b >> 8 & 255;
+        int bb = b & 255;
+        int ba = b >>> 24;
+        return (int) ((float) aa + (float) (ba - aa) * t) << 24
+                | (int) ((float) ar + (float) (br - ar) * t) << 16
+                | (int) ((float) ag + (float) (bg - ag) * t) << 8
+                | (int) ((float) ab + (float) (bb - ab) * t);
+    }
+
+    static int hsv(float h, float s, float v) {
+        int i = (int) Math.floor((double) (h * 6.0F));
+        float f = h * 6.0F - (float) i;
+        float p = v * (1.0F - s);
+        float q = v * (1.0F - f * s);
+        float t = v * (1.0F - (1.0F - f) * s);
+        float r;
+        float g;
+        float b;
+        switch (Math.floorMod(i, 6)) {
+            case 0:
+                r = v;
+                g = t;
+                b = p;
+                break;
+            case 1:
+                r = q;
+                g = v;
+                b = p;
+                break;
+            case 2:
+                r = p;
+                g = v;
+                b = t;
+                break;
+            case 3:
+                r = p;
+                g = q;
+                b = v;
+                break;
+            case 4:
+                r = t;
+                g = p;
+                b = v;
+                break;
+            default:
+                r = v;
+                g = p;
+                b = q;
+        }
+
+        return 0xFF000000 | Math.round(r * 255.0F) << 16 | Math.round(g * 255.0F) << 8 | Math.round(b * 255.0F);
     }
 
     public abstract static class Base extends Module {
-        public final Setting.Mode mode =
-                add(new Setting.Mode("mode", "Режим", "Переливание", "Переливание", "Градиент", "Радуга", "Один цвет"));
-        public final Setting.Colour a = add(new Setting.Colour("color_a", "Цвет 1", true));
-        public final Setting.Colour b = add(new Setting.Colour("color_b", "Цвет 2", false, 0xFF22D3EE))
-                .showIf(() -> !mode.is("Один цвет") && !mode.is("Радуга"));
-        public final Setting.Mode style =
-                add(new Setting.Mode("style", "Стиль", "Перекраска", "Перекраска", "Оттенок"));
-        public final Setting.Num speed = add(new Setting.Num("speed", "Скорость", 1, .2, 3, .1, "×"))
-                .showIf(() -> !mode.is("Градиент") || shineOn());
-        public final Setting.Bool shine = add(new Setting.Bool("shine", "Блик", true));
+        public final Setting.Mode mode = this.add(new Setting.Mode(
+                "mode", "Режим", "Переливание", new String[] {"Переливание", "Градиент", "Радуга", "Один цвет"}));
+        public final Setting.Colour a = this.add(new Setting.Colour("color_a", "Цвет 1", true));
+        public final Setting.Colour b = (this.add(new Setting.Colour("color_b", "Цвет 2", false, -14494738)))
+                .showIf(() -> !this.mode.is("Один цвет") && !this.mode.is("Радуга"));
+        public final Setting.Mode style = (Setting.Mode)
+                this.add(new Setting.Mode("style", "Стиль", "Перекраска", new String[] {"Перекраска", "Оттенок"}));
+        public final Setting.Num speed =
+                (Setting.Num) ((Setting.Num) this.add(new Setting.Num("speed", "Скорость", 1.0, 0.2, 3.0, 0.1, "×")))
+                        .showIf(() -> !this.mode.is("Градиент") || this.shineOn());
+        public final Setting.Bool shine = this.add(new Setting.Bool("shine", "Блик", true));
         public final Setting.Bool glow;
 
         protected Base(String id, String name, String desc, Category c, boolean glowDefault) {
             super(id, name, desc, c, false);
-            glow = add(new Setting.Bool("glow", "Свечение", glowDefault));
+            this.glow = this.add(new Setting.Bool("glow", "Свечение", glowDefault));
         }
 
         private boolean shineOn() {
-            return shine != null && shine.on();
+            return this.shine != null && this.shine.on();
         }
 
         public boolean recolour() {
-            return style.is("Перекраска");
+            return this.style.is("Перекраска");
         }
 
         int colourA() {
-            return a.argb() | 0xFF000000;
+            return this.a.argb() | 0xFF000000;
         }
 
         int colourB() {
-            return (b.followsTheme() ? Theme.accent2() : b.argb()) | 0xFF000000;
+            return (this.b.followsTheme() ? Theme.accent2() : this.b.argb()) | 0xFF000000;
         }
 
-        /** Colour at position t (0 = handle / feet, 1 = tip / head) at the given time. */
         public int colourAt(float t, float time) {
-            float tm = time * speed.f();
-            int c =
-                    switch (mode.get()) {
-                        case "Градиент" -> lerp(colourA(), colourB(), clamp(t));
-                        case "Радуга" -> hsv(frac(t * .55f - tm * .22f), .7f, 1);
-                        case "Один цвет" -> colourA();
-                        default ->
-                            lerp(colourA(), colourB(), .5f + .5f * (float) Math.sin((t * 1.7f - tm * 1.1f) * Math.PI));
-                    };
-            if (shine.on()) {
-                float p = frac(tm * .38f) * 2.2f - .6f; // a light band sweeping up every few seconds
-                float d = Math.abs(t - p), s = Math.max(0, 1 - d / .16f);
-                s = s * s * (3 - 2 * s);
-                c = lerp(c, 0xFFFFFFFF, .78f * s);
+            float tm = time * this.speed.f();
+            int var10000;
+            switch ((String) this.mode.get()) {
+                case "Градиент" -> var10000 = Paint.lerp(this.colourA(), this.colourB(), Paint.clamp(t));
+                case "Радуга" -> var10000 = Paint.hsv(Paint.frac(t * 0.55F - tm * 0.22F), 0.7F, 1.0F);
+                case "Один цвет" -> var10000 = this.colourA();
+                default ->
+                    var10000 = Paint.lerp(
+                            this.colourA(),
+                            this.colourB(),
+                            0.5F + 0.5F * (float) Math.sin((double) (t * 1.7F - tm * 1.1F) * Math.PI));
             }
+
+            int c = var10000;
+            if (this.shine.on()) {
+                float p = Paint.frac(tm * 0.38F) * 2.2F - 0.6F;
+                float d = Math.abs(t - p);
+                float s = Math.max(0.0F, 1.0F - d / 0.16F);
+                s = s * s * (3.0F - 2.0F * s);
+                c = Paint.lerp(c, -1, 0.78F * s);
+            }
+
             return c;
         }
     }
 
-    public static final class Weapon extends Base {
-        public final Setting.Bool aura = add(new Setting.Bool("aura", "Аура", true));
-        public final Setting.Num auraPower = add(new Setting.Num("aura_power", "Сила ауры", 60, 10, 100, 5, "%"))
-                .showIf(aura::on);
-        public final Setting.Bool onlyWeapons = add(new Setting.Bool("only_weapons", "Только оружие", true));
-        public final Setting.Bool offhand = add(new Setting.Bool("offhand", "Левая рука", false));
-        public final Setting.Bool thirdPerson = add(new Setting.Bool("third_person", "От третьего лица", true));
-
-        public Weapon() {
-            super(
-                    "weapon_paint",
-                    "Цвет оружия",
-                    "Перекрашивает меч в руке: градиент, переливание, блик и аура",
-                    Category.HANDS,
-                    false);
-        }
-
-        public boolean paints(ItemStack s) {
-            if (s.isEmpty()) return false;
-            return !onlyWeapons.on() || s.has(DataComponents.WEAPON);
-        }
-    }
-
     public static final class Armor extends Base {
-        public final Setting.Bool others = add(new Setting.Bool("others", "На других игроках", false));
+        public final Setting.Bool others = this.add(new Setting.Bool("others", "На других игроках", false));
 
         public Armor() {
             super(
@@ -124,61 +172,5 @@ public final class Paint {
                     Category.PLAYERS,
                     false);
         }
-    }
-
-    static float clamp(float v) {
-        return Math.max(0, Math.min(1, v));
-    }
-
-    static float frac(float v) {
-        return v - (float) Math.floor(v);
-    }
-
-    static int lerp(int a, int b, float t) {
-        int ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255, aa = a >>> 24;
-        int br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255, ba = b >>> 24;
-        return ((int) (aa + (ba - aa) * t) << 24)
-                | ((int) (ar + (br - ar) * t) << 16)
-                | ((int) (ag + (bg - ag) * t) << 8)
-                | (int) (ab + (bb - ab) * t);
-    }
-
-    static int hsv(float h, float s, float v) {
-        float r, g, b;
-        int i = (int) Math.floor(h * 6);
-        float f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
-        switch (Math.floorMod(i, 6)) {
-            case 0 -> {
-                r = v;
-                g = t;
-                b = p;
-            }
-            case 1 -> {
-                r = q;
-                g = v;
-                b = p;
-            }
-            case 2 -> {
-                r = p;
-                g = v;
-                b = t;
-            }
-            case 3 -> {
-                r = p;
-                g = q;
-                b = v;
-            }
-            case 4 -> {
-                r = t;
-                g = p;
-                b = v;
-            }
-            default -> {
-                r = v;
-                g = p;
-                b = q;
-            }
-        }
-        return 0xFF000000 | (Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255);
     }
 }

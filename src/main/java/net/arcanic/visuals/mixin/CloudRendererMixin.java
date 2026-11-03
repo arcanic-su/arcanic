@@ -23,14 +23,27 @@ import net.minecraft.client.renderer.CloudRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** World Tweaker: clouds can be hidden under a custom sky. */
-@Mixin(CloudRenderer.class)
+@Mixin({CloudRenderer.class})
 public abstract class CloudRendererMixin {
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    @ModifyVariable(
+            method = {"render"},
+            at = {@At("HEAD")},
+            argsOnly = true,
+            ordinal = 0)
+    private int arcanicvisuals$ambienceClouds(int colour) {
+        return Modules.AMBIENCE.clouds(colour);
+    }
+
+    @Inject(
+            method = {"render"},
+            at = {@At("HEAD")},
+            cancellable = true)
     private void arcanicvisuals$clouds(CallbackInfo ci) {
-        var w = Modules.WORLD;
-        if (w.skyActive() && !w.clouds.on()) ci.cancel();
+        if (Modules.SKY_SHADER.replaces() || Modules.CUSTOM_FOG.hidesSky()) {
+            ci.cancel();
+        }
     }
 }

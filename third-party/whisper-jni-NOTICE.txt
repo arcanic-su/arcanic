@@ -1,0 +1,7 @@
+whisper-jni 1.7.1 (libs/whisper-jni-1.7.1.jar), bundled jar-in-jar for World Lyrics speech recognition.
+
+whisper-jni   https://github.com/GiviMAD/whisper-jni   Apache License 2.0
+whisper.cpp   https://github.com/ggerganov/whisper.cpp  MIT License, Copyright (c) 2023-2024 The ggml authors
+
+The full Apache License 2.0 text: https://www.apache.org/licenses/LICENSE-2.0.txt
+The jar is redistributed unmodified.

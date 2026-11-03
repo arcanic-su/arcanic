@@ -19,12 +19,28 @@ If you notice a bug or want to suggest a feature, please open an
 
 ## License
 
-Arcanic Visuals is free software under the [GNU General Public License v3.0](LICENSE). The licence covers the source
-code in this repository. Minecraft and the mods bundled with the client are not ours and stay under their own terms,
-see [third-party](third-party) and [libs](libs/NOTICE.txt).
+This project is subject to the [GNU General Public License v3.0](LICENSE). This does only apply for source code
+located directly in this clean repository. During the development and compilation process, additional source code may
+be used to which we have obtained no rights. Such code is not covered by the GPL license.
 
-In short, and not as legal advice: you may use, share and change the code. If you publish something built on it, you
-have to publish your source as well, keep it under the GPL v3 and say that it is based on Arcanic Visuals.
+For those who are unfamiliar with the license, here is a summary of its main points. This is by no means legal advice
+nor legally binding.
+
+*Actions that you are allowed to do:*
+
+- Use
+- Share
+- Modify
+
+*If you do decide to use ANY code from the source:*
+
+- **You must disclose the source code of your modified work and the source code you took from this project. This means
+  you are not allowed to use code from this project (even partially) in a closed-source and/or obfuscated
+  application.**
+- **You must state clearly and obviously to all end users that you are using code from this project.**
+- **Your application must also be licensed under the same license.**
+
+Bundled third-party mods keep their own licenses, see [third-party](third-party).
 
 ## Contributing
 

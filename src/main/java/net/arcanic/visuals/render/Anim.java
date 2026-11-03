@@ -22,51 +22,85 @@ import java.util.HashMap;
 import java.util.Map;
 import net.arcanic.visuals.core.Theme;
 
-/** Frame-rate independent springs keyed by name: hover glows, toggles, expanding cards, page fades. */
 public final class Anim {
-    public static float speedMul = 1;
-
-    private final Map<String, Float> values = new HashMap<>();
+    public static float speedMul = 1.0F;
+    private final Map<String, Run> runs = new HashMap<>();
     private long last = System.nanoTime();
-    private float dt = 1 / 60f;
+    private float dt = 0.016666668F;
+    public static boolean snap;
 
     public void frame() {
         long now = System.nanoTime();
-        dt = Math.min(.1f, (now - last) / 1e9f);
-        last = now;
+        this.dt = Math.min(0.1F, (float) (now - this.last) / 1.0E9F);
+        this.last = now;
     }
 
     public float to(String key, float target, float speed) {
-        float v = values.getOrDefault(key, target);
-        if (!Theme.animations) v = target;
-        else v += (target - v) * (1 - (float) Math.exp(-dt * speed * speedMul));
-        if (Math.abs(target - v) < .0015f) v = target;
-        values.put(key, v);
-        return v;
+        Run r = (Run) this.runs.get(key);
+        long now = System.nanoTime();
+        if (r == null) {
+            r = new Run();
+            r.from = r.target = r.value = target;
+            this.runs.put(key, r);
+            return target;
+        } else if (Theme.animations && !snap) {
+            if (Math.abs(target - r.target) > 1.0E-6F) {
+                r.from = r.value;
+                r.target = target;
+                r.start = now;
+                r.seconds = Math.max(0.06F, Math.min(0.8F, 2.0F / Math.max(0.1F, speed * speedMul)));
+            }
+
+            if (r.value != r.target) {
+                float t = Math.min(1.0F, (float) (now - r.start) / 1.0E9F / r.seconds);
+                float e = 1.0F - (1.0F - t) * (1.0F - t);
+                r.value = t >= 1.0F ? r.target : r.from + (r.target - r.from) * e;
+            }
+
+            return r.value;
+        } else {
+            r.from = r.target = r.value = target;
+            return target;
+        }
     }
 
     public float get(String key, float def) {
-        return values.getOrDefault(key, def);
+        Run r = (Run) this.runs.get(key);
+        return r == null ? def : r.value;
     }
 
     public void set(String key, float v) {
-        values.put(key, v);
+        Run r = (Run) this.runs.computeIfAbsent(key, (k) -> new Run());
+        r.from = r.target = r.value = v;
     }
 
     public void clear(String prefix) {
-        values.keySet().removeIf(k -> k.startsWith(prefix));
+        this.runs.keySet().removeIf((k) -> k.startsWith(prefix));
     }
 
     public float factor(float speed) {
-        return Theme.animations ? 1 - (float) Math.exp(-dt * speed * speedMul) : 1;
+        return Theme.animations ? 1.0F - (float) Math.exp((double) (-this.dt * speed * speedMul)) : 1.0F;
     }
 
     public static float easeOutBack(float t) {
-        float c1 = 1.70158f, c3 = c1 + 1;
-        return 1 + c3 * (float) Math.pow(t - 1, 3) + c1 * (float) Math.pow(t - 1, 2);
+        float c1 = 1.70158F;
+        float c3 = c1 + 1.0F;
+        return 1.0F + c3 * (float) Math.pow((double) (t - 1.0F), 3.0) + c1 * (float) Math.pow((double) (t - 1.0F), 2.0);
     }
 
     public static float easeOutCubic(float t) {
-        return 1 - (float) Math.pow(1 - t, 3);
+        return 1.0F - (float) Math.pow((double) (1.0F - t), 3.0);
+    }
+
+    public static float easeOutExpo(float t) {
+        return t >= 1.0F ? 1.0F : 1.0F - (float) Math.pow(2.0, (double) (-10.0F * Math.max(0.0F, t)));
+    }
+
+    private static final class Run {
+        float from;
+        float target;
+        float value;
+        long start;
+        float seconds;
     }
 }

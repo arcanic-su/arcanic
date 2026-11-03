@@ -1,0 +1,20 @@
+[TaCZ] CS+ — Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+https://modrinth.com/mod/tacz-cs
+https://creativecommons.org/licenses/by-nc/4.0/
+
+Copyright (c) lolokeia
+
+The AWP bow skin of Arcanic Visuals is made from the AWP of CS+ 1.3.1-hotfix2
+(csplus-1.3.1-hotfix2.jar): its gun and scope models, textures, animations and sounds.
+
+Changes made (tools/csplus_awp.py):
+- the scope model is mounted on the gun's scope_pos bone and merged into one model;
+- the gun and scope textures are packed into one atlas;
+- only the draw, shoot, inspect, idle and run animations are kept, their sound cues renamed,
+  and the shot sound is cued at the start of the shoot animation;
+- the shoot animation keeps only its kick (gun and view); the bolt worked after a shot is a new
+  "bolt" animation cut from the bolt stretch of the draw animation;
+- the Blockbench hand stand-ins are removed and an aim_view bone is added at the scope's eye point.
+
+These assets are used for a free, non-commercial mod. CS+ is not an official Valve or
+Counter-Strike product, and neither is this skin.

@@ -26,35 +26,45 @@ import net.arcanic.visuals.core.Setting;
 import net.arcanic.visuals.core.Theme;
 import net.arcanic.visuals.render.Anim;
 import net.arcanic.visuals.render.Px;
-import net.arcanic.visuals.render.Px.Weight;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
-/** Combo helper: a small coach under the crosshair. */
 public final class ComboHelper extends Module {
-    final Setting.Bool timing = add(new Setting.Bool("timing", "Тайминг удара", true));
-    final Setting.Bool sprint = add(new Setting.Bool("sprint", "Сброс спринта", true));
-    final Setting.Bool reach = add(new Setting.Bool("reach", "Дистанция", true));
-    final Setting.Bool combo = add(new Setting.Bool("combo", "Счётчик комбо", true));
-    final Setting.Num size = add(new Setting.Num("size", "Размер", 1, .6, 1.6, .05, "×"));
-
-    private static final int GREEN = 0xFF6EE7B7, RED = 0xFFF87171, AMBER = 0xFFF5C46B;
-
-    private void say(String word, int colour, long now) {
-        verdict = word;
-        verdictColour = colour;
-        verdictAt = now;
-    }
-
+    final Setting.Bool timing = this.add(new Setting.Bool("timing", "Тайминг удара", true));
+    final Setting.Bool sprint = this.add(new Setting.Bool("sprint", "Сброс спринта", true));
+    final Setting.Bool reach = this.add(new Setting.Bool("reach", "Дистанция", true));
+    final Setting.Bool combo = this.add(new Setting.Bool("combo", "Счётчик комбо", true));
+    final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.6, 1.6, 0.05, "×"));
+    private static final int GREEN = -9508937;
+    private static final int RED = -495247;
+    private static final int AMBER = -670613;
     private LivingEntity target;
-    private long targetSeen, attackAt, earlyAt, wastedAt, brokenAt, comboAt, sprintHitAt, verdictAt;
+    private long targetSeen;
+    private long attackAt;
+    private long earlyAt;
+    private long wastedAt;
+    private long brokenAt;
+    private long comboAt;
+    private long sprintHitAt;
+    private long verdictAt;
     private String verdict = "";
     private int verdictColour;
-    private int comboCount, brokenCount, lastSelfHurt, lastTargetHurt;
+    private int comboCount;
+    private int brokenCount;
+    private int lastSelfHurt;
+    private int lastTargetHurt;
     private final Anim anim = new Anim();
+    private String lastCombo = "";
+    private int lastWidth;
+
+    private void say(String word, int colour, long now) {
+        this.verdict = word;
+        this.verdictColour = colour;
+        this.verdictAt = now;
+    }
 
     public ComboHelper() {
         super(
@@ -69,207 +79,252 @@ public final class ComboHelper extends Module {
         return Minecraft.getInstance();
     }
 
-    /** Our own attack (client side, before it is sent). */
     public void onAttack(Player p, Entity e) {
-        if (!(e instanceof LivingEntity l)) return;
-        long now = System.currentTimeMillis();
-        if (target != l) {
-            target = l;
-            comboCount = 0;
+        if (e instanceof LivingEntity l) {
+            long now = System.currentTimeMillis();
+            if (this.target != l) {
+                this.target = l;
+                this.comboCount = 0;
+            }
+
+            this.targetSeen = now;
+            this.attackAt = now;
+            boolean early = p.getAttackStrengthScale(0.5F) < 0.9F;
+            boolean wasted = l.hurtTime > 2;
+            if (early) {
+                this.earlyAt = now;
+            }
+
+            if (wasted) {
+                this.wastedAt = now;
+            }
+
+            this.say(
+                    early ? "рано" : (wasted ? "неуязвим" : "точно"),
+                    early ? -495247 : (wasted ? -670613 : -9508937),
+                    now);
+            if (p.isSprinting()) {
+                this.sprintHitAt = now;
+            }
         }
-        targetSeen = now;
-        attackAt = now;
-        boolean early = p.getAttackStrengthScale(.5f) < .9f, wasted = l.hurtTime > 2;
-        if (early) earlyAt = now;
-        if (wasted) wastedAt = now;
-        say(early ? "рано" : wasted ? "неуязвим" : "точно", early ? RED : wasted ? AMBER : GREEN, now);
-        if (p.isSprinting()) sprintHitAt = now;
     }
 
-    @Override
     public void tick() {
-        var mc = mc();
-        if (mc.player == null) return;
-        long now = System.currentTimeMillis();
-        if (mc.crosshairPickEntity instanceof LivingEntity l && l.isAlive() && l != target) {
-            target = l;
-            comboCount = 0;
-        }
-        if (mc.crosshairPickEntity == target && target != null) targetSeen = now;
-        if (target != null
-                && (!target.isAlive()
-                        || target.isRemoved()
-                        || now - targetSeen > 3000
-                        || target.distanceTo(mc.player) > 12)) {
-            target = null;
-            comboCount = 0;
-        }
-        // a hit of ours registered on the target: its hurt time jumps up shortly after our swing
-        if (target != null) {
-            int ht = target.hurtTime;
-            if (ht > lastTargetHurt && now - attackAt < 600) {
-                comboCount = now - comboAt < 2500 ? comboCount + 1 : 1;
-                comboAt = now;
+        Minecraft mc = mc();
+        if (mc.player != null) {
+            long now = System.currentTimeMillis();
+            Entity var5 = mc.crosshairPickEntity;
+            if (var5 instanceof LivingEntity) {
+                LivingEntity l = (LivingEntity) var5;
+                if (l.isAlive() && l != this.target) {
+                    this.target = l;
+                    this.comboCount = 0;
+                }
             }
-            lastTargetHurt = ht;
-        }
-        // we were hit: the combo is broken
-        int self = mc.player.hurtTime;
-        if (self > lastSelfHurt) {
-            if (comboCount >= 2) {
-                brokenAt = now;
-                brokenCount = comboCount;
-                say("комбо сбито", RED, now);
+
+            if (mc.crosshairPickEntity == this.target && this.target != null) {
+                this.targetSeen = now;
             }
-            comboCount = 0;
+
+            if (this.target != null
+                    && (!this.target.isAlive()
+                            || this.target.isRemoved()
+                            || now - this.targetSeen > 3000L
+                            || this.target.distanceTo(mc.player) > 12.0F)) {
+                this.target = null;
+                this.comboCount = 0;
+            }
+
+            if (this.target != null) {
+                int ht = this.target.hurtTime;
+                if (ht > this.lastTargetHurt && now - this.attackAt < 600L) {
+                    this.comboCount = now - this.comboAt < 2500L ? this.comboCount + 1 : 1;
+                    this.comboAt = now;
+                }
+
+                this.lastTargetHurt = ht;
+            }
+
+            int self = mc.player.hurtTime;
+            if (self > this.lastSelfHurt) {
+                if (this.comboCount >= 2) {
+                    this.brokenAt = now;
+                    this.brokenCount = this.comboCount;
+                    this.say("комбо сбито", -495247, now);
+                }
+
+                this.comboCount = 0;
+            }
+
+            this.lastSelfHurt = self;
+            if (now - this.comboAt > 2500L) {
+                this.comboCount = 0;
+            }
         }
-        lastSelfHurt = self;
-        if (now - comboAt > 2500) comboCount = 0;
     }
 
-    /** Drawn in pixel space by the crosshair element. */
     public void render(GuiGraphics g) {
-        var mc = mc();
-        if (mc.player == null) return;
-        anim.frame();
-        long now = System.currentTimeMillis();
-        int cx = Px.width() / 2, cy = Px.height() / 2;
-        float u = Px.height() / 1080f * size.f() * 1.1f;
-        boolean engaged = target != null && now - targetSeen < 3000;
-        float show = anim.to("show", engaged ? 1 : 0, engaged ? 10 : 6);
-        float base = Px.fade;
-        if (show < .01f) {
-            lastWidth = 0;
-            return;
-        }
-        int fs = Math.max(9, Math.round(13 * u)), small = Math.max(8, Math.round(11 * u));
+        Minecraft mc = mc();
+        if (mc.player != null) {
+            this.anim.frame();
+            long now = System.currentTimeMillis();
+            int cx = Px.width() / 2;
+            int cy = Px.height() / 2;
+            float u = (float) Px.height() / 1080.0F * this.size.f() * 1.1F;
+            boolean engaged = this.target != null && now - this.targetSeen < 3000L;
+            float show = this.anim.to("show", engaged ? 1.0F : 0.0F, engaged ? 10.0F : 6.0F);
+            float base = Px.fade;
+            if (show < 0.01F) {
+                this.lastWidth = 0;
+            } else {
+                int fs = Math.max(9, Math.round(13.0F * u));
+                int small = Math.max(8, Math.round(11.0F * u));
+                double dist = engaged
+                        ? Math.sqrt(this.target.getBoundingBox().distanceToSqr(mc.player.getEyePosition()))
+                        : 0.0;
+                double range = mc.player.entityInteractionRange();
+                boolean inReach = engaged && dist <= range;
+                String d = this.reach.on() ? String.format(Locale.ROOT, "%.1f", dist) : "";
+                String dm = this.reach.on() ? Lang.tr("м") : "";
+                String c = this.combo.on() && this.comboCount >= 2 ? "×" + this.comboCount : "";
+                int barW = this.timing.on() ? Math.round(64.0F * u) : 0;
+                int barH = Math.max(3, Math.round(5.0F * u)) / 2 * 2 + Math.max(3, Math.round(5.0F * u)) % 2;
+                int pad = Math.round(11.0F * u);
+                int gap = Math.round(10.0F * u);
+                int h = Math.max(fs + 10, Math.round(26.0F * u)) / 2 * 2;
+                int dW = d.isEmpty()
+                        ? 0
+                        : steady(d, fs) + Math.round(3.0F * u) + Px.textWidth(dm, Px.Weight.MEDIUM, small);
+                int cW = c.isEmpty() ? 0 : Px.textWidth(c, Px.Weight.BOLD, fs);
+                float cWa = this.anim.to("cw", (float) cW, 14.0F);
+                int inner = dW + (dW > 0 && barW > 0 ? gap : 0) + barW + (cWa > 0.5F ? gap + Math.round(cWa) : 0);
+                if (inner <= 0) {
+                    Px.fade = base;
+                } else {
+                    int w = pad * 2 + inner;
+                    int x = cx - w / 2;
+                    int y = cy + Math.round(30.0F * u);
+                    Px.fade = base * show;
+                    Px.round(g, x, y, w, h, h / 2, 0xC40D0C12);
+                    Px.outline(g, x, y, w, h, h / 2, 587202559);
+                    int ix = x + pad;
+                    int mid = y + h / 2;
+                    if (dW > 0) {
+                        int dc = inReach ? -9508937 : (dist <= range + 1.5 ? -670613 : -495247);
+                        Px.text(g, d, ix, mid - fs / 2, Px.Weight.SEMIBOLD, fs, dc);
+                        Px.text(
+                                g,
+                                dm,
+                                ix + steady(d, fs) + Math.round(3.0F * u),
+                                mid - small / 2 + Math.round(1.0F * u),
+                                Px.Weight.MEDIUM,
+                                small,
+                                -6515282);
+                        ix += dW + (barW > 0 ? gap : 0);
+                    }
 
-        double dist = engaged ? Math.sqrt(target.getBoundingBox().distanceToSqr(mc.player.getEyePosition())) : 0;
-        double range = mc.player.entityInteractionRange();
-        boolean inReach = engaged && dist <= range;
+                    if (barW > 0) {
+                        float swing = Math.min(1.0F, mc.player.getAttackStrengthScale(0.5F));
+                        float open = engaged ? 1.0F - Math.min(1.0F, (float) this.target.hurtTime / 9.0F) : 1.0F;
+                        float ready = Math.min(swing, open);
+                        float fill = this.anim.to("fill", ready, 24.0F);
+                        boolean go = ready >= 0.97F && inReach;
+                        float gk = this.anim.to("go", go ? 1.0F : 0.0F, 16.0F);
+                        int by = mid - barH / 2;
+                        Px.round(g, ix, by, barW, barH, barH / 2, 788529151);
+                        int fc = Px.mix(inReach ? Theme.accent2() | 0xFF000000 : -7436389, -9508937, gk);
+                        fc = Px.mix(fc, -495247, flash(now, this.earlyAt));
+                        fc = Px.mix(fc, -670613, flash(now, this.wastedAt));
+                        int fw = Math.round((float) barW * Math.max(0.0F, Math.min(1.0F, fill)));
+                        if (fw > 0) {
+                            Px.round(g, ix, by, Math.max(barH, fw), barH, barH / 2, fc);
+                        }
 
-        // the plate under the crosshair: distance · bar · combo
-        String d = reach.on() ? String.format(Locale.ROOT, "%.1f", dist) : "";
-        String dm = reach.on() ? Lang.tr("м") : "";
-        String c = combo.on() && comboCount >= 2 ? "×" + comboCount : "";
-        int barW = timing.on() ? Math.round(64 * u) : 0,
-                barH = Math.max(3, Math.round(5 * u)) / 2 * 2 + (Math.max(3, Math.round(5 * u)) % 2);
-        int pad = Math.round(11 * u), gap = Math.round(10 * u), h = Math.max(fs + 10, Math.round(26 * u)) / 2 * 2;
-        int dW = d.isEmpty() ? 0 : steady(d, fs) + Math.round(3 * u) + Px.textWidth(dm, Weight.MEDIUM, small);
-        int cW = c.isEmpty() ? 0 : Px.textWidth(c, Weight.BOLD, fs);
-        float cWa = anim.to("cw", cW, 14);
-        int inner = dW + (dW > 0 && barW > 0 ? gap : 0) + barW + (cWa > .5f ? gap + Math.round(cWa) : 0);
-        if (inner <= 0) {
-            Px.fade = base;
-            return;
-        }
-        int w = pad * 2 + inner;
-        int x = cx - w / 2, y = cy + Math.round(30 * u);
-        Px.fade = base * show;
-        Px.round(g, x, y, w, h, h / 2, 0xC40D0C12);
-        Px.outline(g, x, y, w, h, h / 2, 0x22FFFFFF);
-        int ix = x + pad, mid = y + h / 2;
-        if (dW > 0) {
-            int dc = inReach ? GREEN : dist <= range + 1.5 ? AMBER : RED;
-            Px.text(g, d, ix, mid - fs / 2, Weight.SEMIBOLD, fs, dc);
-            Px.text(
-                    g,
-                    dm,
-                    ix + steady(d, fs) + Math.round(3 * u),
-                    mid - small / 2 + Math.round(1 * u),
-                    Weight.MEDIUM,
-                    small,
-                    0xFF9C95AE);
-            ix += dW + (barW > 0 ? gap : 0);
-        }
-        if (barW > 0) {
-            float swing = Math.min(1, mc.player.getAttackStrengthScale(.5f));
-            float open = engaged ? 1 - Math.min(1, target.hurtTime / 9f) : 1;
-            float ready = Math.min(swing, open);
-            float fill = anim.to("fill", ready, 24);
-            boolean go = ready >= .97f && inReach;
-            float gk = anim.to("go", go ? 1 : 0, 16);
-            int by = mid - barH / 2;
-            Px.round(g, ix, by, barW, barH, barH / 2, 0x2EFFFFFF);
-            int fc = Px.mix(inReach ? (Theme.accent2() | 0xFF000000) : 0xFF8E879B, GREEN, gk);
-            fc = Px.mix(fc, RED, flash(now, earlyAt));
-            fc = Px.mix(fc, AMBER, flash(now, wastedAt));
-            int fw = Math.round(barW * Math.max(0, Math.min(1, fill)));
-            if (fw > 0) Px.round(g, ix, by, Math.max(barH, fw), barH, barH / 2, fc);
-            if (gk > .02f) { // ready: the bar breathes a soft green light
-                float pulse = (float) (Math.sin(now / 120.0) * .5 + .5);
-                Px.fade = base * show * gk * (.25f + .2f * pulse);
-                Px.round(g, ix - 2, by - 2, barW + 4, barH + 4, barH / 2 + 2, GREEN);
-                Px.fade = base * show;
+                        if (gk > 0.02F) {
+                            float pulse = (float) (Math.sin((double) now / 120.0) * 0.5 + 0.5);
+                            Px.fade = base * show * gk * (0.25F + 0.2F * pulse);
+                            Px.round(g, ix - 2, by - 2, barW + 4, barH + 4, barH / 2 + 2, -9508937);
+                            Px.fade = base * show;
+                        }
+
+                        ix += barW;
+                    }
+
+                    if (cWa > 0.5F) {
+                        ix += gap;
+                        float pop = Math.min(1.0F, (float) (now - this.comboAt) / 160.0F);
+                        int col = this.comboCount >= 6 ? -20448 : -856328;
+                        float k = Px.fade;
+                        Px.fade = k * Math.min(1.0F, cWa / Math.max(1.0F, cW == 0 ? cWa : (float) cW));
+                        g.pose().pushMatrix();
+                        float sc = 1.0F + 0.3F * (1.0F - Anim.easeOutCubic(pop));
+                        g.pose().translate((float) ix + cWa / 2.0F, (float) mid);
+                        g.pose().scale(sc, sc);
+                        String shown = c.isEmpty() ? this.lastCombo : c;
+                        int sw = Px.textWidth(shown, Px.Weight.BOLD, fs);
+                        Px.text(g, shown, -sw / 2, -fs / 2, Px.Weight.BOLD, fs, col);
+                        g.pose().popMatrix();
+                        Px.fade = k;
+                    }
+
+                    if (!c.isEmpty()) {
+                        this.lastCombo = c;
+                    }
+
+                    float vt = (float) (now - this.verdictAt) / 900.0F;
+                    if (this.timing.on() && this.verdictAt > 0L && vt < 1.0F && !this.verdict.isEmpty()) {
+                        String t = Lang.tr(this.verdict);
+                        Px.fade = base * show * (vt < 0.12F ? vt / 0.12F : 1.0F - Math.max(0.0F, (vt - 0.55F) / 0.45F));
+                        int tx = x
+                                + w
+                                + Math.round(8.0F * u)
+                                - Math.round(6.0F * u * (1.0F - Anim.easeOutCubic(Math.min(1.0F, vt * 4.0F))));
+                        int ty = y + (h - small) / 2;
+                        Px.text(g, t, tx + 1, ty + 1, Px.Weight.SEMIBOLD, small, 0x99000000);
+                        Px.text(g, t, tx, ty, Px.Weight.SEMIBOLD, small, this.verdictColour);
+                    }
+
+                    boolean needSprint = engaged
+                            && this.sprint.on()
+                            && now - this.sprintHitAt < 2500L
+                            && !mc.player.isSprinting()
+                            && mc.options.keyUp.isDown()
+                            && mc.player.getFoodData().getFoodLevel() > 6;
+                    float sk = this.anim.to("sprint", needSprint ? 1.0F : 0.0F, needSprint ? 14.0F : 9.0F);
+                    if (sk > 0.01F) {
+                        Px.fade = base * sk;
+                        String t = Lang.tr("спринт");
+                        int kh = Math.max(small + 6, Math.round(18.0F * u)) / 2 * 2;
+                        int tw = Px.textWidth(t, Px.Weight.SEMIBOLD, small);
+                        int dash = Math.round(6.0F * u);
+                        int total = kh + dash + tw;
+                        int sx = cx - total / 2;
+                        int sy = y + h + Math.round(8.0F * u) - Math.round(4.0F * u * (1.0F - sk));
+                        float pulse = (float) (Math.sin((double) now / 150.0) * 0.5 + 0.5);
+                        Px.round(g, sx, sy, kh, kh, Math.max(2, Math.round(5.0F * u)), Px.a(16106603, (int)
+                                (40.0F + 40.0F * pulse)));
+                        Px.outline(g, sx, sy, kh, kh, Math.max(2, Math.round(5.0F * u)), Px.a(16106603, (int)
+                                (150.0F + 100.0F * pulse)));
+                        int ww = Px.textWidth("W", Px.Weight.BOLD, small);
+                        Px.text(g, "W", sx + (kh - ww) / 2, sy + (kh - small) / 2, Px.Weight.BOLD, small, -6216);
+                        Px.text(g, t, sx + kh + dash, sy + (kh - small) / 2, Px.Weight.SEMIBOLD, small, -661816);
+                    }
+
+                    Px.fade = base;
+                    this.lastWidth = w;
+                }
             }
-            ix += barW;
         }
-        if (cWa > .5f) {
-            ix += gap;
-            float pop = Math.min(1, (now - comboAt) / 160f);
-            int col = comboCount >= 6 ? 0xFFFFB020 : 0xFFF2EEF8;
-            float k = Px.fade;
-            Px.fade = k * Math.min(1, cWa / Math.max(1, cW == 0 ? cWa : cW));
-            g.pose().pushMatrix();
-            float sc = 1 + .3f * (1 - Anim.easeOutCubic(pop));
-            g.pose().translate(ix + cWa / 2f, mid);
-            g.pose().scale(sc, sc);
-            String shown = c.isEmpty() ? lastCombo : c;
-            int sw = Px.textWidth(shown, Weight.BOLD, fs);
-            Px.text(g, shown, -sw / 2, -fs / 2, Weight.BOLD, fs, col);
-            g.pose().popMatrix();
-            Px.fade = k;
-        }
-        if (!c.isEmpty()) lastCombo = c;
-
-        // the verdict of the last hit
-        float vt = (now - verdictAt) / 900f;
-        if (timing.on() && verdictAt > 0 && vt < 1 && !verdict.isEmpty()) {
-            String t = Lang.tr(verdict);
-            Px.fade = base * show * (vt < .12f ? vt / .12f : 1 - Math.max(0, (vt - .55f) / .45f));
-            // beside the plate on the right, sliding out from it: never over the crosshair
-            int tx = x + w + Math.round(8 * u) - Math.round(6 * u * (1 - Anim.easeOutCubic(Math.min(1, vt * 4f))));
-            int ty = y + (h - small) / 2;
-            Px.text(g, t, tx + 1, ty + 1, Weight.SEMIBOLD, small, 0x99000000);
-            Px.text(g, t, tx, ty, Weight.SEMIBOLD, small, verdictColour);
-        }
-
-        // re-sprint: "W: sprint" under the plate while the sprint is gone after a sprint hit
-        boolean needSprint = engaged
-                && sprint.on()
-                && now - sprintHitAt < 2500
-                && !mc.player.isSprinting()
-                && mc.options.keyUp.isDown()
-                && mc.player.getFoodData().getFoodLevel() > 6;
-        float sk = anim.to("sprint", needSprint ? 1 : 0, needSprint ? 14 : 9);
-        if (sk > .01f) {
-            Px.fade = base * sk;
-            String t = Lang.tr("спринт");
-            int kh = Math.max(small + 6, Math.round(18 * u)) / 2 * 2, kw = kh;
-            int tw = Px.textWidth(t, Weight.SEMIBOLD, small), dash = Math.round(6 * u);
-            int total = kw + dash + tw;
-            int sx = cx - total / 2, sy = y + h + Math.round(8 * u) - Math.round(4 * u * (1 - sk));
-            float pulse = (float) (Math.sin(now / 150.0) * .5 + .5);
-            Px.round(g, sx, sy, kw, kh, Math.max(2, Math.round(5 * u)), Px.a(0xF5C46B, (int) (40 + 40 * pulse)));
-            Px.outline(g, sx, sy, kw, kh, Math.max(2, Math.round(5 * u)), Px.a(0xF5C46B, (int) (150 + 100 * pulse)));
-            int ww = Px.textWidth("W", Weight.BOLD, small);
-            Px.text(g, "W", sx + (kw - ww) / 2, sy + (kh - small) / 2, Weight.BOLD, small, 0xFFFFE7B8);
-            Px.text(g, t, sx + kw + dash, sy + (kh - small) / 2, Weight.SEMIBOLD, small, 0xFFF5E6C8);
-        }
-        Px.fade = base;
-        lastWidth = w;
     }
-
-    private String lastCombo = "";
-    private int lastWidth;
 
     private static int steady(String s, int fs) {
         return Math.max(
-                Px.textWidth(s, Weight.SEMIBOLD, fs), Px.textWidth(s.replaceAll("[0-9]", "0"), Weight.SEMIBOLD, fs));
+                Px.textWidth(s, Px.Weight.SEMIBOLD, fs),
+                Px.textWidth(s.replaceAll("[0-9]", "0"), Px.Weight.SEMIBOLD, fs));
     }
 
     private static float flash(long now, long at) {
-        float t = (now - at) / 380f;
-        return at == 0 || t >= 1 ? 0 : 1 - t * t;
+        float t = (float) (now - at) / 380.0F;
+        return at != 0L && !(t >= 1.0F) ? 1.0F - t * t : 0.0F;
     }
 }

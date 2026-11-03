@@ -21,7 +21,10 @@ package net.arcanic.visuals.core;
 import com.google.gson.JsonParser;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -32,6 +35,8 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 public final class Lang {
     private static final Map<String, String> EN = new HashMap<>();
     private static final Map<String, String> RU = new HashMap<>();
+    private static final List<String> HEADS = new ArrayList<>();
+    private static final List<String> TAILS = new ArrayList<>();
 
     private static final Pattern NUMBER = Pattern.compile(
             "^([+−\\-]?[0-9]+(?:[.,][0-9]+)?)( функций| колонки| активно| чанков| МБ| мс| бл| м| с| т| ч)$");
@@ -43,6 +48,7 @@ public final class Lang {
         "Удалён: ",
         "Плащ: ",
         "Нож: ",
+        "Оружие: ",
         "Пресет ",
         "ЛКМ  ",
         "Играешь как ",
@@ -70,6 +76,15 @@ public final class Lang {
         } catch (Exception e) {
             throw new IllegalStateException("Missing Arcanic English translations", e);
         }
+        // Keys that end or start with a separator are message parts; longest first so "Метка ивента: " beats "Метка ".
+        EN.keySet().stream()
+                .filter(k -> k.length() > 2 && (k.endsWith(" ") || k.endsWith("«")))
+                .sorted(Comparator.comparingInt(String::length).reversed())
+                .forEach(HEADS::add);
+        EN.keySet().stream()
+                .filter(k -> k.length() > 2 && (k.startsWith(" ") || k.startsWith("»")))
+                .sorted(Comparator.comparingInt(String::length).reversed())
+                .forEach(TAILS::add);
         try (var in = Lang.class.getResourceAsStream("/assets/arcanicvisuals/i18n/ru.json")) {
             if (in != null)
                 JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
@@ -115,6 +130,13 @@ public final class Lang {
         int separator = text.indexOf(" — ");
         if (separator > 0 && EN.containsKey(text.substring(0, separator)))
             return EN.get(text.substring(0, separator)) + " — " + english(text.substring(separator + 3));
+        // Messages built as "known text" + value, e.g. "Метка: home" or "Открываю " + menu name.
+        for (String head : HEADS)
+            if (text.startsWith(head) && text.length() > head.length())
+                return EN.get(head) + english(text.substring(head.length()));
+        for (String tail : TAILS)
+            if (text.endsWith(tail) && text.length() > tail.length())
+                return english(text.substring(0, text.length() - tail.length())) + EN.get(tail);
         // Numeric labels and units, without translating substrings of player or track names.
         var number = NUMBER.matcher(text);
         if (number.matches()) return number.group(1) + EN.getOrDefault(number.group(2), number.group(2));

@@ -31,6 +31,11 @@ public interface RenderPipelinesAccess {
         throw new AssertionError();
     }
 
+    @Accessor("LINES_SNIPPET")
+    static RenderPipeline.Snippet arcanicvisuals$linesSnippet() {
+        throw new AssertionError();
+    }
+
     @Accessor("GUI_TEXTURED_SNIPPET")
     static RenderPipeline.Snippet arcanicvisuals$guiTextureSnippet() {
         throw new AssertionError();

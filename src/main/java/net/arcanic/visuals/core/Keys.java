@@ -18,80 +18,106 @@
  */
 package net.arcanic.visuals.core;
 
+import net.arcanic.visuals.helper.HolyFeatures;
+import net.arcanic.visuals.helper.Pings;
 import net.arcanic.visuals.hud.Toasts;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.glfw.GLFW;
 
-/** Module binds: short key labels for chips, and switching modules when their key is pressed in game. */
 public final class Keys {
-    private Keys() {}
-
     public static final int MOUSE = 1000;
 
+    private Keys() {}
+
     public static String label(int code) {
-        if (code < 0) return "—";
-        if (code >= MOUSE)
-            return switch (code - MOUSE) {
-                case 2 -> "СКМ";
-                default -> "M" + (code - MOUSE + 1);
-            };
-        if (code >= GLFW.GLFW_KEY_A && code <= GLFW.GLFW_KEY_Z) return String.valueOf((char) code);
-        if (code >= GLFW.GLFW_KEY_0 && code <= GLFW.GLFW_KEY_9) return String.valueOf((char) code);
-        if (code >= GLFW.GLFW_KEY_F1 && code <= GLFW.GLFW_KEY_F25) return "F" + (code - GLFW.GLFW_KEY_F1 + 1);
-        if (code >= GLFW.GLFW_KEY_KP_0 && code <= GLFW.GLFW_KEY_KP_9) return "Num" + (code - GLFW.GLFW_KEY_KP_0);
-        return switch (code) {
-            case GLFW.GLFW_KEY_LEFT_SHIFT -> "LShift";
-            case GLFW.GLFW_KEY_RIGHT_SHIFT -> "RShift";
-            case GLFW.GLFW_KEY_LEFT_CONTROL -> "LCtrl";
-            case GLFW.GLFW_KEY_RIGHT_CONTROL -> "RCtrl";
-            case GLFW.GLFW_KEY_LEFT_ALT -> "LAlt";
-            case GLFW.GLFW_KEY_RIGHT_ALT -> "RAlt";
-            case GLFW.GLFW_KEY_TAB -> "Tab";
-            case GLFW.GLFW_KEY_CAPS_LOCK -> "Caps";
-            case GLFW.GLFW_KEY_SPACE -> "Space";
-            case GLFW.GLFW_KEY_ENTER -> "Enter";
-            case GLFW.GLFW_KEY_INSERT -> "Ins";
-            case GLFW.GLFW_KEY_DELETE -> "Del";
-            case GLFW.GLFW_KEY_HOME -> "Home";
-            case GLFW.GLFW_KEY_END -> "End";
-            case GLFW.GLFW_KEY_PAGE_UP -> "PgUp";
-            case GLFW.GLFW_KEY_PAGE_DOWN -> "PgDn";
-            case GLFW.GLFW_KEY_LEFT -> "←";
-            case GLFW.GLFW_KEY_RIGHT -> "→";
-            case GLFW.GLFW_KEY_UP -> "↑";
-            case GLFW.GLFW_KEY_DOWN -> "↓";
-            case GLFW.GLFW_KEY_GRAVE_ACCENT -> "`";
-            case GLFW.GLFW_KEY_MINUS -> "-";
-            case GLFW.GLFW_KEY_EQUAL -> "=";
-            case GLFW.GLFW_KEY_LEFT_BRACKET -> "[";
-            case GLFW.GLFW_KEY_RIGHT_BRACKET -> "]";
-            case GLFW.GLFW_KEY_SEMICOLON -> ";";
-            case GLFW.GLFW_KEY_APOSTROPHE -> "'";
-            case GLFW.GLFW_KEY_COMMA -> ",";
-            case GLFW.GLFW_KEY_PERIOD -> ".";
-            case GLFW.GLFW_KEY_SLASH -> "/";
-            case GLFW.GLFW_KEY_BACKSLASH -> "\\";
-            case GLFW.GLFW_KEY_KP_ADD -> "Num+";
-            case GLFW.GLFW_KEY_KP_SUBTRACT -> "Num-";
-            case GLFW.GLFW_KEY_KP_MULTIPLY -> "Num*";
-            case GLFW.GLFW_KEY_KP_DIVIDE -> "Num/";
-            case GLFW.GLFW_KEY_KP_ENTER -> "NumEnter";
-            case GLFW.GLFW_KEY_PAUSE -> "Pause";
-            case GLFW.GLFW_KEY_SCROLL_LOCK -> "ScrLk";
-            case GLFW.GLFW_KEY_PRINT_SCREEN -> "PrtSc";
-            default -> "#" + code;
-        };
+        if (code < 0) {
+            return "—";
+        } else if (code >= 1000) {
+            String var1;
+            switch (code - 1000) {
+                case 2 -> var1 = "СКМ";
+                default -> var1 = "M" + (code - 1000 + 1);
+            }
+
+            return var1;
+        } else if (code >= 65 && code <= 90) {
+            return String.valueOf((char) code);
+        } else if (code >= 48 && code <= 57) {
+            return String.valueOf((char) code);
+        } else if (code >= 290 && code <= 314) {
+            return "F" + (code - 290 + 1);
+        } else if (code >= 320 && code <= 329) {
+            return "Num" + (code - 320);
+        } else {
+            String var10000;
+            switch (code) {
+                case 32 -> var10000 = "Space";
+                case 39 -> var10000 = "'";
+                case 44 -> var10000 = ",";
+                case 45 -> var10000 = "-";
+                case 46 -> var10000 = ".";
+                case 47 -> var10000 = "/";
+                case 59 -> var10000 = ";";
+                case 61 -> var10000 = "=";
+                case 91 -> var10000 = "[";
+                case 92 -> var10000 = "\\";
+                case 93 -> var10000 = "]";
+                case 96 -> var10000 = "`";
+                case 257 -> var10000 = "Enter";
+                case 258 -> var10000 = "Tab";
+                case 260 -> var10000 = "Ins";
+                case 261 -> var10000 = "Del";
+                case 262 -> var10000 = "→";
+                case 263 -> var10000 = "←";
+                case 264 -> var10000 = "↓";
+                case 265 -> var10000 = "↑";
+                case 266 -> var10000 = "PgUp";
+                case 267 -> var10000 = "PgDn";
+                case 268 -> var10000 = "Home";
+                case 269 -> var10000 = "End";
+                case 280 -> var10000 = "Caps";
+                case 281 -> var10000 = "ScrLk";
+                case 283 -> var10000 = "PrtSc";
+                case 284 -> var10000 = "Pause";
+                case 331 -> var10000 = "Num/";
+                case 332 -> var10000 = "Num*";
+                case 333 -> var10000 = "Num-";
+                case 334 -> var10000 = "Num+";
+                case 335 -> var10000 = "NumEnter";
+                case 340 -> var10000 = "LShift";
+                case 341 -> var10000 = "LCtrl";
+                case 342 -> var10000 = "LAlt";
+                case 344 -> var10000 = "RShift";
+                case 345 -> var10000 = "RCtrl";
+                case 346 -> var10000 = "RAlt";
+                default -> var10000 = "#" + code;
+            }
+
+            return var10000;
+        }
     }
 
     public static void pressed(int code) {
         Minecraft mc = Minecraft.getInstance();
-        if (code < 0 || mc.screen != null || mc.player == null) return;
-        for (Module m : Modules.ALL) {
-            if (m.bind != code) continue;
-            m.toggle();
-            m.knob = m.enabled() ? 1 : 0;
-            Toasts.module(m);
-            Config.dirty();
+        if (code >= 0 && mc.screen == null && mc.player != null) {
+            Modules.FAST_SWAP.pressed(code);
+            Modules.ELYTRA_SWAP.pressed(code);
+            // the wheel: pings and the player menu when a friend plays here or an Arcanic player is aimed at;
+            // otherwise the old friend list
+            if (code == MOUSE + 2 && !Pings.press()) Modules.FRIENDS.middleClicked();
+            for (Module m : Modules.ALL) {
+                if (m.bind == code) {
+                    if (m == Modules.CLICK_PEARL) {
+                        Modules.CLICK_PEARL.press();
+                    } else if (!m.enabled() && HolyFeatures.forbidden(m)) {
+                        HolyFeatures.deny(m);
+                    } else {
+                        m.toggle();
+                        m.knob = m.enabled() ? 1.0F : 0.0F;
+                        Toasts.module(m);
+                        Config.dirty();
+                    }
+                }
+            }
         }
     }
 }

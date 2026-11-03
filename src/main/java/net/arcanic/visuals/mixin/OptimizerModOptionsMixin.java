@@ -30,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Sodium's video settings.
  */
 @Pseudo
-@Mixin(targets = "net.arcanic.optimizer.SodiumOptions", remap = false)
+@Mixin(targets = "zako.opt.SodiumOptions", remap = false)
 public abstract class OptimizerModOptionsMixin {
     @Inject(method = "registerConfigLate", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
     private void arcanicvisuals$noPage(CallbackInfo ci) {

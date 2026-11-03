@@ -20,73 +20,101 @@ package net.arcanic.visuals.hud;
 
 import net.arcanic.visuals.core.Modules;
 import net.arcanic.visuals.fx.ArcVisuals;
-import net.arcanic.visuals.fx.TargetEsp;
+import net.arcanic.visuals.fx.WorldPlus;
 import net.arcanic.visuals.gui.FrontEndLoading;
 import net.arcanic.visuals.gui.HudEditorScreen;
+import net.arcanic.visuals.helper.Pings;
+import net.arcanic.visuals.render.Anim;
 import net.arcanic.visuals.render.Px;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
-/** Draws the HUD elements in screen pixels (in game, and inside the editor). */
 public final class HudRenderer {
     private HudRenderer() {}
 
     public static void renderAll(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.options.hideGui || mc.screen instanceof HudEditorScreen || mc.player == null) return;
-        TargetEsp.hud(g);
-        Px.begin(g);
-        try {
-            ArcVisuals.hud(g);
-            if (Modules.DAMAGE.enabled()) Modules.DAMAGE.render(g);
-            // with the chat open every enabled element shows, so it can be moved
-            boolean chat = HudDrag.chatOpen();
-            for (HudModule h : Modules.HUD) {
-                if (!h.enabled()) continue;
-                boolean live = h.shown();
-                if (live || chat) draw(g, h, chat && !live, false);
+        if (!mc.options.hideGui && !(mc.screen instanceof HudEditorScreen) && mc.player != null) {
+            Px.begin(g);
+
+            try {
+                Survival.screen(g);
+                ArcVisuals.hud(g);
+                WorldPlus.hud(g);
+                if (Modules.DAMAGE.enabled()) {
+                    Modules.DAMAGE.render(g);
+                }
+                if (Modules.LYRICS.enabled()) {
+                    Modules.LYRICS.render(g);
+                }
+
+                boolean chat = HudDrag.chatOpen();
+
+                for (HudModule h : Modules.HUD) {
+                    if (h.enabled()) {
+                        boolean live = h.shown();
+                        if (live || chat) {
+                            draw(g, h, chat && !live, false);
+                        }
+                    }
+                }
+
+                Toasts.render(g);
+                Pings.render(g);
+                FriendCards.render(g);
+                if (HudDrag.chatOpen()) {
+                    double mx = mouse(mc.mouseHandler.xpos(), mc.getWindow().getScreenWidth(), Px.width());
+                    double my = mouse(mc.mouseHandler.ypos(), mc.getWindow().getScreenHeight(), Px.height());
+                    HudDrag.frames(g, mx, my);
+                    HudDrag.guides(g);
+                }
+
+                FrontEndLoading.worldOutro(g);
+            } finally {
+                Px.end(g);
             }
-            Toasts.render(g);
-            if (HudDrag.chatOpen()) {
-                double mx = mouse(mc.mouseHandler.xpos(), mc.getWindow().getScreenWidth(), Px.width()),
-                        my = mouse(mc.mouseHandler.ypos(), mc.getWindow().getScreenHeight(), Px.height());
-                HudDrag.frames(g, mx, my);
-                HudDrag.guides(g);
-            }
-            FrontEndLoading.worldOutro(g);
-        } finally {
-            Px.end(g);
         }
     }
 
     private static double mouse(double pos, int window, int pixels) {
-        return pos * pixels / Math.max(1, window);
+        return pos * (double) pixels / (double) Math.max(1, window);
     }
 
     public static void menuOverlay(GuiGraphics g) {
         Px.begin(g);
+
         try {
-            for (HudModule h : Modules.HUD) if (h instanceof DynamicIsland && h.enabled()) draw(g, h, false, false);
+            for (HudModule h : Modules.HUD) {
+                if (h instanceof DynamicIsland && h.enabled()) {
+                    draw(g, h, false, false);
+                }
+            }
+
             Toasts.render(g);
         } finally {
             Px.end(g);
         }
     }
 
-    /** One element at its place (call inside pixel space); {@code ghost} draws it faded. */
     public static void draw(GuiGraphics g, HudModule h, boolean editing, boolean ghost) {
-        int sw = Px.width(), sh = Px.height();
+        int sw = Px.width();
+        int sh = Px.height();
         h.prepare();
-        int x = Math.max(0, Math.min(sw - h.w, h.x(sw))), y = Math.max(0, Math.min(sh - h.h, h.y(sh)));
+        int x = Math.max(0, Math.min(sw - h.w, h.x(sw)));
+        int y = Math.max(0, Math.min(sh - h.h, h.y(sh)));
         g.pose().pushMatrix();
-        g.pose().translate(x, y);
+        g.pose().translate((float) x, (float) y);
         float old = Px.fade;
-        if (ghost) Px.fade = old * .35f;
+        if (ghost) {
+            Px.fade = old * 0.35F;
+        }
+
         try {
+            Anim.snap = h.rescaled();
             h.render(g, editing);
-        } catch (RuntimeException e) {
-            /* a broken element must never break the HUD */
+        } catch (RuntimeException ignored) {
         } finally {
+            Anim.snap = false;
             Px.fade = old;
             g.pose().popMatrix();
         }

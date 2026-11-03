@@ -21,15 +21,15 @@ package net.arcanic.visuals.core;
 import java.util.ArrayList;
 import java.util.List;
 
-/** A visual feature that can be switched on and tuned in the menu. */
 public abstract class Module {
-    public final String id, name, description;
+    public final String id;
+    public final String name;
+    public final String description;
     public final Category category;
     public final List<Setting<?>> settings = new ArrayList<>();
     private boolean enabled;
     public int bind = -1;
     public boolean expanded = true;
-
     public float knob;
 
     protected Module(String id, String name, String description, Category category, boolean enabled) {
@@ -38,27 +38,40 @@ public abstract class Module {
         this.description = description;
         this.category = category;
         this.enabled = enabled;
-        this.knob = enabled ? 1 : 0;
+        this.knob = enabled ? 1.0F : 0.0F;
+    }
+
+    public String title() {
+        return Names.of(this);
     }
 
     protected <S extends Setting<?>> S add(S s) {
-        settings.add(s);
+        this.settings.add(s);
         return s;
     }
 
     public boolean enabled() {
-        return enabled;
+        return this.enabled;
     }
 
     public void setEnabled(boolean on) {
-        if (on == enabled) return;
-        enabled = on;
-        if (on) onEnable();
-        else onDisable();
+        if (on != this.enabled) {
+            this.enabled = on;
+            if (on) {
+                this.onEnable();
+            } else {
+                this.onDisable();
+            }
+        }
+    }
+
+    void initial(boolean on) {
+        this.enabled = on;
+        this.knob = on ? 1.0F : 0.0F;
     }
 
     public void toggle() {
-        setEnabled(!enabled);
+        this.setEnabled(!this.enabled);
     }
 
     protected void onEnable() {}
@@ -68,11 +81,18 @@ public abstract class Module {
     public void tick() {}
 
     public boolean modified() {
-        for (Setting<?> s : settings) if (s.visible() && s.modified()) return true;
+        for (Setting<?> s : this.settings) {
+            if (s.visible() && s.modified()) {
+                return true;
+            }
+        }
+
         return false;
     }
 
     public void resetSettings() {
-        for (Setting<?> s : settings) s.reset();
+        for (Setting<?> s : this.settings) {
+            s.reset();
+        }
     }
 }

@@ -29,16 +29,22 @@ import net.minecraft.client.renderer.entity.layers.CapeLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(CapeLayer.class)
+@Mixin({CapeLayer.class})
 public abstract class CapeLayerMixin {
-    @Inject(method = "submit", at = @At("HEAD"), cancellable = true)
-    private void arcanic$cape(
+    @Inject(
+            method = {
+                "submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/AvatarRenderState;FF)V"
+            },
+            at = {@At("HEAD")},
+            cancellable = true)
+    private void arcanicvisuals$cape(
             PoseStack pose,
             SubmitNodeCollector collector,
             int light,
@@ -46,12 +52,23 @@ public abstract class CapeLayerMixin {
             float limbAngle,
             float limbDistance,
             CallbackInfo ci) {
-        var mc = Minecraft.getInstance();
-        if (mc.level == null || !(mc.level.getEntity(state.id) instanceof AbstractClientPlayer player)) return;
-        if (Capes.resolve(player) == null
-                || player.getItemBySlot(EquipmentSlot.CHEST).has(DataComponents.GLIDER)) return;
-        var self = (RenderLayer<AvatarRenderState, PlayerModel>) (Object) this;
-        ClothCapeRenderer.getInstance().render(pose, collector, light, state, player, self.getParentModel());
-        ci.cancel();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            Entity var10 = mc.level.getEntity(state.id);
+            if (var10 instanceof AbstractClientPlayer) {
+                AbstractClientPlayer player = (AbstractClientPlayer) var10;
+                if (Capes.resolve(player) != null
+                        && !player.getItemBySlot(EquipmentSlot.CHEST).has(DataComponents.GLIDER)) {
+                    RenderLayer<AvatarRenderState, PlayerModel> self =
+                            (RenderLayer<AvatarRenderState, PlayerModel>) (Object) this;
+                    ClothCapeRenderer.getInstance()
+                            .render(pose, collector, light, state, player, self.getParentModel());
+                    ci.cancel();
+                    return;
+                }
+
+                return;
+            }
+        }
     }
 }

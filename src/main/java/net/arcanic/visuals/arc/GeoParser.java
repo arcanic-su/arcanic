@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Reads a Bedrock {@code .geo.json} model: bones with pivots and rotations, cubes with box UV or per-face UV. */
 public class GeoParser {
     private static final int FACE_CORNERS = 4;
     private static final int UV_QUARTER_TURN = 90;
@@ -37,75 +36,89 @@ public class GeoParser {
     public static GeoParts parse(String json) {
         try {
             return parse(JsonParser.parseString(json).getAsJsonObject());
-        } catch (Exception e) {
+        } catch (Exception var2) {
             return null;
         }
     }
 
     private static GeoParts parse(JsonObject root) {
         JsonArray geometries = root.getAsJsonArray("minecraft:geometry");
-        if (geometries == null || geometries.size() == 0) return null;
-        JsonObject geometry = geometries.get(0).getAsJsonObject();
-        JsonObject description = geometry.getAsJsonObject("description");
-        int textureWidth = description != null && description.has("texture_width")
-                ? description.get("texture_width").getAsInt()
-                : 64;
-        int textureHeight = description != null && description.has("texture_height")
-                ? description.get("texture_height").getAsInt()
-                : 64;
-        GeoParts parts = new GeoParts();
-        parts.textureWidth = textureWidth;
-        parts.textureHeight = textureHeight;
-        JsonArray bones = geometry.getAsJsonArray("bones");
-        if (bones != null) {
-            List<float[]> frontRects = collectFrontRects(bones);
-            Map<String, GeoPart> byName = new HashMap<>();
-            for (JsonElement element : bones) {
-                GeoPart bone = parseBone(element.getAsJsonObject(), textureWidth, textureHeight, frontRects);
-                byName.put(bone.name, bone);
-            }
-            // link children to parents; a bone whose parent is missing becomes a root
-            for (JsonElement element : bones) {
-                JsonObject json = element.getAsJsonObject();
-                GeoPart bone = byName.get(json.get("name").getAsString());
-                GeoPart parent = json.has("parent") && !json.get("parent").isJsonNull()
-                        ? byName.get(json.get("parent").getAsString())
-                        : null;
-                if (parent != null) {
-                    parent.children.add(bone);
-                    bone.parent = parent;
-                } else {
-                    parts.roots.add(bone);
+        if (geometries != null && geometries.size() != 0) {
+            JsonObject geometry = geometries.get(0).getAsJsonObject();
+            JsonObject description = geometry.getAsJsonObject("description");
+            int textureWidth = description != null && description.has("texture_width")
+                    ? description.get("texture_width").getAsInt()
+                    : 64;
+            int textureHeight = description != null && description.has("texture_height")
+                    ? description.get("texture_height").getAsInt()
+                    : 64;
+            GeoParts parts = new GeoParts();
+            parts.textureWidth = textureWidth;
+            parts.textureHeight = textureHeight;
+            JsonArray bones = geometry.getAsJsonArray("bones");
+            if (bones != null) {
+                List<float[]> frontRects = collectFrontRects(bones);
+                Map<String, GeoPart> byName = new HashMap<>();
+
+                for (JsonElement element : bones) {
+                    GeoPart bone = parseBone(element.getAsJsonObject(), textureWidth, textureHeight, frontRects);
+                    byName.put(bone.name, bone);
+                }
+
+                for (JsonElement element : bones) {
+                    JsonObject json = element.getAsJsonObject();
+                    GeoPart bone = (GeoPart) byName.get(json.get("name").getAsString());
+                    GeoPart parent = json.has("parent") && !json.get("parent").isJsonNull()
+                            ? (GeoPart) byName.get(json.get("parent").getAsString())
+                            : null;
+                    if (parent != null) {
+                        parent.children.add(bone);
+                        bone.parent = parent;
+                    } else {
+                        parts.roots.add(bone);
+                    }
                 }
             }
+
+            return parts;
+        } else {
+            return null;
         }
-        return parts;
     }
 
     private static List<float[]> collectFrontRects(JsonArray bones) {
         List<float[]> rects = new ArrayList<>();
+
         for (JsonElement element : bones) {
             JsonObject bone = element.getAsJsonObject();
-            if (!bone.has("cubes")) continue;
-            for (JsonElement cubeElement : bone.getAsJsonArray("cubes")) {
-                JsonObject cube = cubeElement.getAsJsonObject();
-                if (!cube.has("uv") || !cube.get("uv").isJsonArray()) continue;
-                JsonArray uv = cube.getAsJsonArray("uv");
-                float[] size = readVec(cube, "size", new float[] {1.0F, 1.0F, 1.0F});
-                float inflate = cube.has("inflate") ? cube.get("inflate").getAsFloat() : 0.0F;
-                float width = size[0] + inflate * 2.0F;
-                float height = size[1] + inflate * 2.0F;
-                float depth = size[2] + inflate * 2.0F;
-                rects.add(boxRect("north", uv.get(0).getAsFloat(), uv.get(1).getAsFloat(), width, height, depth));
+            if (bone.has("cubes")) {
+                for (JsonElement cubeElement : bone.getAsJsonArray("cubes")) {
+                    JsonObject cube = cubeElement.getAsJsonObject();
+                    if (cube.has("uv") && cube.get("uv").isJsonArray()) {
+                        JsonArray uv = cube.getAsJsonArray("uv");
+                        float[] size = readVec(cube, "size", new float[] {1.0F, 1.0F, 1.0F});
+                        float inflate =
+                                cube.has("inflate") ? cube.get("inflate").getAsFloat() : 0.0F;
+                        float width = size[0] + inflate * 2.0F;
+                        float height = size[1] + inflate * 2.0F;
+                        float depth = size[2] + inflate * 2.0F;
+                        rects.add(boxRect(
+                                "north", uv.get(0).getAsFloat(), uv.get(1).getAsFloat(), width, height, depth));
+                    }
+                }
             }
         }
+
         return rects;
     }
 
     private static boolean isRectClaimed(List<float[]> rects, float[] rect) {
         for (float[] other : rects) {
-            if (rect[0] < other[2] && other[0] < rect[2] && rect[1] < other[3] && other[1] < rect[3]) return true;
+            if (rect[0] < other[2] && other[0] < rect[2] && rect[1] < other[3] && other[1] < rect[3]) {
+                return true;
+            }
         }
+
         return false;
     }
 
@@ -117,17 +130,20 @@ public class GeoParser {
             bone.pivotY = pivot.get(1).getAsFloat();
             bone.pivotZ = pivot.get(2).getAsFloat();
         }
+
         if (json.has("rotation")) {
             JsonArray rotation = json.getAsJsonArray("rotation");
-            bone.setRotX((float) Math.toRadians(-rotation.get(0).getAsFloat()));
-            bone.setRotY((float) Math.toRadians(-rotation.get(1).getAsFloat()));
-            bone.setRotZ((float) Math.toRadians(rotation.get(2).getAsFloat()));
+            bone.setRotX((float) Math.toRadians((double) (-rotation.get(0).getAsFloat())));
+            bone.setRotY((float) Math.toRadians((double) (-rotation.get(1).getAsFloat())));
+            bone.setRotZ((float) Math.toRadians((double) rotation.get(2).getAsFloat()));
         }
+
         if (json.has("cubes")) {
             for (JsonElement cube : json.getAsJsonArray("cubes")) {
                 bone.cubes.add(parseCube(cube.getAsJsonObject(), textureWidth, textureHeight, frontRects));
             }
         }
+
         return bone;
     }
 
@@ -138,11 +154,12 @@ public class GeoParser {
         float[] rotation = readVec(json, "rotation", new float[] {0.0F, 0.0F, 0.0F});
         float inflate = json.has("inflate") ? json.get("inflate").getAsFloat() : 0.0F;
         boolean mirror = json.has("mirror") && json.get("mirror").getAsBoolean();
-
         GeoModel cube = new GeoModel(size[0], size[1], size[2]);
         cube.pivot = new GeoVec(-pivot[0], pivot[1], pivot[2]);
-        cube.rotation = new GeoVec((float) Math.toRadians(-rotation[0]), (float) Math.toRadians(-rotation[1]), (float)
-                Math.toRadians(rotation[2]));
+        cube.rotation = new GeoVec(
+                (float) Math.toRadians((double) (-rotation[0])),
+                (float) Math.toRadians((double) (-rotation[1])),
+                (float) Math.toRadians((double) rotation[2]));
         cube.inflate = inflate;
         cube.mirror = mirror;
         buildFaces(cube, origin, size, inflate, json, textureWidth, textureHeight, frontRects);
@@ -170,7 +187,6 @@ public class GeoParser {
         float maxY = (y + height) / 16.0F;
         float minZ = z / 16.0F;
         float maxZ = (z + depth) / 16.0F;
-
         JsonObject faceUv = null;
         float u = 0.0F;
         float v = 0.0F;
@@ -185,11 +201,9 @@ public class GeoParser {
             }
         }
 
-        // A flat card that shares its south rectangle with another cube shows its own front on the back, mirrored.
         boolean southUsesFront = depth == 0.0F
                 && faceUv == null
                 && isRectClaimed(frontRects, boxRect("south", u, v, width, height, depth));
-
         cube.faces[0] = makeFace(
                 "north",
                 minX,
@@ -345,23 +359,28 @@ public class GeoParser {
         float u1;
         float v1;
         if (faceUv != null) {
-            if (!faceUv.has(face)) return null;
+            if (!faceUv.has(face)) {
+                return null;
+            }
+
             JsonObject entry = faceUv.getAsJsonObject(face);
             if (entry.has("uv_rotation")) {
                 int degrees = entry.get("uv_rotation").getAsInt();
-                if (degrees < 0 || degrees >= UV_FULL_TURN || degrees % UV_QUARTER_TURN != 0) {
-                    throw new IllegalArgumentException(INVALID_UV_ROTATION + degrees);
+                if (degrees < 0 || degrees >= 360 || degrees % 90 != 0) {
+                    throw new IllegalArgumentException("Invalid face UV rotation: " + degrees);
                 }
-                quarterTurns = degrees / UV_QUARTER_TURN;
+
+                quarterTurns = degrees / 90;
             }
+
             JsonArray uv = entry.getAsJsonArray("uv");
             JsonArray uvSize = entry.getAsJsonArray("uv_size");
             float faceU = uv.get(0).getAsFloat();
             float faceV = uv.get(1).getAsFloat();
-            u0 = faceU / textureWidth;
-            v0 = faceV / textureHeight;
-            u1 = (faceU + uvSize.get(0).getAsFloat()) / textureWidth;
-            v1 = (faceV + uvSize.get(1).getAsFloat()) / textureHeight;
+            u0 = faceU / (float) textureWidth;
+            v0 = faceV / (float) textureHeight;
+            u1 = (faceU + uvSize.get(0).getAsFloat()) / (float) textureWidth;
+            v1 = (faceV + uvSize.get(1).getAsFloat()) / (float) textureHeight;
         } else {
             String source = face;
             boolean flipU = mirror;
@@ -373,49 +392,59 @@ public class GeoParser {
             } else if (mirror && "west".equals(face)) {
                 source = "east";
             }
+
             float[] rect = boxRect(source, u, v, width, height, depth);
-            u0 = rect[flipU ? 2 : 0] / textureWidth;
-            v0 = rect[1] / textureHeight;
-            u1 = rect[flipU ? 0 : 2] / textureWidth;
-            v1 = rect[3] / textureHeight;
+            u0 = rect[flipU ? 2 : 0] / (float) textureWidth;
+            v0 = rect[1] / (float) textureHeight;
+            u1 = rect[flipU ? 0 : 2] / (float) textureWidth;
+            v1 = rect[3] / (float) textureHeight;
         }
 
         GeoVertex[] corners = buildCorners(face, minX, minY, minZ, maxX, maxY, maxZ, u0, v0, u1, v1);
         if (quarterTurns != 0) {
-            // turn the texture on the face by moving each corner's UV along
-            float[] us = new float[FACE_CORNERS];
-            float[] vs = new float[FACE_CORNERS];
-            for (int i = 0; i < FACE_CORNERS; i++) {
+            float[] us = new float[4];
+            float[] vs = new float[4];
+
+            for (int i = 0; i < 4; ++i) {
                 us[i] = corners[i].u;
                 vs[i] = corners[i].v;
             }
-            for (int i = 0; i < FACE_CORNERS; i++) {
-                int from = (i + quarterTurns) % FACE_CORNERS;
+
+            for (int i = 0; i < 4; ++i) {
+                int from = (i + quarterTurns) % 4;
                 corners[i].u = us[from];
                 corners[i].v = vs[from];
             }
         }
+
         return new GeoQuad(corners, normalX, normalY, normalZ);
     }
 
     private static float[] boxRect(String face, float u, float v, float width, float height, float depth) {
         switch (face) {
-            case "up":
+            case "up" -> {
                 return new float[] {u + depth, v, u + depth + width, v + depth};
-            case "down":
+            }
+            case "down" -> {
                 return new float[] {u + depth + width, v, u + depth + width * 2.0F, v + depth};
-            case "west":
+            }
+            case "west" -> {
                 return new float[] {u, v + depth, u + depth, v + depth + height};
-            case "north":
+            }
+            case "north" -> {
                 return new float[] {u + depth, v + depth, u + depth + width, v + depth + height};
-            case "east":
+            }
+            case "east" -> {
                 return new float[] {u + depth + width, v + depth, u + depth * 2.0F + width, v + depth + height};
-            case "south":
+            }
+            case "south" -> {
                 return new float[] {
                     u + depth * 2.0F + width, v + depth, u + depth * 2.0F + width * 2.0F, v + depth + height
                 };
-            default:
+            }
+            default -> {
                 return new float[] {u, v, u, v};
+            }
         }
     }
 
@@ -431,7 +460,7 @@ public class GeoParser {
             float v0,
             float u1,
             float v1) {
-        GeoVertex[] corners = new GeoVertex[FACE_CORNERS];
+        GeoVertex[] corners = new GeoVertex[4];
         switch (face) {
             case "north":
                 corners[0] = new GeoVertex(minX, maxY, minZ, u0, v0);
@@ -468,18 +497,23 @@ public class GeoParser {
                 corners[1] = new GeoVertex(maxX, minY, maxZ, u1, v0);
                 corners[2] = new GeoVertex(maxX, minY, minZ, u1, v1);
                 corners[3] = new GeoVertex(minX, minY, minZ, u0, v1);
-                break;
-            default:
-                break;
         }
+
         return corners;
     }
 
     private static float[] readVec(JsonObject json, String field, float[] fallback) {
-        if (!json.has(field)) return fallback;
-        JsonArray array = json.getAsJsonArray(field);
-        float[] out = new float[array.size()];
-        for (int i = 0; i < out.length; i++) out[i] = array.get(i).getAsFloat();
-        return out;
+        if (!json.has(field)) {
+            return fallback;
+        } else {
+            JsonArray array = json.getAsJsonArray(field);
+            float[] out = new float[array.size()];
+
+            for (int i = 0; i < out.length; ++i) {
+                out[i] = array.get(i).getAsFloat();
+            }
+
+            return out;
+        }
     }
 }

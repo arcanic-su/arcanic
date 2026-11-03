@@ -45,6 +45,10 @@ dependencies {
 	// the optimiser mod (needs ImmediatelyFast); switched on and off by fx/OptimizerMod together with the optimiser module
 	modImplementation "local:optimizermod:1.0.3"
 	include "local:optimizermod:1.0.3"
+	// whisper-jni (Apache-2.0, libs/whisper-jni-1.7.1.jar), bundled jar-in-jar: World Lyrics recognises the words
+	// with Whisper when no lyrics are found; the native library for Windows ships inside it
+	implementation "local:whisper-jni:1.7.1"
+	include "local:whisper-jni:1.7.1"
 	// players run with Sodium (the launcher installs it): development runs do too; it is not put into our jar
 	modLocalRuntime "maven.modrinth:sodium:rkdTcxoT"
 
@@ -67,4 +71,22 @@ tasks.withType(JavaCompile).configureEach {
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
+}
+
+// Explicit verification task: regular builds do not need an OpenGL context.
+sourceSets {
+    portVerification {
+        java.srcDir 'src/verification/java'
+        compileClasspath += sourceSets.test.compileClasspath
+        runtimeClasspath += sourceSets.test.runtimeClasspath
+    }
+}
+tasks.register('verifyPortMixins', JavaExec) {
+    dependsOn tasks.named('portVerificationClasses')
+    classpath = sourceSets.portVerification.runtimeClasspath
+    mainClass = 'net.arcanic.visuals.fx.MixinPortAudit'
+    workingDir = projectDir
+    systemProperty 'fabric.development', 'true'
+    systemProperty 'fabric.disableErrorGui', 'true'
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
 }

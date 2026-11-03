@@ -21,7 +21,7 @@ package net.arcanic.visuals.arc;
 import java.util.List;
 import net.minecraft.resources.Identifier;
 
-/** One melee skin: its model and animation files, texture, slot icon, variants and how it sits in third person. */
+/** One melee skin: what it replaces, its model and animation files, texture, slot icon, variants and third person. */
 public final class MeleeDesign {
     private static final String MODEL_PATH = "/assets/arcanic/cosmetic/melee/%s.geo.json";
     private static final String ANIMATION_PATH = "/assets/arcanic/cosmetic/melee/%s.anim.json";
@@ -32,6 +32,7 @@ public final class MeleeDesign {
     private final String key;
     private final String geometryKey;
     private final String displayName;
+    private final MeleeSlot slot;
     private final List<MeleeVariant> variants;
     private final List<String> holyBones;
     private final MeleeTransform thirdPersonRightHand;
@@ -44,6 +45,7 @@ public final class MeleeDesign {
             String key,
             String geometryKey,
             String displayName,
+            MeleeSlot slot,
             List<MeleeVariant> variants,
             List<String> holyBones,
             MeleeTransform thirdPersonRightHand,
@@ -51,6 +53,7 @@ public final class MeleeDesign {
         this.key = key;
         this.geometryKey = geometryKey != null && !geometryKey.isEmpty() ? geometryKey : key;
         this.displayName = displayName;
+        this.slot = slot;
         this.variants = variants;
         this.holyBones = holyBones;
         this.thirdPersonRightHand = thirdPersonRightHand;
@@ -70,6 +73,10 @@ public final class MeleeDesign {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public MeleeSlot getSlot() {
+        return slot;
     }
 
     public List<MeleeVariant> getVariants() {

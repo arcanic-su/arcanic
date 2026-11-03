@@ -33,23 +33,13 @@ import net.arcanic.visuals.render.TexWarm;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Entity;
 
-/** Animated capes on the cloth physics. */
 public final class Capes extends Module {
     private static final Map<String, int[]> TIMING = new LinkedHashMap<>();
-
     private static final Map<String, String> FILES = new LinkedHashMap<>();
-
-    static {
-        add("Arcanic", "arcanic", 16, 140);
-        add("Arcanic Neon", "neon", 12, 110);
-        // made for Arcanic (converted to the same strips: the cape's outer face, 160 x 256 a frame)
-        add("Leopard", "leopard", 1, 1000);
-        add("Potion", "potion", 1, 1000);
-        add("Diamond Sword", "diamond_sword", 11, 150);
-        add("Glitch", "glitch", 14, 50);
-        add("Sweatgod", "sweatgod", 5, 200);
-    }
+    public final Setting.Mode design;
+    private static final Map<String, Identifier[]> textures;
 
     private static void add(String name, String file, int frames, int ms) {
         FILES.put(name, file);
@@ -60,10 +50,6 @@ public final class Capes extends Module {
         return List.copyOf(FILES.keySet());
     }
 
-    public final Setting.Mode design =
-            add(new Setting.Mode("design", "Рисунок", "Arcanic", FILES.keySet().toArray(String[]::new)));
-    private static final Map<String, Identifier[]> textures = new LinkedHashMap<>();
-
     public Capes() {
         super(
                 "capes",
@@ -71,24 +57,36 @@ public final class Capes extends Module {
                 "Живая ткань Arcanic и анимированные плащи Arcanic: фирменные и забавные.",
                 Category.COSMETICS,
                 false);
+        this.design = this.add(new Setting.Mode(
+                "design", "Рисунок", "Arcanic", (String[]) FILES.keySet().toArray((x$0) -> new String[x$0])));
     }
 
     public static Identifier resolve(AbstractClientPlayer player) {
-        var mc = Minecraft.getInstance();
-        if (player == null || player.isInvisible()) return null;
-        if (player == mc.player) return Modules.CAPES.enabled() ? worldFrame(Modules.CAPES.design.get()) : null;
-        // another player with the client: the cape they chose, as the sync reports it
-        var remote = Sync.of(player);
-        String design = remote == null || remote.cape() == null ? null : byId(remote.cape());
-        return design == null ? null : worldFrame(design);
+        Minecraft mc = Minecraft.getInstance();
+        if (player != null && !player.isInvisible()) {
+            if (player == mc.player) {
+                return Modules.CAPES.enabled() ? worldFrame((String) Modules.CAPES.design.get()) : null;
+            } else {
+                Sync.Remote remote = Sync.of((Entity) player);
+                String design = remote != null && remote.cape() != null ? byId(remote.cape()) : null;
+                return design == null ? null : worldFrame(design);
+            }
+        } else {
+            return null;
+        }
     }
 
     public static String id(String design) {
-        return FILES.get(known(design));
+        return (String) FILES.get(known(design));
     }
 
     private static String byId(String id) {
-        for (var e : FILES.entrySet()) if (e.getValue().equals(id)) return e.getKey();
+        for (Map.Entry<String, String> e : FILES.entrySet()) {
+            if (((String) e.getValue()).equals(id)) {
+                return (String) e.getKey();
+            }
+        }
+
         return null;
     }
 
@@ -97,58 +95,77 @@ public final class Capes extends Module {
     }
 
     private static int frame(String design) {
-        int[] timing = TIMING.get(design);
-        return Theme.animations ? (int) ((System.currentTimeMillis() / timing[1]) % timing[0]) : 0;
+        int[] timing = (int[]) TIMING.get(design);
+        return Theme.animations ? (int) (System.currentTimeMillis() / (long) timing[1] % (long) timing[0]) : 0;
     }
-
-    /**
-     * Menu preview: the art strip itself (the cape's front, 160 x 256 per frame, frames stacked), or null while it
-     * loads.
-     */
-    public record Strip(Identifier id, int frame, int frames) {}
 
     public static Strip strip(String design) {
         design = known(design);
-        Identifier id =
-                Identifier.fromNamespaceAndPath("arcanicvisuals", "textures/cape/" + FILES.get(design) + ".png");
-        if (!TexWarm.ready(id)) return null;
-        return new Strip(id, frame(design), TIMING.get(design)[0]);
+        Identifier id = Identifier.fromNamespaceAndPath(
+                "arcanicvisuals", "textures/cape/" + (String) FILES.get(design) + ".png");
+        return !TexWarm.ready(id) ? null : new Strip(id, frame(design), ((int[]) TIMING.get(design))[0]);
     }
 
     private static Identifier worldFrame(String design) {
         design = known(design);
-        Identifier[] ids = textures.computeIfAbsent(design, Capes::requestWorld);
-        int n = ids.length, i = frame(design);
-        for (int k = 0; k < n; k++) {
+        Identifier[] ids = (Identifier[]) textures.computeIfAbsent(design, Capes::requestWorld);
+        int n = ids.length;
+        int i = frame(design);
+
+        for (int k = 0; k < n; ++k) {
             Identifier id = ids[(i - k + n) % n];
-            if (TexWarm.registered(id)) return id;
+            if (TexWarm.registered(id)) {
+                return id;
+            }
         }
+
         return null;
     }
 
     private static Identifier[] requestWorld(String design) {
-        String file = FILES.get(design);
-        int count = TIMING.get(design)[0];
+        String file = (String) FILES.get(design);
+        int count = ((int[]) TIMING.get(design))[0];
         Identifier[] out = new Identifier[count];
-        NativeImage[] strip = {null}; // decoded once on the worker, shared by its frames, freed after the last
-        int[] left = {count};
-        for (int f = 0; f < count; f++) {
-            int frame = f;
+        NativeImage[] strip = new NativeImage[] {null};
+        int[] left = new int[] {count};
+
+        for (int f = 0; f < count; ++f) {
             out[f] = Identifier.fromNamespaceAndPath("arcanicvisuals", "cape/" + file + "_" + f);
+            final int frame = f;
             TexWarm.request(out[f], () -> {
-                if (strip[0] == null)
-                    try (InputStream in =
-                            Capes.class.getResourceAsStream("/assets/arcanicvisuals/textures/cape/" + file + ".png")) {
+                if (strip[0] == null) {
+                    InputStream in =
+                            Capes.class.getResourceAsStream("/assets/arcanicvisuals/textures/cape/" + file + ".png");
+
+                    try {
                         strip[0] = NativeImage.read(in);
+                    } catch (Throwable var8) {
+                        if (in != null) {
+                            try {
+                                in.close();
+                            } catch (Throwable x2) {
+                                var8.addSuppressed(x2);
+                            }
+                        }
+
+                        throw var8;
                     }
+
+                    if (in != null) {
+                        in.close();
+                    }
+                }
+
                 NativeImage image = layout(strip[0], frame);
                 if (--left[0] == 0) {
                     strip[0].close();
                     strip[0] = null;
                 }
+
                 return image;
             });
         }
+
         return out;
     }
 
@@ -157,23 +174,42 @@ public final class Capes extends Module {
         int oy = frame * 256;
         int edge = strip.getPixel(2, oy + 128) | 0xFF000000;
         image.fillRect(0, 0, 1024, 512, edge);
-        for (int y = 0; y < 256; y++)
-            for (int x = 0; x < 160; x++) {
+
+        for (int y = 0; y < 256; ++y) {
+            for (int x = 0; x < 160; ++x) {
                 int c = strip.getPixel(x, oy + y) | 0xFF000000;
                 image.setPixel(16 + x, 16 + y, c);
                 image.setPixel(192 + (159 - x), 16 + y, c);
             }
-        // the cape's thin sides and top/bottom take the colour of the face next to them
-        for (int y = 0; y < 256; y++)
-            for (int x = 0; x < 16; x++) {
+        }
+
+        for (int y = 0; y < 256; ++y) {
+            for (int x = 0; x < 16; ++x) {
                 image.setPixel(x, 16 + y, strip.getPixel(0, oy + y) | 0xFF000000);
                 image.setPixel(176 + x, 16 + y, strip.getPixel(159, oy + y) | 0xFF000000);
             }
-        for (int x = 0; x < 160; x++)
-            for (int y = 0; y < 16; y++) {
+        }
+
+        for (int x = 0; x < 160; ++x) {
+            for (int y = 0; y < 16; ++y) {
                 image.setPixel(16 + x, y, strip.getPixel(x, oy) | 0xFF000000);
                 image.setPixel(176 + x, y, strip.getPixel(x, oy + 255) | 0xFF000000);
             }
+        }
+
         return image;
     }
+
+    static {
+        add("Arcanic", "arcanic", 16, 140);
+        add("Arcanic Neon", "neon", 12, 110);
+        add("Leopard", "leopard", 1, 1000);
+        add("Potion", "potion", 1, 1000);
+        add("Diamond Sword", "diamond_sword", 11, 150);
+        add("Glitch", "glitch", 14, 50);
+        add("Sweatgod", "sweatgod", 5, 200);
+        textures = new LinkedHashMap<>();
+    }
+
+    public static record Strip(Identifier id, int frame, int frames) {}
 }

@@ -19,176 +19,584 @@
 package net.arcanic.visuals.gui;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import net.arcanic.visuals.core.*;
+import java.util.Map;
+import java.util.Set;
+import net.arcanic.visuals.core.Config;
+import net.arcanic.visuals.core.Keys;
+import net.arcanic.visuals.core.Lang;
 import net.arcanic.visuals.core.Module;
+import net.arcanic.visuals.core.Setting;
+import net.arcanic.visuals.core.UiSound;
+import net.arcanic.visuals.fx.ItemZones;
+import net.arcanic.visuals.helper.HolyFeatures;
 import net.arcanic.visuals.hud.Toasts;
-import net.arcanic.visuals.render.Frost;
 import net.arcanic.visuals.render.Px;
-import net.arcanic.visuals.render.Px.Weight;
 import net.minecraft.client.gui.GuiGraphics;
 
-/** The window a module's settings open in. */
 final class ModulePopup {
     private final ArcanicMenu menu;
+    String itemPage;
+    private final Set<String> more = new HashSet<>();
+    private static final int FIRST = 5;
+    private long pageAt;
+    private int pageDir = 1;
+    private static final int GROUP = 30;
+    private static final int ROW = 36;
 
     ModulePopup(ArcanicMenu menu) {
         this.menu = menu;
     }
 
+    void openItem(String key) {
+        this.pageDir = key == null ? -1 : 1;
+        this.itemPage = key;
+        this.pageAt = this.menu.now;
+        if (this.menu.popMod != null) {
+            this.menu.resetScroll("pm:" + this.menu.popMod.id);
+        }
+    }
+
     void modulePopup(GuiGraphics g) {
-        float k = menu.an("pm", menu.popMod != null ? 1 : 0, menu.popMod != null ? 15 : 22);
-        if (menu.popMod != null) menu.popShown = menu.popMod;
-        else if (k < .01f) menu.popShown = null;
-        Module m = menu.popShown;
-        if (m == null) return;
-        float a = menu.ease(k);
-        boolean live = menu.popMod != null && !menu.blocked() && k > .5f;
-        int sw = Px.width(), sh = Px.height();
-        List<Setting<?>> list = new ArrayList<>();
-        for (Setting<?> s : m.settings) if (s.visible()) list.add(s);
-        menu.compact = true;
-        int w = menu.S(300), pad = menu.S(18), cw = w - pad * 2, head = menu.S(66);
-        int inner = head;
-        for (Setting<?> s : list) inner += menu.rowH(s, cw);
-        inner += menu.S(8) + menu.S(40) + menu.S(8);
-        int h = Math.min(inner, Math.min(menu.ph, sh - menu.S(24)));
-        boolean fitsR = menu.px + menu.pw + menu.S(14) + w <= sw - menu.S(10),
-                fitsL = menu.px - menu.S(14) - w >= menu.S(10);
-        boolean leftColumn = menu.ancX + menu.ancW / 2 < menu.px + menu.pw / 2;
-        boolean right = leftColumn ? !fitsL : (fitsR || !fitsL);
-        int x = right ? menu.px + menu.pw + menu.S(14) : menu.px - menu.S(14) - w;
-        if (x < menu.S(10)) {
-            right = true;
-            x = Math.min(sw - w - menu.S(10), menu.ancX + menu.ancW + menu.S(10));
+        float k = this.menu.an("pm", this.menu.popMod != null ? 1.0F : 0.0F, this.menu.popMod != null ? 14.0F : 22.0F);
+        if (this.menu.popMod != null) {
+            this.menu.popShown = this.menu.popMod;
+        } else if (k < 0.01F) {
+            this.menu.popShown = null;
         }
-        int y = Math.max(
-                Math.max(menu.S(12), menu.py),
-                Math.min(Math.min(sh - menu.S(12), menu.py + menu.ph) - h, menu.ancY - menu.S(6)));
-        menu.pmX = x;
-        menu.pmY = y;
-        menu.pmW = w;
-        menu.pmH = h;
-        float kf = Px.fade;
-        Px.fade = kf * Math.min(1, k * 1.4f);
-        g.pose().pushMatrix();
-        if (a < .999f) g.pose().translate((1 - a) * (right ? -menu.S(14) : menu.S(14)), 0);
-        boolean lt = menu.light();
-        int bg = lt ? 0xFFFFFFFF : 0xF40C0D12;
-        Px.shadow(g, x, y + menu.S(6), w, h, menu.S(18), Px.a(0, lt ? 30 : 70));
-        if (!lt && false) {
-            Frost.backdrop(g, x, y, w, h, menu.S(13));
-            bg = 0xDC0C0D12;
+
+        Module m = this.menu.popShown;
+        if (m != null) {
+            float a = 1.0F - (float) Math.pow((double) (1.0F - Math.min(1.0F, k)), 4.0);
+            boolean live = this.menu.popMod != null && !this.menu.blocked() && k > 0.5F;
+            int sw = Px.width();
+            int sh = Px.height();
+            ItemZones var10000;
+            if (m instanceof ItemZones) {
+                ItemZones z = (ItemZones) m;
+                var10000 = z;
+            } else {
+                var10000 = null;
+            }
+
+            ItemZones iz = var10000;
+            ItemZones.Item page = iz != null && this.itemPage != null ? iz.item(this.itemPage) : null;
+            List<Setting<?>> list = new ArrayList<>();
+            if (page != null) {
+                list.addAll(page.shown);
+            } else {
+                for (Setting<?> s : m.settings) {
+                    if (s.visible()) {
+                        list.add(s);
+                    }
+                }
+            }
+
+            List<Setting<?>> extra = new ArrayList<>();
+            if (iz == null && list.size() > 6) {
+                extra = new ArrayList(list.subList(5, list.size()));
+                list = new ArrayList(list.subList(0, 5));
+            }
+
+            boolean unfolded = this.more.contains(m.id);
+            this.menu.compact = true;
+            this.menu.bands = true;
+            int w = this.menu.S(iz != null ? 340.0 : 292.0);
+            int pad = this.menu.S(16.0);
+            int cw = w - pad * 2;
+            int head = this.menu.S(58.0);
+            int moreH = this.menu.S(34.0);
+            int inner;
+            if (iz != null && page == null) {
+                inner = head + this.listH(iz) + this.menu.S(8.0);
+            } else {
+                inner = head;
+
+                for (Setting<?> s : list) {
+                    inner += this.menu.rowH(s, cw);
+                }
+
+                if (!extra.isEmpty()) {
+                    inner += moreH;
+                    if (unfolded) {
+                        for (Setting<?> s : extra) {
+                            inner += this.menu.rowH(s, cw);
+                        }
+                    }
+                }
+
+                inner += iz != null ? this.menu.S(10.0) : this.menu.S(10.0) + this.menu.S(40.0) + this.menu.S(4.0);
+            }
+
+            int h = Math.min(inner, Math.min(this.menu.ph, sh - this.menu.S(24.0)));
+            boolean fitsR = this.menu.px + this.menu.pw + this.menu.S(14.0) + w <= sw - this.menu.S(10.0);
+            boolean fitsL = this.menu.px - this.menu.S(14.0) - w >= this.menu.S(10.0);
+            boolean leftColumn = this.menu.ancX + this.menu.ancW / 2 < this.menu.px + this.menu.pw / 2;
+            boolean right = leftColumn ? !fitsL : fitsR || !fitsL;
+            int x = right ? this.menu.px + this.menu.pw + this.menu.S(10.0) : this.menu.px - this.menu.S(10.0) - w;
+            if (x < this.menu.S(10.0)) {
+                right = true;
+                x = Math.min(sw - w - this.menu.S(10.0), this.menu.ancX + this.menu.ancW + this.menu.S(10.0));
+            }
+
+            int y = Math.max(
+                    Math.max(this.menu.S(12.0), this.menu.py),
+                    Math.min(
+                            Math.min(sh - this.menu.S(12.0), this.menu.py + this.menu.ph) - h,
+                            this.menu.ancY - this.menu.S(6.0)));
+            this.menu.pmX = x;
+            this.menu.pmY = y;
+            this.menu.pmW = w;
+            this.menu.pmH = h;
+            float kf = Px.fade;
+            Px.fade = kf * Math.min(1.0F, k * 1.6F);
+            g.pose().pushMatrix();
+            if (a < 0.999F) {
+                float grow = 0.96F + 0.04F * a;
+                float ox = right ? (float) x : (float) (x + w);
+                float oy = (float) (y + Math.min(h, this.menu.S(60.0)));
+                g.pose().translate((1.0F - a) * (float) (right ? -this.menu.S(10.0) : this.menu.S(10.0)), 0.0F);
+                g.pose().translate(ox, oy);
+                g.pose().scale(grow, grow);
+                g.pose().translate(-ox, -oy);
+            }
+
+            int bg = ArcanicMenu.panelBg();
+            int R = this.menu.S(12.0);
+            int var10002 = y + this.menu.S(8.0);
+            int var10005 = this.menu.S(24.0);
+            ArcanicMenu var10007 = this.menu;
+            Px.shadow(g, x, var10002, w, h, var10005, Px.a(0, ArcanicMenu.light() ? 30 : 130));
+            Px.round(g, x, y, w, h, R, bg);
+            Px.outline(g, x, y, w, h, R, ArcanicMenu.hairline(16));
+            this.menu.topLight(g, x, y, w, R);
+            int t = y + this.menu.S(3.0);
+            int b = y + h - this.menu.S(3.0);
+            float sc = (float) Math.round(this.menu.scrolled("pm:" + m.id, inner, y, y + h));
+            g.enableScissor(x, t, x + w, b);
+            g.pose().pushMatrix();
+            float pt = iz == null ? 1.0F : ArcanicMenu.ease((float) (this.menu.now - this.pageAt) / 260.0F);
+            g.pose().translate((float) Math.round((1.0F - pt) * (float) this.menu.S(18.0) * (float) this.pageDir), -sc);
+            float pf = Px.fade;
+            Px.fade = pf * (iz == null ? 1.0F : 0.3F + 0.7F * pt);
+            int cx = x + pad;
+            if (iz == null) {
+                this.header(g, m, cx, y, cw, sc, t, b, live);
+            } else if (page == null) {
+                Px.text(
+                        g,
+                        m.title(),
+                        cx,
+                        y + this.menu.S(15.0),
+                        Px.Weight.SEMIBOLD,
+                        this.menu.S(15.0),
+                        ArcanicMenu.T().text());
+                Px.text(
+                        g,
+                        Lang.tr("Нажми на предмет, чтобы настроить его"),
+                        cx,
+                        y + this.menu.S(35.0),
+                        Px.Weight.MEDIUM,
+                        this.menu.S(11.0),
+                        ArcanicMenu.faint());
+                this.list(g, iz, cx, y + head, cw, sc, t, b, live);
+            } else {
+                this.itemHeader(g, page, cx, y, cw, sc, t, b, live);
+            }
+
+            if (iz == null || page != null) {
+                int cy = this.menu.settings(g, m, list, cx, y + head, cw, sc, t, b, live);
+                if (!extra.isEmpty()) {
+                    this.moreRow(g, m, extra.size(), unfolded, cx, cy, cw, moreH, sc, t, b, live);
+                    cy += moreH;
+                    if (unfolded) {
+                        cy = this.menu.settings(g, m, extra, cx, cy, cw, sc, t, b, live);
+                    }
+                }
+
+                if (iz == null) {
+                    this.key(g, m, cx, cy + this.menu.S(10.0), cw, sc, t, b, live);
+                }
+            }
+
+            Px.fade = pf;
+            g.pose().popMatrix();
+            g.disableScissor();
+            g.nextStratum();
+            if (inner > h) {
+                this.menu.edges(g, x + this.menu.S(1.0), w - this.menu.S(2.0), t, b, sc, bg);
+                this.menu.scrollbar(
+                        g,
+                        x + w - this.menu.S(8.0),
+                        t + this.menu.S(10.0),
+                        b - this.menu.S(10.0),
+                        inner,
+                        sc,
+                        "pm:" + m.id);
+            }
+
+            g.pose().popMatrix();
+            Px.fade = kf;
+            this.menu.compact = false;
+            this.menu.bands = false;
         }
-        Px.round(g, x, y, w, h, menu.S(13), bg);
-        Px.outline(g, x, y, w, h, menu.S(13), lt ? Px.a(menu.T().text(), 26) : 0x18FFFFFF);
-        // a thin tie towards the row it belongs to
-        int tieY = Math.max(y + menu.S(16), Math.min(y + h - menu.S(16), menu.ancY + menu.ancH / 2));
-        if (right)
-            Px.rect(
-                    g,
-                    menu.px + menu.pw,
-                    tieY,
-                    x - menu.px - menu.pw,
-                    Math.max(1, menu.S(1)),
-                    Px.a(Theme.accent(), (int) (120 * a)));
-        else Px.rect(g, x + w, tieY, menu.px - x - w, Math.max(1, menu.S(1)), Px.a(Theme.accent(), (int) (120 * a)));
-        int t = y + menu.S(3), b = y + h - menu.S(3);
-        float sc = Math.round(menu.scrolled("pm:" + m.id, inner, y, y + h));
-        g.enableScissor(x, t, x + w, b);
-        g.pose().pushMatrix();
-        g.pose().translate(0, -sc);
-        int cx = x + pad;
-        // header like a module card: the name, what it does under it, and the module's own switch on the right
-        int tgW = menu.S(34);
+    }
+
+    private void header(GuiGraphics g, Module m, int cx, int y, int cw, float sc, int t, int b, boolean live) {
+        int tgW = this.menu.S(30.0);
+        int textW = cw - tgW - this.menu.S(12.0);
         Px.text(
                 g,
-                Px.ellipsize(Lang.tr(m.name), Weight.SEMIBOLD, menu.S(15), cw - tgW - menu.S(12)),
+                Px.ellipsize(m.title(), Px.Weight.SEMIBOLD, this.menu.S(15.0), textW),
                 cx,
-                y + menu.S(15),
-                Weight.SEMIBOLD,
-                menu.S(15),
-                menu.T().text());
+                y + this.menu.S(15.0),
+                Px.Weight.SEMIBOLD,
+                this.menu.S(15.0),
+                ArcanicMenu.T().text());
         Px.text(
                 g,
-                Px.ellipsize(Lang.tr(m.description), Weight.MEDIUM, menu.S(11), cw - tgW - menu.S(12)),
+                Px.ellipsize(Lang.tr(m.description), Px.Weight.MEDIUM, this.menu.S(11.0), textW),
                 cx,
-                y + menu.S(36),
-                Weight.MEDIUM,
-                menu.S(11),
-                menu.lt(menu.T().dim(), 0xFF757D8A));
-        float mOn = menu.tween("on:" + m.id, m.enabled() ? 1 : 0, 180);
-        boolean tgHv = live && menu.hover(cx + cw - tgW, Math.round(y + menu.S(12) - sc), tgW, menu.S(30));
-        menu.toggle(g, cx + cw - tgW, y + menu.S(12), tgW, menu.S(30), mOn, tgHv ? 1 : 0);
-        if (live)
-            menu.clipped(
-                    cx + cw - tgW - menu.S(4),
-                    y + menu.S(8),
-                    tgW + menu.S(8),
-                    menu.S(38),
+                y + this.menu.S(35.0),
+                Px.Weight.MEDIUM,
+                this.menu.S(11.0),
+                ArcanicMenu.faint());
+        String var10001 = m.id;
+        float mOn = this.menu.tween("on:" + var10001, m.enabled() ? 1.0F : 0.0F, 180.0F);
+        int tgY = y + this.menu.S(14.0);
+        boolean tgHv = live && this.menu.hover(cx + cw - tgW, Math.round((float) tgY - sc), tgW, this.menu.S(30.0));
+        this.menu.toggle(g, cx + cw - tgW, tgY, tgW, this.menu.S(30.0), mOn, tgHv ? 1.0F : 0.0F);
+        if (live) {
+            this.menu.clipped(
+                    cx + cw - tgW - this.menu.S(4.0),
+                    tgY - this.menu.S(4.0),
+                    tgW + this.menu.S(8.0),
+                    this.menu.S(38.0),
                     sc,
                     t,
                     b,
                     () -> {
-                        m.toggle();
-                        if (m.enabled()) menu.pulse.put(m.id, menu.now);
-                        UiSound.play(m.enabled() ? "charge" : "drain");
-                        Toasts.module(m, false);
-                        Config.dirty();
+                        if (!m.enabled() && HolyFeatures.forbidden(m)) {
+                            HolyFeatures.deny(m);
+                        } else {
+                            m.toggle();
+                            if (m.enabled()) {
+                                this.menu.pulse.put(m.id, this.menu.now);
+                            }
+
+                            UiSound.play(m.enabled() ? "charge" : "drain");
+                            Toasts.module(m, false);
+                            Config.dirty();
+                        }
                     },
-                    null);
-        Px.rect(
+                    (Runnable) null);
+        }
+    }
+
+    private void moreRow(
+            GuiGraphics g,
+            Module m,
+            int n,
+            boolean open,
+            int cx,
+            int cy,
+            int cw,
+            int h,
+            float sc,
+            int t,
+            int b,
+            boolean live) {
+        boolean hv = live
+                && this.menu.my >= (double) t
+                && this.menu.my < (double) b
+                && this.menu.hover(cx, Math.round((float) cy - sc), cw, h);
+        if (hv) {
+            this.menu.hot("more:" + m.id);
+        }
+
+        String var10001 = m.id;
+        float hk = this.menu.an("moreH:" + var10001, hv ? 1.0F : 0.0F, 18.0F);
+        var10001 = m.id;
+        float ok = this.menu.tween("more:" + var10001, open ? 1.0F : 0.0F, 220.0F);
+        String label = Lang.tr(open ? "Скрыть" : "Ещё настройки");
+        int fs = this.menu.S(12.0);
+        int col = Px.mix(ArcanicMenu.sub(), ArcanicMenu.T().text(), hk);
+        Px.text(g, label, cx, cy + (h - fs) / 2, Px.Weight.MEDIUM, fs, col);
+        int lw = Px.textWidth(label, Px.Weight.MEDIUM, fs);
+        Px.text(
                 g,
-                cx,
-                y + head - menu.S(4),
-                cw,
-                Math.max(1, menu.S(1)),
-                lt ? Px.a(menu.T().text(), 18) : 0x12FFFFFF);
-        int cy = menu.settings(g, m, list, cx, y + head, cw, sc, t, b, live);
-        cy += menu.S(8);
-        Px.rect(g, cx, cy, cw, Math.max(1, menu.S(1)), Px.a(menu.T().text(), lt ? 20 : 14));
-        boolean cap = menu.binding == m;
-        int rh = menu.S(40);
-        boolean khv = live && menu.my >= t && menu.my < b && menu.hover(cx, Math.round(cy - sc), cw, rh);
-        if (khv) menu.hot("bind");
+                String.valueOf(n),
+                cx + lw + this.menu.S(7.0),
+                cy + (h - fs) / 2,
+                Px.Weight.MEDIUM,
+                fs,
+                ArcanicMenu.faint());
+        int as = this.menu.S(11.0);
+        g.pose().pushMatrix();
+        g.pose().translate((float) (cx + cw) - (float) as / 2.0F, (float) cy + (float) h / 2.0F);
+        g.pose().rotate((float) Math.PI * ok);
+        ArcanicMenu.glyph(g, "chevron-down", -as / 2, -as / 2, as, col);
+        g.pose().popMatrix();
+        if (live) {
+            this.menu.clipped(
+                    cx,
+                    cy,
+                    cw,
+                    h,
+                    sc,
+                    t,
+                    b,
+                    () -> {
+                        if (!this.more.remove(m.id)) {
+                            this.more.add(m.id);
+                        }
+
+                        UiSound.play("click");
+                    },
+                    (Runnable) null);
+        }
+    }
+
+    private void key(GuiGraphics g, Module m, int cx, int cy, int cw, float sc, int t, int b, boolean live) {
+        boolean cap = this.menu.binding == m;
+        int rowH = this.menu.S(40.0);
+        boolean khv = live
+                && this.menu.my >= (double) t
+                && this.menu.my < (double) b
+                && this.menu.hover(cx, Math.round((float) cy - sc), cw, rowH);
+        if (khv) {
+            this.menu.hot("bind");
+        }
+
         Px.text(
                 g,
                 Lang.tr("Клавиша"),
                 cx,
-                cy + (rh - menu.S(13)) / 2,
-                Weight.MEDIUM,
-                menu.S(13),
-                menu.T().muted());
-        String kt = cap ? Lang.tr("Нажми клавишу") : m.bind >= 0 ? Keys.label(m.bind) : "—";
-        menu.valueBox(g, kt, cx + cw, cy + (rh - menu.S(26)) / 2, cap, khv);
-        if (live)
-            menu.clipped(
+                cy + (rowH - this.menu.S(13.0)) / 2,
+                Px.Weight.MEDIUM,
+                this.menu.S(13.0),
+                khv ? ArcanicMenu.T().text() : ArcanicMenu.label());
+        String kt = cap ? Lang.tr("Нажми клавишу") : (m.bind >= 0 ? Keys.label(m.bind) : "—");
+        this.menu.valueBox(g, kt, cx + cw, cy + (rowH - this.menu.S(26.0)) / 2, cap, khv);
+        if (live) {
+            this.menu.clipped(
                     cx,
                     cy,
                     cw,
-                    rh,
+                    rowH,
                     sc,
                     t,
                     b,
                     () -> {
-                        menu.binding = cap ? null : m;
+                        this.menu.binding = cap ? null : m;
                         UiSound.play("click");
                     },
                     () -> {
                         m.bind = -1;
-                        menu.binding = null;
+                        this.menu.binding = null;
                         Config.dirty();
                         UiSound.play("reset");
                     });
-        g.pose().popMatrix();
-        g.disableScissor();
-        g.nextStratum();
-        if (inner > h) {
-            menu.edges(g, x + menu.S(1), w - menu.S(2), t, b, sc, bg);
-            menu.scrollbar(g, x + w - menu.S(7), t + menu.S(8), b - menu.S(8), inner, sc, "pm:" + m.id);
         }
+    }
+
+    private static Map<String, List<ItemZones.Item>> groups(ItemZones iz) {
+        Map<String, List<ItemZones.Item>> out = new LinkedHashMap<>();
+
+        for (ItemZones.Item it : iz.items) {
+            ((List) out.computeIfAbsent(it.group, (k) -> new ArrayList<>())).add(it);
+        }
+
+        return out;
+    }
+
+    private int listH(ItemZones iz) {
+        int hh = 0;
+
+        for (List<ItemZones.Item> l : groups(iz).values()) {
+            hh += this.menu.S(30.0) + (l.size() + 1) / 2 * this.menu.S(36.0);
+        }
+
+        return hh;
+    }
+
+    private void list(GuiGraphics g, ItemZones iz, int x, int y, int w, float sc, int t, int b, boolean live) {
+        int colW = w / 2;
+        int cy = y;
+
+        for (Map.Entry<String, List<ItemZones.Item>> e : groups(iz).entrySet()) {
+            Px.text(
+                    g,
+                    Lang.tr((String) e.getKey()),
+                    x,
+                    cy + this.menu.S(8.0),
+                    Px.Weight.SEMIBOLD,
+                    this.menu.S(14.0),
+                    ArcanicMenu.T().text());
+            cy += this.menu.S(30.0);
+            List<ItemZones.Item> l = (List) e.getValue();
+
+            for (int i = 0; i < l.size(); ++i) {
+                ItemZones.Item it = (ItemZones.Item) l.get(i);
+                int rx = x + i % 2 * colW - this.menu.S(8.0);
+                int ry = cy + i / 2 * this.menu.S(36.0);
+                int rw = colW - this.menu.S(4.0);
+                int rh = this.menu.S(36.0) - this.menu.S(4.0);
+                boolean hv = live
+                        && this.menu.my >= (double) t
+                        && this.menu.my < (double) b
+                        && this.menu.hover(rx, Math.round((float) ry - sc), rw, rh);
+                if (hv) {
+                    this.menu.hot("it:" + it.key);
+                }
+
+                String var10001 = it.key;
+                float hk = this.menu.an("itH:" + var10001, hv ? 1.0F : 0.0F, 18.0F);
+                var10001 = it.key;
+                float on = this.menu.tween("itO:" + var10001, it.on.on() ? 1.0F : 0.0F, 200.0F);
+                if (hk > 0.01F) {
+                    Px.round(g, rx, ry, rw, rh, this.menu.S(8.0), Px.a(ArcanicMenu.cardHi(), (int) (255.0F * hk)));
+                }
+
+                int is = this.menu.S(18.0);
+                int ix = rx + this.menu.S(8.0);
+                int iy = ry + (rh - is) / 2;
+                if (Px.fade > 0.35F) {
+                    g.pose().pushMatrix();
+                    g.pose().translate((float) ix, (float) iy);
+                    g.pose().scale((float) is / 16.0F, (float) is / 16.0F);
+                    g.renderItem(ArcanicMenu.icon(it.icon), 0, 0);
+                    g.pose().popMatrix();
+                    g.nextStratum();
+                    if (on < 0.999F) {
+                        Px.rect(
+                                g,
+                                ix - 1,
+                                iy - 1,
+                                is + 2,
+                                is + 2,
+                                Px.a(Px.mix(ArcanicMenu.panelBg(), ArcanicMenu.cardHi(), hk), (int)
+                                        (150.0F * (1.0F - on))));
+                    }
+                }
+
+                int nx = ix + is + this.menu.S(10.0);
+                int ds = this.menu.S(6.0);
+                Px.text(
+                        g,
+                        Px.ellipsize(
+                                Lang.tr(it.name),
+                                Px.Weight.MEDIUM,
+                                this.menu.S(12.0),
+                                rx + rw - nx - ds - this.menu.S(14.0)),
+                        nx,
+                        ry + (rh - this.menu.S(12.0)) / 2,
+                        Px.Weight.MEDIUM,
+                        this.menu.S(12.0),
+                        Px.mix(
+                                Px.mix(ArcanicMenu.faint(), ArcanicMenu.label(), on),
+                                ArcanicMenu.T().text(),
+                                hk));
+                if (on > 0.01F) {
+                    float f0 = Px.fade;
+                    Px.fade = f0 * on;
+                    Px.round(
+                            g,
+                            rx + rw - this.menu.S(10.0) - ds,
+                            ry + (rh - ds) / 2,
+                            ds,
+                            ds,
+                            ds / 2,
+                            it.zone.argb() | 0xFF000000);
+                    Px.fade = f0;
+                }
+
+                if (live) {
+                    this.menu.clipped(
+                            rx,
+                            ry,
+                            rw,
+                            rh,
+                            sc,
+                            t,
+                            b,
+                            () -> {
+                                UiSound.play("click");
+                                this.openItem(it.key);
+                            },
+                            () -> {
+                                it.on.toggle();
+                                UiSound.play(it.on.on() ? "toggle_on" : "toggle_off");
+                                Config.dirty();
+                            });
+                }
+            }
+
+            cy += (l.size() + 1) / 2 * this.menu.S(36.0);
+        }
+    }
+
+    private void itemHeader(
+            GuiGraphics g, ItemZones.Item it, int cx, int y, int cw, float sc, int t, int b, boolean live) {
+        int bs = this.menu.S(28.0);
+        int by = y + this.menu.S(14.0);
+        boolean bh = live && this.menu.hover(cx, Math.round((float) by - sc), bs, bs);
+        if (bh) {
+            this.menu.hot("itBack");
+        }
+
+        float bk = this.menu.an("itBack", bh ? 1.0F : 0.0F, 18.0F);
+        Px.round(g, cx, by, bs, bs, this.menu.S(8.0), Px.mix(ArcanicMenu.field(), ArcanicMenu.cardHi(), bk));
+        int gs = this.menu.S(14.0);
+        g.pose().pushMatrix();
+        g.pose()
+                .translate(
+                        (float) cx + (float) bs / 2.0F - (float) Math.round(bk * (float) this.menu.S(2.0)),
+                        (float) by + (float) bs / 2.0F);
+        g.pose().rotate((float) Math.PI);
+        ArcanicMenu.glyph(
+                g,
+                "chevron-right",
+                -gs / 2,
+                -gs / 2,
+                gs,
+                Px.mix(ArcanicMenu.sub(), ArcanicMenu.T().text(), bk));
         g.pose().popMatrix();
-        Px.fade = kf;
-        menu.compact = false;
+        int is = this.menu.S(20.0);
+        int ix = cx + bs + this.menu.S(12.0);
+        if (Px.fade > 0.35F) {
+            g.pose().pushMatrix();
+            g.pose().translate((float) ix, (float) by + (float) (bs - is) / 2.0F);
+            g.pose().scale((float) is / 16.0F, (float) is / 16.0F);
+            g.renderItem(ArcanicMenu.icon(it.icon), 0, 0);
+            g.pose().popMatrix();
+            g.nextStratum();
+        }
+
+        Px.text(
+                g,
+                Lang.tr(it.name),
+                ix + is + this.menu.S(10.0),
+                by + (bs - this.menu.S(15.0)) / 2,
+                Px.Weight.SEMIBOLD,
+                this.menu.S(15.0),
+                ArcanicMenu.T().text());
+        if (live) {
+            this.menu.clipped(
+                    cx,
+                    by,
+                    bs,
+                    bs,
+                    sc,
+                    t,
+                    b,
+                    () -> {
+                        UiSound.play("pop", 0.9F, 0.6F);
+                        this.openItem((String) null);
+                    },
+                    (Runnable) null);
+        }
     }
 }

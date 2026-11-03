@@ -2,6 +2,20 @@
 
 All notable changes to Arcanic Visuals are listed here, newest first.
 
+## 1.2
+
+- FunTime Helper: events of the FunTime servers, item zones and server tools.
+- Friends: a friends page, friend cards, their inventory, friend highlight; middle click a player to add or remove.
+- Pings: mark a place, an enemy or loot for your friends; an interaction menu.
+- World Lyrics: the song playing on your PC sings line by line in the world; when no lyrics are found, Whisper
+  recognises the words.
+- FastSwap: swap an item for another in the chosen hand on a key.
+- No Render is back and covers all particles, screen overlays, camera shake, fog, weather and HUD parts.
+- A new crosshair page, chest sorting, slot locking, see-invisible, low fire, interface animations.
+- The menu can be resized from its bottom-right corner.
+- Translations: the English interface no longer shows Russian text; feature and section names are in English.
+- Removed the proxy screen.
+
 ## 1.6.7
 
 - Main menu: singleplayer and multiplayer are horizontal cards in the same style as "Visual settings".

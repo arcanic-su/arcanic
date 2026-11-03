@@ -43,19 +43,19 @@ public final class Theme {
     }
 
     public static final Palette[] PALETTES = {
-        // night: a cool near-black, white hairline borders and cool greys, with our violet accent
+        // night: a near-black, faint white hairlines, cool greys, and a soft periwinkle accent
         new Palette(
                 "Обсидиан",
-                0xF2090A0E,
-                0xFF0C0D12,
-                0xFF12141C,
-                0xFF1E2028,
-                0x18FFFFFF,
-                0xFFF4F6FA,
-                0xFFB0B8C4,
-                0xFF757D8A,
-                0xFF8B5CF6,
-                0xFFB79CFF,
+                0xF2080808,
+                0xFF0B0B0D,
+                0xFF111114,
+                0xFF1A1B20,
+                0x1AFFFFFF,
+                0xFFFFFFFF,
+                0xFFA9ADB8,
+                0xFF5D616D,
+                0xFF859CFF,
+                0xFFB4C2FF,
                 false,
                 0),
         new Palette(

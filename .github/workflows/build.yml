@@ -18,9 +18,6 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Make the wrapper runnable
-        run: chmod +x gradlew
-
       - name: Check formatting
         run: ./gradlew spotlessCheck
 

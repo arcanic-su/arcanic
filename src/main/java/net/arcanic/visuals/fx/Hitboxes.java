@@ -37,53 +37,32 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Hitboxes module
- *
- * Draws the hitboxes of entities: an outline or corners, with an optional glow and fill.
- */
 public final class Hitboxes extends Module {
-    public final Setting.Bool players = add(new Setting.Bool("players", "Игроки", true));
-    public final Setting.Bool mobs = add(new Setting.Bool("mobs", "Враждебные мобы", true));
-    public final Setting.Bool animals = add(new Setting.Bool("animals", "Животные", false));
-    public final Setting.Bool items = add(new Setting.Bool("items", "Предметы", false));
-    public final Setting.Num range = add(new Setting.Num("range", "Дальность", 48, 8, 128, 4, " бл"));
-    public final Setting.Bool walls = add(new Setting.Bool("walls", "Сквозь стены", false));
-
-    public final Setting.Bool outline = add(new Setting.Bool("outline", "Обводка", true));
-    public final Setting.Mode style = add(new Setting.Mode("style", "Вид обводки", "Полная", "Полная", "Углы"))
-            .showIf(outline::on);
-    public final Setting.Num corner = add(new Setting.Num("corner", "Длина углов", .25, .05, .45, .05, ""))
-            .showIf(() -> outline.on() && style.is("Углы"));
-    public final Setting.Num width =
-            add(new Setting.Num("width2", "Толщина", 2, .5, 5, .5, " px")).showIf(outline::on);
-
-    public final Setting.Mode colourMode =
-            add(new Setting.Mode("colour_mode", "Окраска", "Тема", "Тема", "Свой", "Здоровье", "Радуга"));
-    public final Setting.Colour colourA =
-            add(new Setting.Colour("colour_a", "Цвет", false, 0xFFC084FC)).showIf(() -> colourMode.is("Свой"));
-    public final Setting.Bool gradient =
-            add(new Setting.Bool("gradient", "Градиент", true)).showIf(() -> !colourMode.is("Здоровье"));
-    public final Setting.Colour colourB = add(new Setting.Colour("colour_b", "Цвет градиента", false, 0xFF22D3EE))
-            .showIf(() -> gradient.on() && colourMode.is("Свой"));
-    public final Setting.Bool hover = add(new Setting.Bool("hover", "Цвет при наведении", true));
-    public final Setting.Colour hoverColour = add(new Setting.Colour(
-                    "hover_colour", "Цвет наведения", false, 0xFFFF3B4E))
-            .showIf(hover::on);
-    public final Setting.Bool flash = add(new Setting.Bool("flash", "Вспышка при ударе", true));
-    public final Setting.Colour flashColour = add(new Setting.Colour("flash_colour", "Цвет вспышки", false, 0xFFFFFFFF))
-            .showIf(flash::on);
-
-    public final Setting.Bool glow = add(new Setting.Bool("glow", "Свечение", true));
-    public final Setting.Mode glowMode = add(new Setting.Mode(
-                    "glow_mode", "Сила свечения", "Обычное", "Обычное", "Сильное"))
-            .showIf(glow::on);
-    public final Setting.Bool fill = add(new Setting.Bool("fill", "Заливка", false));
-    public final Setting.Mode fillType = add(new Setting.Mode(
-                    "fill_type", "Тип заливки", "Прозрачная", "Прозрачная", "Переливание"))
-            .showIf(fill::on);
-    public final Setting.Num fillAlpha = add(new Setting.Num("fill_alpha", "Плотность заливки", 22, 5, 70, 1, "%"))
-            .showIf(fill::on);
+    public final Setting.Bool players = this.add(new Setting.Bool("players", "Игроки", true));
+    public final Setting.Bool mobs = this.add(new Setting.Bool("mobs", "Враждебные мобы", true));
+    public final Setting.Bool animals = this.add(new Setting.Bool("animals", "Животные", false));
+    public final Setting.Bool items = this.add(new Setting.Bool("items", "Предметы", false));
+    public final Setting.Num range = this.add(new Setting.Num("range", "Дальность", 48.0, 8.0, 128.0, 4.0, " бл"));
+    public final Setting.Bool outline = this.add(new Setting.Bool("outline", "Обводка", true));
+    public final Setting.Mode style;
+    public final Setting.Num corner;
+    public final Setting.Num width;
+    public final Setting.Mode colourMode;
+    public final Setting.Colour colourA;
+    public final Setting.Bool gradient;
+    public final Setting.Colour colourB;
+    public final Setting.Bool hover;
+    public final Setting.Colour hoverColour;
+    public final Setting.Bool flash;
+    public final Setting.Colour flashColour;
+    public final Setting.Bool glow;
+    public final Setting.Mode glowMode;
+    public final Setting.Bool fill;
+    public final Setting.Mode fillType;
+    public final Setting.Num fillAlpha;
+    private static final int[][] EDGES =
+            new int[][] {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}
+            };
 
     public Hitboxes() {
         super(
@@ -92,6 +71,44 @@ public final class Hitboxes extends Module {
                 "Чёткие рамки сущностей: углы, градиент, свечение и заливка",
                 Category.PLAYERS,
                 false);
+        Setting.Mode var10001 = (Setting.Mode)
+                this.add(new Setting.Mode("style", "Вид обводки", "Полная", new String[] {"Полная", "Углы"}));
+        Setting.Bool var10002 = this.outline;
+        this.style = (Setting.Mode) var10001.showIf(var10002::on);
+        this.corner = (Setting.Num) (this.add(new Setting.Num("corner", "Длина углов", 0.25, 0.05, 0.45, 0.05, "")))
+                .showIf(() -> this.outline.on() && this.style.is("Углы"));
+        Setting.Num var1 = this.add(new Setting.Num("width2", "Толщина", 2.0, 0.5, 5.0, 0.5, " px"));
+        var10002 = this.outline;
+        this.width = (Setting.Num) var1.showIf(var10002::on);
+        this.colourMode = this.add(new Setting.Mode(
+                "colour_mode", "Окраска", "Тема", new String[] {"Тема", "Свой", "Здоровье", "Радуга"}));
+        this.colourA = (this.add(new Setting.Colour("colour_a", "Цвет", false, -4160260)))
+                .showIf(() -> this.colourMode.is("Свой"));
+        this.gradient = (this.add(new Setting.Bool("gradient", "Градиент", true)))
+                .showIf(() -> !this.colourMode.is("Здоровье"));
+        this.colourB = (Setting.Colour) (this.add(new Setting.Colour("colour_b", "Цвет градиента", false, -14494738)))
+                .showIf(() -> this.gradient.on() && this.colourMode.is("Свой"));
+        this.hover = this.add(new Setting.Bool("hover", "Цвет при наведении", true));
+        Setting.Colour var2 = this.add(new Setting.Colour("hover_colour", "Цвет наведения", false, -50354));
+        var10002 = this.hover;
+        this.hoverColour = (Setting.Colour) var2.showIf(var10002::on);
+        this.flash = this.add(new Setting.Bool("flash", "Вспышка при ударе", true));
+        var2 = this.add(new Setting.Colour("flash_colour", "Цвет вспышки", false, -1));
+        var10002 = this.flash;
+        this.flashColour = (Setting.Colour) var2.showIf(var10002::on);
+        this.glow = this.add(new Setting.Bool("glow", "Свечение", true));
+        Setting.Mode var4 = this.add(
+                new Setting.Mode("glow_mode", "Сила свечения", "Обычное", new String[] {"Обычное", "Сильное"}));
+        var10002 = this.glow;
+        this.glowMode = (Setting.Mode) var4.showIf(var10002::on);
+        this.fill = this.add(new Setting.Bool("fill", "Заливка", false));
+        var4 = this.add(
+                new Setting.Mode("fill_type", "Тип заливки", "Прозрачная", new String[] {"Прозрачная", "Переливание"}));
+        var10002 = this.fill;
+        this.fillType = (Setting.Mode) var4.showIf(var10002::on);
+        Setting.Num var6 = this.add(new Setting.Num("fill_alpha", "Плотность заливки", 22.0, 5.0, 70.0, 1.0, "%"));
+        var10002 = this.fill;
+        this.fillAlpha = (Setting.Num) var6.showIf(var10002::on);
     }
 
     private static Minecraft mc() {
@@ -99,74 +116,129 @@ public final class Hitboxes extends Module {
     }
 
     private boolean wants(Entity e) {
-        if (e == mc().player || e.isRemoved() || (e.isInvisible() && !(e instanceof ItemEntity))) return false;
-        if (e instanceof Avatar) return players.on() && !e.isSpectator();
-        if (e instanceof ItemEntity) return items.on();
-        if (!(e instanceof LivingEntity)) return false;
-        return e instanceof Enemy ? mobs.on() : animals.on();
+        if (e != mc().player && !e.isRemoved() && (!e.isInvisible() || e instanceof ItemEntity)) {
+            if (!(e instanceof Avatar)) {
+                if (e instanceof ItemEntity) {
+                    return this.items.on();
+                } else if (!(e instanceof LivingEntity)) {
+                    return false;
+                } else {
+                    return e instanceof Enemy ? this.mobs.on() : this.animals.on();
+                }
+            } else {
+                return this.players.on() && !e.isSpectator();
+            }
+        } else {
+            return false;
+        }
     }
 
     private int colour(Entity e, float t, float time, int index) {
         int c;
-        switch (colourMode.get()) {
-            case "Свой" ->
-                c = gradient.on()
-                        ? Paint.lerp(colourA.argb() | 0xFF000000, colourB.argb() | 0xFF000000, t)
-                        : colourA.argb() | 0xFF000000;
-            case "Радуга" ->
-                c = Paint.hsv(Paint.frac(index * .13f + time * .12f + (gradient.on() ? t * .35f : 0)), .65f, 1);
-            case "Здоровье" -> {
-                float hp = e instanceof LivingEntity l ? Health.of(l).fraction() : 1;
-                c = hp > .5f
-                        ? Paint.lerp(0xFFFACC15, 0xFF4ADE80, (hp - .5f) * 2)
-                        : Paint.lerp(0xFFF43F5E, 0xFFFACC15, hp * 2);
-            }
-            default ->
-                c = gradient.on()
+        switch ((String) this.colourMode.get()) {
+            case "Свой":
+                c = this.gradient.on()
+                        ? Paint.lerp(this.colourA.argb() | 0xFF000000, this.colourB.argb() | 0xFF000000, t)
+                        : this.colourA.argb() | 0xFF000000;
+                break;
+            case "Радуга":
+                c = Paint.hsv(
+                        Paint.frac((float) index * 0.13F + time * 0.12F + (this.gradient.on() ? t * 0.35F : 0.0F)),
+                        0.65F,
+                        1.0F);
+                break;
+            case "Здоровье":
+                float var10000;
+                if (e instanceof LivingEntity l) {
+                    var10000 = Health.of(l).fraction();
+                } else {
+                    var10000 = 1.0F;
+                }
+
+                float hp = var10000;
+                c = hp > 0.5F
+                        ? Paint.lerp(-340971, -11870592, (hp - 0.5F) * 2.0F)
+                        : Paint.lerp(-770210, -340971, hp * 2.0F);
+                break;
+            default:
+                c = this.gradient.on()
                         ? Paint.lerp(Theme.accent() | 0xFF000000, Theme.accent2() | 0xFF000000, t)
                         : Theme.accent() | 0xFF000000;
         }
-        if (hover.on() && e == mc().crosshairPickEntity) c = Paint.lerp(c, hoverColour.argb() | 0xFF000000, .85f);
-        if (flash.on() && e instanceof LivingEntity l && l.hurtTime > 0)
-            c = Paint.lerp(c, flashColour.argb() | 0xFF000000, l.hurtTime / 10f);
+
+        if (this.hover.on() && e == mc().crosshairPickEntity) {
+            c = Paint.lerp(c, this.hoverColour.argb() | 0xFF000000, 0.85F);
+        }
+
+        if (this.flash.on() && e instanceof LivingEntity l) {
+            if (l.hurtTime > 0) {
+                c = Paint.lerp(c, this.flashColour.argb() | 0xFF000000, (float) l.hurtTime / 10.0F);
+            }
+        }
+
         return c;
     }
 
-    private record Box(Entity e, AABB b, int index) {}
-
     public void render(WorldRenderContext ctx, Vec3 cam, float pt) {
-        if (mc().level == null || mc().player == null) return;
-        double r2 = range.get() * range.get();
-        List<Box> boxes = new ArrayList<>();
-        int index = 0;
-        for (Entity e : mc().level.entitiesForRendering()) {
-            if (!wants(e) || e.distanceToSqr(mc().player) > r2) continue;
-            double x = e.xo + (e.getX() - e.xo) * pt,
-                    y = e.yo + (e.getY() - e.yo) * pt,
-                    z = e.zo + (e.getZ() - e.zo) * pt;
-            boxes.add(new Box(e, e.getBoundingBox().move(x - e.getX(), y - e.getY(), z - e.getZ()), index++));
-        }
-        if (boxes.isEmpty()) return;
-        PoseStack.Pose pose = ctx.matrices().last();
-        float time = Theme.animations ? (System.nanoTime() % 1_000_000_000_000L) / 1e9f : 0;
-        double fov = Math.toRadians(mc().options.fov().get());
-        float perPx =
-                (float) (2 * Math.tan(fov / 2) / Math.max(1, mc().getWindow().getHeight()));
-        boolean top = walls.on();
+        if (mc().level != null && mc().player != null) {
+            double r2 = (Double) this.range.get() * (Double) this.range.get();
+            List<Box> boxes = new ArrayList<>();
+            int index = 0;
 
-        // one buffer at a time: fills and lines share the translucent type, the glow uses the additive one
-        VertexConsumer solid = ctx.consumers().getBuffer(Fx.solid(top));
-        for (Box b : boxes) {
-            if (fill.on()) fill(solid, pose, cam, b, time);
-            if (outline.on()) edges(solid, pose, cam, b, time, perPx, width.f(), 1, false);
-        }
-        if (glow.on() && outline.on()) {
-            VertexConsumer g =
-                    ctx.consumers().getBuffer(top ? Fx.typeOnTop(Fx.Tex.LINE_GLOW) : Fx.type(Fx.Tex.LINE_GLOW, true));
-            boolean strong = glowMode.is("Сильное");
-            for (Box b : boxes) {
-                edges(g, pose, cam, b, time, perPx, width.f() * (strong ? 7 : 4.5f) + 4, strong ? .6f : .28f, true);
-                if (strong) edges(g, pose, cam, b, time, perPx, width.f() * 14 + 8, .3f, true);
+            for (Entity e : mc().level.entitiesForRendering()) {
+                if (this.wants(e) && !(e.distanceToSqr((Entity) mc().player) > r2)) {
+                    double x = e.xo + (e.getX() - e.xo) * (double) pt;
+                    double y = e.yo + (e.getY() - e.yo) * (double) pt;
+                    double z = e.zo + (e.getZ() - e.zo) * (double) pt;
+                    boxes.add(new Box(e, e.getBoundingBox().move(x - e.getX(), y - e.getY(), z - e.getZ()), index++));
+                }
+            }
+
+            if (!boxes.isEmpty()) {
+                PoseStack.Pose pose = ctx.matrices().last();
+                float time = Theme.animations ? (float) (System.nanoTime() % 1000000000000L) / 1.0E9F : 0.0F;
+                double fov =
+                        Math.toRadians((double) (Integer) mc().options.fov().get());
+                float perPx = (float) (2.0
+                        * Math.tan(fov / 2.0)
+                        / (double) Math.max(1, mc().getWindow().getHeight()));
+                VertexConsumer solid = ctx.consumers().getBuffer(Fx.solid(false));
+
+                for (Box b : boxes) {
+                    if (this.fill.on()) {
+                        this.fill(solid, pose, cam, b, time);
+                    }
+
+                    if (this.outline.on()) {
+                        this.edges(solid, pose, cam, b, time, perPx, this.width.f(), 1.0F, false);
+                    }
+                }
+
+                if (this.glow.on() && this.outline.on()) {
+                    VertexConsumer g = ctx.consumers().getBuffer(Fx.type(Fx.Tex.LINE_GLOW, true));
+                    boolean strong = this.glowMode.is("Сильное");
+
+                    for (Box b : boxes) {
+                        double dist = b.b.getCenter().distanceTo(cam);
+                        float near = 1.0F - (float) Math.max(0.0, Math.min(1.0, (dist - 14.0) / 18.0));
+                        if (!(near <= 0.01F)) {
+                            this.edges(
+                                    g,
+                                    pose,
+                                    cam,
+                                    b,
+                                    time,
+                                    perPx,
+                                    this.width.f() * (strong ? 7.0F : 4.5F) + 4.0F,
+                                    (strong ? 0.6F : 0.28F) * near,
+                                    true);
+                            if (strong) {
+                                this.edges(
+                                        g, pose, cam, b, time, perPx, this.width.f() * 14.0F + 8.0F, 0.3F * near, true);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -184,10 +256,6 @@ public final class Hitboxes extends Module {
         };
     }
 
-    private static final int[][] EDGES = {
-        {0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}
-    };
-
     private void edges(
             VertexConsumer vc,
             PoseStack.Pose pose,
@@ -199,17 +267,19 @@ public final class Hitboxes extends Module {
             float strength,
             boolean glowPass) {
         Vec3[] p = corners(box.b);
-        double h = Math.max(1e-3, box.b.maxY - box.b.minY);
-        boolean corners = style.is("Углы");
+        double h = Math.max(0.001, box.b.maxY - box.b.minY);
+        boolean corners = this.style.is("Углы");
+
         for (int[] edge : EDGES) {
-            Vec3 a = p[edge[0]], b = p[edge[1]];
+            Vec3 a = p[edge[0]];
+            Vec3 b = p[edge[1]];
             if (!corners) {
-                segment(vc, pose, cam, box, a, b, h, time, perPx, px, strength, glowPass);
-                continue;
+                this.segment(vc, pose, cam, box, a, b, h, time, perPx, px, strength, glowPass);
+            } else {
+                double k = (Double) this.corner.get();
+                this.segment(vc, pose, cam, box, a, a.lerp(b, k), h, time, perPx, px, strength, glowPass);
+                this.segment(vc, pose, cam, box, b.lerp(a, k), b, h, time, perPx, px, strength, glowPass);
             }
-            double k = corner.get();
-            segment(vc, pose, cam, box, a, a.lerp(b, k), h, time, perPx, px, strength, glowPass);
-            segment(vc, pose, cam, box, b.lerp(a, k), b, h, time, perPx, px, strength, glowPass);
         }
     }
 
@@ -226,59 +296,78 @@ public final class Hitboxes extends Module {
             float px,
             float strength,
             boolean glowPass) {
-        Vec3 ra = a.subtract(cam), rb = b.subtract(cam), dir = rb.subtract(ra);
-        Vec3 mid = ra.add(rb).scale(.5);
+        Vec3 ra = a.subtract(cam);
+        Vec3 rb = b.subtract(cam);
+        Vec3 dir = rb.subtract(ra);
+        Vec3 mid = ra.add(rb).scale(0.5);
         Vec3 side = dir.cross(mid);
-        if (side.lengthSqr() < 1e-12) return;
-        double halfA = Math.max(.003, ra.length() * perPx * px / 2),
-                halfB = Math.max(.003, rb.length() * perPx * px / 2);
-        side = side.normalize();
-        int ca = colour(box.e, (float) ((a.y - box.b.minY) / h), time, box.index),
-                cb = colour(box.e, (float) ((b.y - box.b.minY) / h), time, box.index);
-        if (glowPass) {
-            ca = Fx.pm(Px(ca, strength));
-            cb = Fx.pm(Px(cb, strength));
+        if (!(side.lengthSqr() < 1.0E-12)) {
+            double cap = Math.min(box.b.getXsize(), box.b.getYsize()) * (glowPass ? 0.12 : 0.035);
+            double halfA = Math.min(cap, Math.max(0.002, ra.length() * (double) perPx * (double) px / 2.0));
+            double halfB = Math.min(cap, Math.max(0.002, rb.length() * (double) perPx * (double) px / 2.0));
+            side = side.normalize();
+            int ca = this.colour(box.e, (float) ((a.y - box.b.minY) / h), time, box.index);
+            int cb = this.colour(box.e, (float) ((b.y - box.b.minY) / h), time, box.index);
+            if (glowPass) {
+                ca = Fx.pm(Px(ca, strength));
+                cb = Fx.pm(Px(cb, strength));
+            }
+
+            Vec3 ext = dir.normalize();
+            Vec3 a0 = ra.subtract(ext.scale(glowPass ? 0.0 : halfA));
+            Vec3 b0 = rb.add(ext.scale(glowPass ? 0.0 : halfB));
+            Vec3 sa = side.scale(halfA);
+            Vec3 sb = side.scale(halfB);
+            Fx.v(vc, pose, (float) (a0.x + sa.x), (float) (a0.y + sa.y), (float) (a0.z + sa.z), 0.0F, 0.0F, ca);
+            Fx.v(vc, pose, (float) (a0.x - sa.x), (float) (a0.y - sa.y), (float) (a0.z - sa.z), 0.0F, 1.0F, ca);
+            Fx.v(vc, pose, (float) (b0.x - sb.x), (float) (b0.y - sb.y), (float) (b0.z - sb.z), 1.0F, 1.0F, cb);
+            Fx.v(vc, pose, (float) (b0.x + sb.x), (float) (b0.y + sb.y), (float) (b0.z + sb.z), 1.0F, 0.0F, cb);
         }
-        // stretch the ends by half a width so neighbouring edges meet without gaps
-        Vec3 ext = dir.normalize();
-        Vec3 a0 = ra.subtract(ext.scale(glowPass ? 0 : halfA)), b0 = rb.add(ext.scale(glowPass ? 0 : halfB));
-        Vec3 sa = side.scale(halfA), sb = side.scale(halfB);
-        Fx.v(vc, pose, (float) (a0.x + sa.x), (float) (a0.y + sa.y), (float) (a0.z + sa.z), 0, 0, ca);
-        Fx.v(vc, pose, (float) (a0.x - sa.x), (float) (a0.y - sa.y), (float) (a0.z - sa.z), 0, 1, ca);
-        Fx.v(vc, pose, (float) (b0.x - sb.x), (float) (b0.y - sb.y), (float) (b0.z - sb.z), 1, 1, cb);
-        Fx.v(vc, pose, (float) (b0.x + sb.x), (float) (b0.y + sb.y), (float) (b0.z + sb.z), 1, 0, cb);
     }
 
     private static int Px(int c, float a) {
-        return (Math.round(Math.max(0, Math.min(1, a)) * 255) << 24) | (c & 0xFFFFFF);
+        return Math.round(Math.max(0.0F, Math.min(1.0F, a)) * 255.0F) << 24 | c & 0xFFFFFF;
     }
 
     private void fill(VertexConsumer vc, PoseStack.Pose pose, Vec3 cam, Box box, float time) {
         Vec3[] p = corners(box.b);
-        double h = Math.max(1e-3, box.b.maxY - box.b.minY);
-        float alpha = fillAlpha.f() / 100f;
-        boolean flow = fillType.is("Переливание");
+        double h = Math.max(0.001, box.b.maxY - box.b.minY);
+        float alpha = this.fillAlpha.f() / 100.0F;
+        boolean flow = this.fillType.is("Переливание");
         int bands = flow ? 10 : 1;
-        int[][] sides = {{0, 1, 5, 4}, {1, 2, 6, 5}, {2, 3, 7, 6}, {3, 0, 4, 7}};
-        for (int[] f : sides)
-            for (int i = 0; i < bands; i++) {
-                float t0 = i / (float) bands, t1 = (i + 1) / (float) bands;
-                Vec3 a = p[f[0]].lerp(p[f[3]], t0),
-                        b = p[f[1]].lerp(p[f[2]], t0),
-                        c = p[f[1]].lerp(p[f[2]], t1),
-                        d = p[f[0]].lerp(p[f[3]], t1);
-                int c0 = fillColour(box, t0, time, alpha, flow), c1 = fillColour(box, t1, time, alpha, flow);
+        int[][] sides = new int[][] {{0, 1, 5, 4}, {1, 2, 6, 5}, {2, 3, 7, 6}, {3, 0, 4, 7}};
+
+        for (int[] f : sides) {
+            for (int i = 0; i < bands; ++i) {
+                float t0 = (float) i / (float) bands;
+                float t1 = (float) (i + 1) / (float) bands;
+                Vec3 a = p[f[0]].lerp(p[f[3]], (double) t0);
+                Vec3 b = p[f[1]].lerp(p[f[2]], (double) t0);
+                Vec3 c = p[f[1]].lerp(p[f[2]], (double) t1);
+                Vec3 d = p[f[0]].lerp(p[f[3]], (double) t1);
+                int c0 = this.fillColour(box, t0, time, alpha, flow);
+                int c1 = this.fillColour(box, t1, time, alpha, flow);
                 quad(vc, pose, cam, a, b, c, d, c0, c0, c1, c1);
             }
-        int cTop = fillColour(box, 1, time, alpha, flow), cBot = fillColour(box, 0, time, alpha, flow);
+        }
+
+        int cTop = this.fillColour(box, 1.0F, time, alpha, flow);
+        int cBot = this.fillColour(box, 0.0F, time, alpha, flow);
         quad(vc, pose, cam, p[4], p[5], p[6], p[7], cTop, cTop, cTop, cTop);
         quad(vc, pose, cam, p[0], p[1], p[2], p[3], cBot, cBot, cBot, cBot);
     }
 
     private int fillColour(Box box, float t, float time, float alpha, boolean flow) {
         float a = alpha;
-        if (flow) a *= .45f + .55f * (float) (.5 + .5 * Math.sin((t * 2.2 - time * 1.6) * Math.PI));
-        return Px(colour(box.e, t, time, box.index), a);
+        if (flow) {
+            a = alpha
+                    * (0.45F
+                            + 0.55F
+                                    * (float)
+                                            (0.5 + 0.5 * Math.sin(((double) t * 2.2 - (double) time * 1.6) * Math.PI)));
+        }
+
+        return Px(this.colour(box.e, t, time, box.index), a);
     }
 
     private static void quad(
@@ -293,11 +382,22 @@ public final class Hitboxes extends Module {
             int cb,
             int cc,
             int cd) {
-        Vec3[] q = {a, b, c, d};
-        int[] col = {ca, cb, cc, cd};
-        for (int i = 0; i < 4; i++) {
+        Vec3[] q = new Vec3[] {a, b, c, d};
+        int[] col = new int[] {ca, cb, cc, cd};
+
+        for (int i = 0; i < 4; ++i) {
             Vec3 r = q[i].subtract(cam);
-            Fx.v(vc, pose, (float) r.x, (float) r.y, (float) r.z, i == 0 || i == 3 ? 0 : 1, i < 2 ? 0 : 1, col[i]);
+            Fx.v(
+                    vc,
+                    pose,
+                    (float) r.x,
+                    (float) r.y,
+                    (float) r.z,
+                    i != 0 && i != 3 ? 1.0F : 0.0F,
+                    i < 2 ? 0.0F : 1.0F,
+                    col[i]);
         }
     }
+
+    private static record Box(Entity e, AABB b, int index) {}
 }

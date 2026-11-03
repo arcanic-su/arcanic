@@ -24,35 +24,68 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.spongepowered.asm.mixin.*;
-import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(TitleScreen.class)
+@Mixin({TitleScreen.class})
 public abstract class TitleScreenMixin extends Screen {
     @Unique
-    private FrontEndMenu arcanic$menu;
+    private FrontEndMenu arcanicvisuals$menu;
 
     protected TitleScreenMixin(Component title) {
         super(title);
     }
 
-    @Inject(method = "init()V", at = @At("RETURN"))
-    private void arcanic$init(CallbackInfo ci) {
-        List<AbstractButton> actions = children().stream()
-                .filter(c -> c instanceof AbstractButton)
-                .map(c -> (AbstractButton) c)
+    @Inject(
+            method = {"init()V"},
+            at = {@At("RETURN")})
+    private void arcanicvisuals$init(CallbackInfo ci) {
+        List<AbstractButton> actions = this.children().stream()
+                .filter((c) -> c instanceof AbstractButton)
+                .map((c) -> (AbstractButton) c)
                 .toList();
-        clearWidgets();
-        arcanic$menu = new FrontEndMenu(this, actions, button -> addRenderableWidget(button));
+        this.clearWidgets();
+        this.arcanicvisuals$menu = new FrontEndMenu(this, actions, (button) -> this.addRenderableWidget(button));
     }
 
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private void arcanic$render(GuiGraphics g, int mx, int my, float delta, CallbackInfo ci) {
-        if (arcanic$menu != null) {
-            arcanic$menu.render(g, mx, my, delta);
+    @Inject(
+            method = {"render"},
+            at = {@At("HEAD")},
+            cancellable = true)
+    private void arcanicvisuals$render(GuiGraphics g, int mx, int my, float delta, CallbackInfo ci) {
+        if (this.arcanicvisuals$menu != null) {
+            this.arcanicvisuals$menu.render(g, mx, my, delta);
             ci.cancel();
         }
+    }
+
+    @Inject(
+            method = {"mouseClicked"},
+            at = {@At("HEAD")},
+            cancellable = true)
+    private void arcanicvisuals$press(MouseButtonEvent e, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
+        if (this.arcanicvisuals$menu != null && this.arcanicvisuals$menu.pressed()) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(
+            method = {"mouseClicked"},
+            at = {@At("RETURN")})
+    private void arcanicvisuals$missed(MouseButtonEvent e, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
+        if (this.arcanicvisuals$menu != null && e.button() == 0 && !cir.getReturnValueZ()) {
+            this.arcanicvisuals$menu.missed(e.x(), e.y());
+        }
+    }
+
+    public boolean keyPressed(KeyEvent e) {
+        return this.arcanicvisuals$menu != null && this.arcanicvisuals$menu.key(e.key()) ? true : super.keyPressed(e);
     }
 }

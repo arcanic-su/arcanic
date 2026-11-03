@@ -19,9 +19,7 @@
 package net.arcanic.visuals.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import net.arcanic.visuals.arc.*;
-import net.arcanic.visuals.core.Modules;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -53,18 +51,18 @@ public abstract class MeleeThirdPersonMixin {
             SubmitNodeCollector queue,
             int light,
             CallbackInfo callback) {
-        if (Modules.KNIVES.rendersThirdPerson(item)) {
+        if (MeleeSkins.renderingThirdPerson(item) != null) {
             Minecraft client = Minecraft.getInstance();
             AbstractClientPlayer player = client.player;
             if (player != null && player.getId() == state.id) {
                 AvatarRenderer<?> renderer = client.getEntityRenderDispatcher().getPlayerRenderer(player);
                 if (renderer != null) {
                     matrices.pushPose();
-                    ((PlayerModel) renderer.getModel()).translateToHand(state, arm, matrices);
-                    matrices.mulPose(Axis.XP.rotationDegrees(-90.0F));
-                    matrices.mulPose(Axis.YP.rotationDegrees(180.0F));
-                    boolean rendered =
-                            MeleeRenderer.getInstance().renderThirdPerson(player, arm, matrices, queue, light);
+                    // the skin is placed in the arm's own space (renderThirdPerson)
+                    PlayerModel skin = (PlayerModel) renderer.getModel();
+                    skin.translateToHand(state, arm, matrices);
+                    boolean rendered = MeleeRenderer.getInstance()
+                            .renderThirdPerson(player, item, state, skin, arm, matrices, queue, light);
                     matrices.popPose();
                     if (rendered) {
                         callback.cancel();

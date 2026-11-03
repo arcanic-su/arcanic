@@ -20,56 +20,84 @@ package net.arcanic.visuals.core;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 
-/** The menu's own sounds (assets/arcanicvisuals/sounds/ui/*.ogg). */
 public final class UiSound {
-    private UiSound() {}
-
     private static final Map<String, SoundEvent> EVENTS = new HashMap<>();
     private static final Map<String, Long> LAST = new HashMap<>();
+    private static final Random JITTER = new Random();
     public static long lastAny;
 
+    private UiSound() {}
+
     public static void play(String name) {
-        play(name, 1, 1);
+        play(name, 1.0F, 1.0F);
     }
 
     public static void play(String name, float pitch, float volume) {
-        lastAny++;
+        ++lastAny;
         MenuPrefs p = Modules.PREFS;
-        if (!p.sounds.on() || p.volume.get() <= 0) return;
-        if ((name.equals("hover") && !p.hoverSounds.on()) || (name.equals("tick") && !p.sliderSounds.on())) return;
-        long now = System.currentTimeMillis();
-        long gap =
+        if (p.sounds.on() && !((Double) p.volume.get() <= 0.0)) {
+            if ((!name.endsWith("hover") || p.hoverSounds.on()) && (!name.equals("tick") || p.sliderSounds.on())) {
+                long now = System.currentTimeMillis();
+                long var10000;
                 switch (name) {
-                    case "hover" -> 45;
-                    case "tick" -> 26;
-                    case "type" -> 18;
-                    default -> 35;
-                };
-        Long last = LAST.get(name);
-        if (last != null && now - last < gap) return;
-        LAST.put(name, now);
-        SoundEvent ev = EVENTS.computeIfAbsent(
-                name,
-                n -> SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("arcanicvisuals", "ui." + n)));
-        float base =
-                switch (name) {
-                    case "hover" -> .35f;
-                    case "tick" -> .5f;
-                    case "type" -> .45f;
-                    case "open", "close" -> .8f;
-                    default -> .7f;
-                };
-        float vol = (float) (p.volume.get() / 100.0) * base * volume;
-        try {
-            Minecraft.getInstance()
-                    .getSoundManager()
-                    .play(SimpleSoundInstance.forUI(ev, Math.max(.5f, Math.min(2f, pitch)), vol));
-        } catch (RuntimeException ignored) {
+                    case "hover" -> var10000 = 45L;
+                    case "tick" -> var10000 = 26L;
+                    case "type" -> var10000 = 18L;
+                    default -> var10000 = 35L;
+                }
+
+                long gap = var10000;
+                Long last = (Long) LAST.get(name);
+                if (last == null || now - last >= gap) {
+                    LAST.put(name, now);
+                    SoundEvent ev = (SoundEvent) EVENTS.computeIfAbsent(
+                            name,
+                            (n) -> SoundEvent.createVariableRangeEvent(
+                                    Identifier.fromNamespaceAndPath("arcanicvisuals", "ui." + n)));
+                    float var15;
+                    switch (name) {
+                        case "hover":
+                            var15 = 0.35F;
+                            break;
+                        case "tick":
+                            var15 = 0.5F;
+                            break;
+                        case "type":
+                            var15 = 0.45F;
+                            break;
+                        case "open":
+                        case "close":
+                        case "unlock":
+                            var15 = 0.8F;
+                            break;
+                        default:
+                            var15 = 0.7F;
+                    }
+
+                    float base = var15;
+                    float vol = (float) ((Double) p.volume.get() / 100.0) * base * volume;
+                    if (name.equals("click")
+                            || name.equals("hover")
+                            || name.equals("tick")
+                            || name.equals("type")
+                            || name.equals("tab")) {
+                        pitch *= 1.0F + (JITTER.nextFloat() - 0.5F) * 0.07F;
+                    }
+
+                    try {
+                        Minecraft.getInstance()
+                                .getSoundManager()
+                                .play(SimpleSoundInstance.forUI(ev, Math.max(0.5F, Math.min(2.0F, pitch)), vol));
+                    } catch (RuntimeException ignored) {
+                    }
+                }
+            }
         }
     }
 }

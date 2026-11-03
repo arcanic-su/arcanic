@@ -22,19 +22,28 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.nio.ByteBuffer;
 import net.arcanic.visuals.core.Modules;
+import net.arcanic.visuals.fx.CustomFog;
+import net.arcanic.visuals.fx.NoRender;
+import net.arcanic.visuals.fx.ShaderSky;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.fog.FogRenderer;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Atmosphere: tints the fog colour (which also colours the distance and the clear colour). */
-@Mixin(FogRenderer.class)
+@Mixin({FogRenderer.class})
 public abstract class FogRendererMixin {
-    @Inject(method = "computeFogColor", at = @At("RETURN"), require = 0)
+    @Unique
+    private static final Vector4f arcanicvisuals$noFogColour = new Vector4f(0.0F);
+
+    @Inject(
+            method = {"computeFogColor"},
+            at = {@At("RETURN")},
+            require = 0)
     private void arcanicvisuals$tintFog(
             Camera camera,
             float partialTick,
@@ -42,24 +51,20 @@ public abstract class FogRendererMixin {
             int renderDistance,
             float darken,
             CallbackInfoReturnable<Vector4f> cir) {
-        Vector4f v = cir.getReturnValue();
-        if (v == null) return;
-        if (Modules.WORLD.fogOn()) {
-            float[] c = Modules.WORLD.fogColour();
-            v.set(c[0], c[1], c[2], v.w);
-            return;
+        Vector4f v = (Vector4f) cir.getReturnValue();
+        if (v != null && Modules.CUSTOM_FOG.active()) {
+            Modules.CUSTOM_FOG.tint(v);
         }
-        float[] c = Modules.ATMOS.apply(v.x, v.y, v.z, false);
-        if (c != null) v.set(c[0], c[1], c[2], v.w);
     }
 
     @WrapOperation(
-            method = "setupFog",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/renderer/fog/FogRenderer;updateBuffer(Ljava/nio/ByteBuffer;ILorg/joml/Vector4f;FFFFFF)V"))
+            method = {"setupFog"},
+            at = {
+                @At(
+                        value = "INVOKE",
+                        target =
+                                "Lnet/minecraft/client/renderer/fog/FogRenderer;updateBuffer(Ljava/nio/ByteBuffer;ILorg/joml/Vector4f;FFFFFF)V")
+            })
     private void arcanicvisuals$fogDistance(
             FogRenderer self,
             ByteBuffer buffer,
@@ -72,13 +77,21 @@ public abstract class FogRendererMixin {
             float skyEnd,
             float cloudEnd,
             Operation<Void> op) {
-        var w = Modules.WORLD;
-        if (w.fogOn()) {
-            envStart = w.fogStart.f();
-            envEnd = Math.max(envStart + 1, w.fogEnd.f());
-            renderStart = Math.min(renderStart, envStart);
-            renderEnd = Math.min(renderEnd, envEnd);
+        CustomFog fog = Modules.CUSTOM_FOG;
+        if (NoRender.hides(Modules.NO_RENDER.fog)) {
+            envStart = renderStart = envEnd = renderEnd = Float.MAX_VALUE;
+        } else if (fog.active()) {
+            colour = new Vector4f(colour);
+            fog.tint(colour);
+            if (fog.customRange.on()) {
+                renderStart = 0.0F;
+                envStart = 0.0F;
+                envEnd = renderEnd = skyEnd = cloudEnd = fog.fogEnd.f();
+            }
         }
-        op.call(self, buffer, offset, colour, envStart, envEnd, renderStart, renderEnd, skyEnd, cloudEnd);
+
+        ShaderSky.captureFog(envStart, envEnd, skyEnd, colour);
+        op.call(new Object[] {self, buffer, offset, colour, envStart, envEnd, renderStart, renderEnd, skyEnd, cloudEnd
+        });
     }
 }

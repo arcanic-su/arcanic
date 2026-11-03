@@ -18,36 +18,44 @@
  */
 package net.arcanic.visuals.hud;
 
-/** One reveal per connection; its clock starts at the first visible world frame. */
 final class IslandIntro {
     private boolean pending;
-    private long started = -1;
+    private long started = -1L;
 
     void queue() {
-        pending = true;
-        started = -1;
+        this.pending = true;
+        this.started = -1L;
     }
 
     void reset() {
-        pending = false;
-        started = -1;
+        this.pending = false;
+        this.started = -1L;
+    }
+
+    boolean waiting() {
+        return this.pending;
     }
 
     float seconds(long now, boolean visible, boolean animated) {
         if (!animated) {
-            reset();
-            return 10;
+            this.reset();
+            return 10.0F;
+        } else {
+            if (this.pending && visible) {
+                this.pending = false;
+                this.started = now;
+            }
+
+            if (this.pending) {
+                return 0.0F;
+            } else {
+                return this.started < 0L ? 10.0F : Math.max(0.0F, (float) (now - this.started) / 1.0E9F);
+            }
         }
-        if (pending && visible) {
-            pending = false;
-            started = now;
-        }
-        if (pending) return 0;
-        return started < 0 ? 10 : Math.max(0, (now - started) / 1_000_000_000f);
     }
 
     static float stage(float seconds, float delay, float duration) {
-        float t = Math.max(0, Math.min(1, (seconds - delay) / duration));
-        return t * t * (3 - 2 * t);
+        float t = Math.max(0.0F, Math.min(1.0F, (seconds - delay) / duration));
+        return t * t * (3.0F - 2.0F * t);
     }
 }

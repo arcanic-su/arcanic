@@ -18,19 +18,35 @@
  */
 package net.arcanic.visuals.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import net.arcanic.visuals.core.Modules;
+import net.arcanic.visuals.fx.Ambience;
+import net.arcanic.visuals.fx.WorldPlus;
 import net.minecraft.client.renderer.LightTexture;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** World Tweaker Lighting: raises the lightmap's gamma, up to almost full bright. */
-@Mixin(LightTexture.class)
+@Mixin({LightTexture.class})
 public abstract class LightTextureMixin {
-    @ModifyExpressionValue(
-            method = "updateLightTexture",
-            at = @At(value = "INVOKE", target = "Ljava/lang/Double;floatValue()F", ordinal = 1))
-    private float arcanicvisuals$gamma(float gamma) {
-        return Modules.WORLD.gamma(gamma);
+    @ModifyArg(
+            require = 0,
+            method = {"updateLightTexture"},
+            at = {
+                @At(
+                        value = "INVOKE",
+                        target =
+                                "Lcom/mojang/blaze3d/buffers/Std140Builder;putFloat(F)Lcom/mojang/blaze3d/buffers/Std140Builder;",
+                        ordinal = 3)
+            })
+    private float arcanicvisuals$fullbright(float nightVision) {
+        return WorldPlus.Fullbright.nightVision(nightVision);
+    }
+
+    @Inject(
+            method = {"updateLightTexture"},
+            at = {@At("TAIL")})
+    private void arcanicvisuals$night(float partialTick, CallbackInfo ci) {
+        Ambience.tintLightmap(((LightTexture) (Object) this).getTextureView());
     }
 }

@@ -26,6 +26,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -85,16 +86,75 @@ public abstract class MeleeHandMixin {
             CallbackInfo callback) {
         if (!player.isScoping()) {
             var knives = Modules.KNIVES;
-            if (knives.hidesEmptyMainHand(player, hand, item)) {
+            var guns = Modules.GUNS;
+            MeleeSkins skins = MeleeSkins.rendering(item);
+            if (knives.hidesEmptyMainHand(player, hand, item) || guns.hidesEmptyMainHand(player, hand, item)) {
                 callback.cancel();
-            } else if (knives.rendersFirstPerson(item)) {
-                // the knife's own draw animation replaces vanilla's lowering; other items still lower when switched
-                float retireProgress = knives.holdsSkinned(hand) ? 0.0F : equipProgress;
+            } else if (guns.hidesOtherHandItem(player, hand, item)) {
+                callback.cancel(); // the gun takes both hands
+            } else if (skins != null) {
+                // the skin's own draw animation replaces vanilla's lowering; other items still lower when switched
+                float retireProgress = skins.holdsSkinned(hand) ? 0.0F : equipProgress;
                 if (MeleeRenderer.getInstance().renderFirstPerson(player, hand, matrices, queue, light, retireProgress))
                     callback.cancel();
             } else if (knives.attachesHandItem(player, hand, item)) {
                 if (MeleeRenderer.getInstance().deferHandItem(item, equipProgress)) callback.cancel();
             }
         }
+    }
+
+    /** A shield (or anything else the game draws itself) beside a knife, moved where the knife studio says. */
+    @Inject(
+            method =
+                    "renderArmWithItem(Lnet/minecraft/client/player/AbstractClientPlayer;FFLnet/minecraft/world/InteractionHand;FLnet/minecraft/world/item/ItemStack;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V",
+                            shift = At.Shift.AFTER))
+    private void arc$moveBesideKnife(
+            AbstractClientPlayer player,
+            float tickProgress,
+            float pitch,
+            InteractionHand hand,
+            float swingProgress,
+            ItemStack item,
+            float equipProgress,
+            PoseStack matrices,
+            SubmitNodeCollector queue,
+            int light,
+            CallbackInfo callback) {
+        MeleeSkins.Placement at = Modules.KNIVES.besideKnife(player, hand, item);
+        if (at == null || !at.moved()) return;
+        HumanoidArm arm = hand == InteractionHand.MAIN_HAND
+                ? player.getMainArm()
+                : player.getMainArm().getOpposite();
+        float side = arm == HumanoidArm.RIGHT ? 1 : -1; // out is to the right for the right hand
+        matrices.translate(at.x() * side, at.y(), -at.z());
+    }
+
+    /** ...and at the size it says, about the item's own place in the hand. */
+    @Inject(
+            method =
+                    "renderArmWithItem(Lnet/minecraft/client/player/AbstractClientPlayer;FFLnet/minecraft/world/InteractionHand;FLnet/minecraft/world/item/ItemStack;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V"))
+    private void arc$sizeBesideKnife(
+            AbstractClientPlayer player,
+            float tickProgress,
+            float pitch,
+            InteractionHand hand,
+            float swingProgress,
+            ItemStack item,
+            float equipProgress,
+            PoseStack matrices,
+            SubmitNodeCollector queue,
+            int light,
+            CallbackInfo callback) {
+        MeleeSkins.Placement at = Modules.KNIVES.besideKnife(player, hand, item);
+        if (at != null && at.size() != 1.0F) matrices.scale(at.size(), at.size(), at.size());
     }
 }

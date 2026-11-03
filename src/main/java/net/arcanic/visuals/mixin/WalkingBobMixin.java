@@ -24,19 +24,17 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-/** Keep the camera and held items on the same continuous walking phase. */
-@Mixin(GameRenderer.class)
+@Mixin({GameRenderer.class})
 public abstract class WalkingBobMixin {
     @Redirect(
-            method = "bobView",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/entity/ClientAvatarState;getBackwardsInterpolatedWalkDistance(F)F"))
+            method = {"bobView"},
+            at = {
+                @At(
+                        value = "INVOKE",
+                        target =
+                                "Lnet/minecraft/client/entity/ClientAvatarState;getBackwardsInterpolatedWalkDistance(F)F")
+            })
     private float arcanicvisuals$continuousWalking(ClientAvatarState state, float partial) {
-        // Vanilla extrapolates here, which shifts the phase at a tick boundary. Interpolate between the two known
-        // ticks.
         float phase = -state.getInterpolatedWalkDistance(partial);
         return phase;
     }

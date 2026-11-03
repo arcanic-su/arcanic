@@ -23,13 +23,18 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
-/** Drives the first-person animation of a melee skin. */
+/** Drives the first-person animation of a melee skin, and of a gun: its aim while the bow is pulled and its shots. */
 public final class MeleeAnimator {
     private static final MeleeAnimator INSTANCE = new MeleeAnimator();
     private static final MeleeAnimator OFF_HAND = new MeleeAnimator();
+    // the knife studio's picture runs its own, so it never restarts or steals the game's animation
+    private static final MeleeAnimator STUDIO = new MeleeAnimator();
+    private static final MeleeAnimator STUDIO_OFF_HAND = new MeleeAnimator();
     private static final String CLIP_STATIC_IDLE = "static_idle";
     private static final String CLIP_DRAW = "draw";
     private static final String CLIP_DRAW_ALTERNATE = "draw_1";
@@ -40,11 +45,20 @@ public final class MeleeAnimator {
     private static final String CLIP_RUN = "run";
     private static final String CLIP_RUN_START = "run_start";
     private static final String CLIP_RUN_END = "run_end";
+    private static final String CLIP_IDLE = "idle";
+    private static final String CLIP_SHOOT = "shoot";
+    private static final String CLIP_BOLT = "bolt";
     private static final float TRANSITION_INSTANT = 0.0F;
     private static final float TRANSITION_ACTION = 0.2F;
     private static final float TRANSITION_RUN_START = 0.2F;
     private static final float TRANSITION_RUN_LOOP = 0.2F;
     private static final float TRANSITION_RUN_END = 0.3F;
+    private static final float TRANSITION_IDLE = 0.3F;
+    private static final float TRANSITION_BOLT = 0.1F;
+    private static final float BOLT_DELAY = 0.25F;
+    private static final float AIM_RATE = 9.0F;
+    private static final float AIM_LOOSE = 0.05F;
+    private static final float FLASH_SECONDS = 0.07F;
     private static final float MAX_DELTA_SECONDS = 0.25F;
     private static final float NANOS_PER_SECOND = 1.0E9F;
     private static final float RUN_CYCLE_DISTANCE = 2.0F;
@@ -58,6 +72,8 @@ public final class MeleeAnimator {
     private final MeleePlayer baseTrack = new MeleePlayer();
     private final MeleePlayer mainTrack = new MeleePlayer();
     private final MeleePlayer movementTrack = new MeleePlayer();
+    // a shot's kick, laid over whatever the hands are doing: its keys are offsets from the pose, not a pose
+    private final MeleePlayer kickTrack = new MeleePlayer();
     private MeleeSkeleton model;
     private String modelKey;
     private boolean renderedSinceTick;
@@ -66,6 +82,7 @@ public final class MeleeAnimator {
     private float[] additivePose = new float[0];
     private float[] staticFade = new float[0];
     private float[] additiveFade = new float[0];
+    private float[] kickPose = new float[0];
     private float[] composedPose = new float[0];
     private boolean[] hidden = new boolean[0];
     private float staticFadeRemaining;
@@ -80,6 +97,13 @@ public final class MeleeAnimator {
     private long lastNanos;
     private Item heldItem;
     private int heldSlot = -1;
+    private MeleeSlot slot = MeleeSlot.KNIFE;
+    private float aim;
+    private float swayTime;
+    private float flashLeft;
+    private float flashSpin;
+    private float boltIn;
+    private int shotsSeen;
 
     private MeleeAnimator() {}
 
@@ -89,6 +113,21 @@ public final class MeleeAnimator {
 
     public static MeleeAnimator offHand() {
         return OFF_HAND;
+    }
+
+    /** The animator for one hand: the game's, or the knife studio's while its picture is drawn. */
+    static MeleeAnimator forHand(boolean primary) {
+        if (MeleeSkins.inStudio()) return primary ? STUDIO : STUDIO_OFF_HAND;
+        return primary ? INSTANCE : OFF_HAND;
+    }
+
+    public static MeleeAnimator studio() {
+        return STUDIO;
+    }
+
+    public static void resetStudio() {
+        STUDIO.reset();
+        STUDIO_OFF_HAND.reset();
     }
 
     public static void resetAll() {
@@ -102,6 +141,8 @@ public final class MeleeAnimator {
         baseTrack.clear();
         mainTrack.clear();
         movementTrack.clear();
+        kickTrack.clear();
+        boltIn = 0.0F;
         mainState = MeleeStage.START;
         movementState = MeleeMotion.IDLE;
         runMode = RUN_MODE_IDLE;
@@ -111,6 +152,9 @@ public final class MeleeAnimator {
         staticFadeRemaining = 0.0F;
         additiveFadeRemaining = 0.0F;
         lastNanos = 0L;
+        slot = MeleeSlot.KNIFE;
+        aim = 0.0F;
+        flashLeft = 0.0F;
     }
 
     public void stop() {
@@ -123,12 +167,21 @@ public final class MeleeAnimator {
         runMode = RUN_MODE_IDLE;
         mainTrack.clear();
         movementTrack.clear();
+        kickTrack.clear();
+        boltIn = 0.0F;
         staticFadeRemaining = 0.0F;
         additiveFadeRemaining = 0.0F;
+        flashLeft = 0.0F;
+        shotsSeen = MeleeShots.count(); // a shot loosed before this gun was drawn is not its own
     }
 
     MeleeClip referenceClip() {
         return baseTrack.getClip();
+    }
+
+    /** The variant shown for {@code skeleton}, or null when this animator is not on it. */
+    MeleeVariant variantOf(MeleeSkeleton skeleton) {
+        return skeleton != null && skeleton == model ? variant : null;
     }
 
     public float[] pose() {
@@ -139,6 +192,25 @@ public final class MeleeAnimator {
         return hidden;
     }
 
+    /** How far a gun is raised toward the eye while its bow is pulled, eased, 0 to 1. */
+    float aim() {
+        return aim * aim * (3.0F - 2.0F * aim);
+    }
+
+    /** Seconds of the gun's breathing sway; it runs on while the gun is held. */
+    float swayTime() {
+        return swayTime;
+    }
+
+    /** The muzzle flash of this gun's last shot, 1 as it fires and 0 once it has burnt out. */
+    float flash() {
+        return flashLeft / FLASH_SECONDS;
+    }
+
+    float flashSpin() {
+        return flashSpin;
+    }
+
     public boolean consumeRendered() {
         boolean rendered = renderedSinceTick;
         renderedSinceTick = false;
@@ -146,20 +218,65 @@ public final class MeleeAnimator {
     }
 
     public MeleeSkeleton prepare(AbstractClientPlayer player, InteractionHand hand) {
-        MeleeDesign design = MeleeCatalog.equipped();
-        if (design == null || player == null) return null;
+        if (player == null) return null;
+        ItemStack held = MeleeSkins.stack(player, hand);
+        MeleeDesign design = MeleeCatalog.equipped(held);
+        if (design == null) return null;
         MeleeSkeleton skeleton = MeleeModels.get(design);
         if (skeleton == null) return null;
         renderedSinceTick = true;
         if (skeleton != model || !design.getKey().equals(modelKey)) bind(design, skeleton);
         else if (heldChanged(player, hand)) restart();
-        advance(player, delta());
+        float delta = delta();
+        advance(player, delta);
+        if (slot == MeleeSlot.BOW) aimAndFire(player, hand, delta);
         compose();
         return model;
     }
 
+    /** The gun follows the bow: raised while it is pulled, fired when a pull is let go. */
+    private void aimAndFire(AbstractClientPlayer player, InteractionHand hand, float delta) {
+        float pull = 0.0F;
+        if (!MeleeSkins.inStudio() && player instanceof LocalPlayer local) {
+            pull = MeleeShots.pull(
+                    local, hand, Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true));
+            if (MeleeShots.count() != shotsSeen) {
+                shotsSeen = MeleeShots.count();
+                if (MeleeShots.hand() == hand) onFire();
+            }
+        }
+        aim += (pull - aim) * (1.0F - (float) Math.exp(-AIM_RATE * delta));
+        swayTime += delta;
+        flashLeft = Math.max(0.0F, flashLeft - delta);
+        if (boltIn > 0.0F) {
+            boltIn -= delta;
+            if (boltIn <= 0.0F) {
+                boltIn = 0.0F;
+                playMain(variantName(CLIP_BOLT), TRANSITION_BOLT);
+            }
+        }
+    }
+
+    /**
+     * A shot: the kick and the flash at once, then, once the gun settles, the right hand works the bolt the way
+     * the draw does.
+     */
+    public void onFire() {
+        if (model == null || slot != MeleeSlot.BOW) return;
+        MeleeClip kick = model.clip(variantName(CLIP_SHOOT));
+        if (kick != null) kickTrack.play(kick, MeleeLoop.ONCE_STOP);
+        if (mainTrack.isActive()) {
+            beginStaticFade(TRANSITION_ACTION); // a shot cuts a draw or an inspect short
+            mainTrack.clear();
+        }
+        mainState = MeleeStage.IDLE;
+        boltIn = BOLT_DELAY;
+        flashLeft = FLASH_SECONDS;
+        flashSpin = ThreadLocalRandom.current().nextFloat() * (float) Math.PI;
+    }
+
     public void onAttack(boolean primary) {
-        if (model == null || mainState != MeleeStage.IDLE) return;
+        if (model == null || mainState != MeleeStage.IDLE || slot == MeleeSlot.BOW) return;
         if (primary) {
             String clip = variantName(CLIP_MELEE_PRIMARY + (attackIndex + 1));
             attackIndex = (attackIndex + 1) % PRIMARY_ATTACK_VARIANTS;
@@ -170,7 +287,7 @@ public final class MeleeAnimator {
     }
 
     public void onInspect() {
-        if (model != null && mainState == MeleeStage.IDLE) {
+        if (model != null && mainState == MeleeStage.IDLE && aim < AIM_LOOSE && boltIn <= 0.0F) {
             String alternate = variantName(CLIP_INSPECT_ALTERNATE);
             boolean useAlternate =
                     model.hasClip(alternate) && ThreadLocalRandom.current().nextBoolean();
@@ -179,7 +296,7 @@ public final class MeleeAnimator {
     }
 
     private boolean heldChanged(AbstractClientPlayer player, InteractionHand hand) {
-        Item item = player.getItemInHand(hand).getItem();
+        Item item = MeleeSkins.stack(player, hand).getItem();
         int slot = hand == InteractionHand.MAIN_HAND ? player.getInventory().getSelectedSlot() : OFF_HAND_SLOT;
         if (item == heldItem && slot == heldSlot) return false;
         heldItem = item;
@@ -192,12 +309,15 @@ public final class MeleeAnimator {
         heldSlot = -1;
         model = skeleton;
         modelKey = design.getKey();
+        slot = design.getSlot();
+        aim = 0.0F;
         int bones = skeleton.boneCount();
         int channels = bones * MeleeClip.BONE_STRIDE;
         staticPose = new float[channels];
         additivePose = new float[channels];
         staticFade = new float[channels];
         additiveFade = new float[channels];
+        kickPose = new float[channels];
         composedPose = new float[channels];
         hidden = new boolean[bones];
         List<MeleeVariant> variants = design.getVariants();
@@ -233,6 +353,7 @@ public final class MeleeAnimator {
         baseTrack.advance(delta);
         mainTrack.advance(delta);
         movementTrack.advance(delta);
+        kickTrack.advance(delta);
         staticFadeRemaining = Math.max(0.0F, staticFadeRemaining - delta);
         additiveFadeRemaining = Math.max(0.0F, additiveFadeRemaining - delta);
         updateMain();
@@ -256,6 +377,10 @@ public final class MeleeAnimator {
                 movementState = MeleeMotion.RUN;
                 runMode = RUN_MODE_IDLE;
                 playMovement(variantName(CLIP_RUN_START), MeleeLoop.ONCE_HOLD, TRANSITION_RUN_START);
+            } else if (slot.idles()
+                    && (movementTrack.getClip() == null || movementTrack.isHolding())
+                    && model.hasClip(variantName(CLIP_IDLE))) {
+                playMovement(variantName(CLIP_IDLE), MeleeLoop.LOOP, TRANSITION_IDLE);
             }
             return;
         }
@@ -324,14 +449,17 @@ public final class MeleeAnimator {
         if (movementTrack.isActive()) movementTrack.evaluate(additivePose);
         blend(additivePose, additiveFade, additiveFadeRemaining, additiveFadeDuration);
 
+        fillNeutral(kickPose);
+        if (kickTrack.isActive()) kickTrack.evaluate(kickPose);
+
         for (int bone = 0; bone < composedPose.length; bone += MeleeClip.BONE_STRIDE) {
             for (int axis = 0; axis < 3; axis++) {
                 int rotation = bone + MeleeClip.ROTATION_OFFSET + axis;
                 int position = bone + MeleeClip.POSITION_OFFSET + axis;
                 int scale = bone + MeleeClip.SCALE_OFFSET + axis;
-                composedPose[rotation] = staticPose[rotation] + additivePose[rotation];
-                composedPose[position] = staticPose[position] + additivePose[position];
-                composedPose[scale] = staticPose[scale] * additivePose[scale];
+                composedPose[rotation] = staticPose[rotation] + additivePose[rotation] + kickPose[rotation];
+                composedPose[position] = staticPose[position] + additivePose[position] + kickPose[position];
+                composedPose[scale] = staticPose[scale] * additivePose[scale] * kickPose[scale];
             }
         }
     }

@@ -28,40 +28,35 @@ import net.minecraft.world.entity.Avatar;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 
-/**
- * Outline module
- *
- * Draws a glowing outline around enemies. It is depth tested, so it never shows through walls.
- */
 public final class Outline extends Module {
-    public final Setting.Mode style = add(new Setting.Mode("style", "Стиль", "Чамсы", "Чамсы", "Контур"));
-
-    public final Setting.Mode material = add(new Setting.Mode(
-                    "material", "Материал", "Заливка", "Простой", "Заливка", "Стекло", "Хром", "Жидкое стекло"))
+    public final Setting.Mode style =
+            this.add(new Setting.Mode("style", "Стиль", "Чамсы", new String[] {"Чамсы", "Контур"}));
+    public final Setting.Mode material = (this.add(new Setting.Mode("material", "Материал", "Заливка", new String[] {
+                "Простой", "Заливка", "Стекло", "Хром", "Жидкое стекло"
+            })))
             .showIf(this::chams);
-    public final Setting.Bool walls =
-            add(new Setting.Bool("walls", "Сквозь стены", false)).showIf(this::chams);
-    public final Setting.Bool players = add(new Setting.Bool("players", "Игроки", true));
-    public final Setting.Bool mobs = add(new Setting.Bool("mobs", "Враждебные мобы", false));
-    public final Setting.Bool onlyTarget = add(new Setting.Bool("only_target", "Только цель", false));
-    public final Setting.Bool allies = add(new Setting.Bool("allies", "Без союзников", true));
-    public final Setting.Mode colour =
-            add(new Setting.Mode("colour", "Цвет", "Тема", "Тема", "Свой", "Здоровье", "Радуга"));
+    public final Setting.Bool players = this.add(new Setting.Bool("players", "Игроки", true));
+    public final Setting.Bool mobs = this.add(new Setting.Bool("mobs", "Враждебные мобы", false));
+    public final Setting.Bool onlyTarget = this.add(new Setting.Bool("only_target", "Только цель", false));
+    public final Setting.Bool allies = this.add(new Setting.Bool("allies", "Без союзников", true));
+    public final Setting.Mode colour = (Setting.Mode)
+            this.add(new Setting.Mode("colour", "Цвет", "Тема", new String[] {"Тема", "Свой", "Здоровье", "Радуга"}));
     public final Setting.Colour a =
-            add(new Setting.Colour("color_a", "Цвет 1", false, 0xFFC084FC)).showIf(() -> colour.is("Свой"));
+            (this.add(new Setting.Colour("color_a", "Цвет 1", false, -4160260))).showIf(() -> this.colour.is("Свой"));
     public final Setting.Colour b =
-            add(new Setting.Colour("color_b", "Цвет 2", false, 0xFF22D3EE)).showIf(() -> colour.is("Свой"));
+            (this.add(new Setting.Colour("color_b", "Цвет 2", false, -14494738))).showIf(() -> this.colour.is("Свой"));
     public final Setting.Num thickness =
-            add(new Setting.Num("thickness", "Толщина", 3, 1, 6, .5, " px")).showIf(() -> !chams());
-    public final Setting.Num opacity = add(new Setting.Num("opacity", "Яркость", 95, 20, 100, 5, "%"));
+            (this.add(new Setting.Num("thickness", "Толщина", 3.0, 1.0, 6.0, 0.5, " px"))).showIf(() -> !this.chams());
+    public final Setting.Num opacity = this.add(new Setting.Num("opacity", "Яркость", 95.0, 20.0, 100.0, 5.0, "%"));
     public final Setting.Bool glow =
-            add(new Setting.Bool("glow", "Свечение", true)).showIf(() -> !chams());
-    public final Setting.Bool flow = add(new Setting.Bool("flow", "Переливание", true));
+            (Setting.Bool) (this.add(new Setting.Bool("glow", "Свечение", true))).showIf(() -> !this.chams());
+    public final Setting.Bool flow = this.add(new Setting.Bool("flow", "Переливание", true));
     public final Setting.Bool fill =
-            add(new Setting.Bool("fill", "Заливка", false)).showIf(() -> !chams());
-    public final Setting.Num fillOpacity = add(new Setting.Num("fill_opacity", "Сила заливки", 22, 5, 60, 1, "%"))
-            .showIf(() -> fill.on() && !chams());
-    public final Setting.Bool hitFlash = add(new Setting.Bool("hit_flash", "Вспышка при ударе", true));
+            (Setting.Bool) (this.add(new Setting.Bool("fill", "Заливка", false))).showIf(() -> !this.chams());
+    public final Setting.Num fillOpacity = (this.add(
+                    new Setting.Num("fill_opacity", "Сила заливки", 22.0, 5.0, 60.0, 1.0, "%")))
+            .showIf(() -> this.fill.on() && !this.chams());
+    public final Setting.Bool hitFlash = this.add(new Setting.Bool("hit_flash", "Вспышка при ударе", true));
 
     public Outline() {
         super(
@@ -73,42 +68,56 @@ public final class Outline extends Module {
     }
 
     public boolean chams() {
-        return style.is("Чамсы");
+        return this.style.is("Чамсы");
     }
 
     public int material() {
-        return switch (material.get()) {
-            case "Простой" -> 0;
-            case "Заливка" -> 1;
-            case "Стекло" -> 2;
-            case "Хром" -> 3;
-            default -> 4;
-        };
+        byte var10000;
+        switch ((String) this.material.get()) {
+            case "Простой" -> var10000 = 0;
+            case "Заливка" -> var10000 = 1;
+            case "Стекло" -> var10000 = 2;
+            case "Хром" -> var10000 = 3;
+            default -> var10000 = 4;
+        }
+
+        return var10000;
     }
 
     public boolean wants(LivingEntity e) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || e == mc.player || !e.isAlive() || e.isInvisibleTo(mc.player)) return false;
-        if (onlyTarget.on()) return e == TargetHud.current();
-        if (allies.on() && e.isAlliedTo(mc.player)) return false;
-        if (e instanceof Avatar) return players.on() && !e.isSpectator();
-        return mobs.on() && e instanceof Enemy;
+        if (mc.player != null && e != mc.player && e.isAlive() && !e.isInvisibleTo(mc.player)) {
+            if (this.onlyTarget.on()) {
+                return e == TargetHud.current();
+            } else if (this.allies.on() && e.isAlliedTo(mc.player) || Friends.hideFromEnemies(e)) {
+                return false;
+            } else if (e instanceof Avatar) {
+                return this.players.on() && !e.isSpectator();
+            } else {
+                return this.mobs.on() && e instanceof Enemy;
+            }
+        } else {
+            return false;
+        }
     }
 
     int colourAt(float h, float time, float health) {
-        float tm = flow.on() ? time * .55f : 0;
-        return switch (colour.get()) {
-            case "Свой" -> Paint.lerp(a.argb() | 0xFF000000, b.argb() | 0xFF000000, wave(h, tm));
+        float tm = this.flow.on() ? time * 0.55F : 0.0F;
+        int var10000;
+        switch ((String) this.colour.get()) {
+            case "Свой" -> var10000 = Paint.lerp(this.a.argb() | 0xFF000000, this.b.argb() | 0xFF000000, wave(h, tm));
             case "Здоровье" ->
-                health > .5f
-                        ? Paint.lerp(0xFFFACC15, 0xFF4ADE80, (health - .5f) * 2)
-                        : Paint.lerp(0xFFF43F5E, 0xFFFACC15, health * 2);
-            case "Радуга" -> Paint.hsv(Paint.frac(h * .5f - tm * .4f), .65f, 1);
-            default -> Paint.lerp(Theme.accent() | 0xFF000000, Theme.accent2() | 0xFF000000, wave(h, tm));
-        };
+                var10000 = health > 0.5F
+                        ? Paint.lerp(-340971, -11870592, (health - 0.5F) * 2.0F)
+                        : Paint.lerp(-770210, -340971, health * 2.0F);
+            case "Радуга" -> var10000 = Paint.hsv(Paint.frac(h * 0.5F - tm * 0.4F), 0.65F, 1.0F);
+            default -> var10000 = Paint.lerp(Theme.accent() | 0xFF000000, Theme.accent2() | 0xFF000000, wave(h, tm));
+        }
+
+        return var10000;
     }
 
     private static float wave(float h, float tm) {
-        return tm == 0 ? Paint.clamp(h) : .5f + .5f * (float) Math.sin((h * 1.3f - tm) * Math.PI);
+        return tm == 0.0F ? Paint.clamp(h) : 0.5F + 0.5F * (float) Math.sin((double) (h * 1.3F - tm) * Math.PI);
     }
 }

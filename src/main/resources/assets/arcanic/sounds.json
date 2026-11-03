@@ -750,5 +750,61 @@
         "stream": false
       }
     ]
+  },
+  "melee.awp.awp_01": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/awp/awp_01",
+        "stream": false
+      }
+    ]
+  },
+  "melee.awp.awp_draw": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/awp/awp_draw",
+        "stream": false
+      }
+    ]
+  },
+  "melee.awp.awp_boltback_d": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/awp/awp_boltback_d",
+        "stream": false
+      }
+    ]
+  },
+  "melee.awp.awp_boltforward_d": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/awp/awp_boltforward_d",
+        "stream": false
+      }
+    ]
+  },
+  "melee.awp.movement1": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/awp/movement1",
+        "stream": false
+      }
+    ]
+  },
+  "melee.awp.movement2": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/awp/movement2",
+        "stream": false
+      }
+    ]
+  },
+  "melee.awp.movement3": {
+    "sounds": [
+      {
+        "name": "arcanic:melee/awp/movement3",
+        "stream": false
+      }
+    ]
   }
 }

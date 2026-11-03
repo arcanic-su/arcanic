@@ -47,18 +47,24 @@ public final class Effects {
         return Fx.lerp(c | 0xFF000000, 0xFFFFFFFF, k);
     }
 
-    private record Emitter(Runnable step, int[] left) {}
+    private record Emitter(Runnable step, int[] left, boolean studio) {}
 
     private static final List<Emitter> emitters = new ArrayList<>();
 
     static void every(int ticks, Runnable step) {
-        emitters.add(new Emitter(step, new int[] {ticks}));
+        emitters.add(new Emitter(step, new int[] {ticks}, Fx.studio));
     }
 
     public static void tick() {
         for (Iterator<Emitter> it = emitters.iterator(); it.hasNext(); ) {
             Emitter e = it.next();
-            e.step.run();
+            boolean was = Fx.studio;
+            Fx.studio = e.studio; // what it spawns later goes where it began
+            try {
+                e.step.run();
+            } finally {
+                Fx.studio = was;
+            }
             if (--e.left[0] <= 0) it.remove();
         }
     }

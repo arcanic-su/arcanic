@@ -27,9 +27,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import net.arcanic.visuals.core.Modules;
+import net.minecraft.world.item.ItemStack;
 import org.slf4j.LoggerFactory;
 
 /** Every melee skin listed in {@code cosmetic/melee/index.json}, read once at start. */
@@ -48,22 +50,40 @@ public final class MeleeCatalog {
             "treasure_kn");
 
     private static final List<MeleeDesign> SKINS = load();
+    private static final Map<MeleeSlot, List<MeleeDesign>> BY_SLOT = bySlot();
 
     public static List<MeleeDesign> all() {
         return SKINS;
+    }
+
+    /** The skins that take the place of one kind of item, in menu order. */
+    public static List<MeleeDesign> of(MeleeSlot slot) {
+        return BY_SLOT.get(slot);
     }
 
     public static MeleeDesign byKey(String key) {
         return SKINS.stream().filter(s -> s.getKey().equals(key)).findFirst().orElse(null);
     }
 
-    public static MeleeDesign equipped() {
-        return Modules.KNIVES.selected();
+    public static MeleeDesign equipped(MeleeSlot slot) {
+        MeleeDesign studio = MeleeSkins.studioDesign(); // the knife studio's picture shows its own skin
+        return studio != null && studio.getSlot() == slot
+                ? studio
+                : MeleeSkins.of(slot).selected();
     }
 
-    public static String equippedKey() {
-        MeleeDesign skin = equipped();
-        return skin == null ? null : skin.getKey();
+    /** The skin drawn for {@code stack}, or null when nothing takes its place. */
+    public static MeleeDesign equipped(ItemStack stack) {
+        MeleeSlot slot = MeleeSlot.of(stack);
+        return slot == null ? null : equipped(slot);
+    }
+
+    private static Map<MeleeSlot, List<MeleeDesign>> bySlot() {
+        Map<MeleeSlot, List<MeleeDesign>> out = new EnumMap<>(MeleeSlot.class);
+        for (MeleeSlot slot : MeleeSlot.values()) {
+            out.put(slot, SKINS.stream().filter(s -> s.getSlot() == slot).toList());
+        }
+        return out;
     }
 
     private static List<MeleeDesign> load() {
@@ -92,11 +112,14 @@ public final class MeleeCatalog {
         try {
             String name = entry.has("name") ? entry.get("name").getAsString() : key;
             String model = entry.has("model") ? entry.get("model").getAsString() : key;
+            MeleeSlot slot =
+                    MeleeSlot.named(entry.has("slot") ? entry.get("slot").getAsString() : null);
             JsonObject transforms = entry.getAsJsonObject("transforms");
             return new MeleeDesign(
                     key,
                     model,
                     name,
+                    slot,
                     readVariants(entry),
                     readStrings(entry, "holyBones"),
                     readTransform(transforms, "thirdperson_righthand"),

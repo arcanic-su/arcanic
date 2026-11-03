@@ -22,14 +22,18 @@ import net.arcanic.visuals.gui.FrontEndLoading;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.LoadingOverlay;
+import net.minecraft.client.gui.screens.Overlay;
 import net.minecraft.server.packs.resources.ReloadInstance;
 import net.minecraft.util.Util;
-import org.spongepowered.asm.mixin.*;
-import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Rendering only: vanilla tick retains completion and error callbacks. */
-@Mixin(LoadingOverlay.class)
+@Mixin({LoadingOverlay.class})
 public abstract class LoadingOverlayMixin {
     @Shadow
     @Final
@@ -50,39 +54,64 @@ public abstract class LoadingOverlayMixin {
     private long fadeInStart;
 
     @Unique
-    private long arcanic$last;
+    private long arcanicvisuals$last;
 
     @Unique
-    private float arcanic$progress;
+    private float arcanicvisuals$progress;
 
     @Unique
-    private float arcanic$target;
+    private float arcanicvisuals$target;
 
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private void arcanic$loading(GuiGraphics g, int mx, int my, float delta, CallbackInfo ci) {
+    @Inject(
+            method = {"render"},
+            at = {@At("HEAD")},
+            cancellable = true)
+    private void arcanicvisuals$loading(GuiGraphics g, int mx, int my, float delta, CallbackInfo ci) {
         ci.cancel();
         long now = Util.getMillis();
-        if (fadeIn && fadeInStart < 0) fadeInStart = now;
-        float dt = arcanic$last == 0 ? 0 : Math.min(.1f, (now - arcanic$last) / 1000f);
-        arcanic$last = now;
-        arcanic$target = Math.max(arcanic$target, fadeOutStart >= 0 ? 1 : Math.min(.995f, reload.getActualProgress()));
-        arcanic$progress += (arcanic$target - arcanic$progress) * (1 - (float) Math.exp(-dt * 12));
-        if (arcanic$target == 1 && arcanic$progress > .998f) arcanic$progress = 1;
-        float leaving = -1;
-        if (fadeOutStart >= 0) {
+        if (this.fadeIn && this.fadeInStart < 0L) {
+            this.fadeInStart = now;
+        }
+
+        float dt = this.arcanicvisuals$last == 0L
+                ? 0.0F
+                : Math.min(0.1F, (float) (now - this.arcanicvisuals$last) / 1000.0F);
+        this.arcanicvisuals$last = now;
+        this.arcanicvisuals$target = Math.max(
+                this.arcanicvisuals$target,
+                this.fadeOutStart >= 0L ? 1.0F : Math.min(0.995F, this.reload.getActualProgress()));
+        this.arcanicvisuals$progress += (this.arcanicvisuals$target - this.arcanicvisuals$progress)
+                * (1.0F - (float) Math.exp((double) (-dt * 12.0F)));
+        if (this.arcanicvisuals$target == 1.0F && this.arcanicvisuals$progress > 0.998F) {
+            this.arcanicvisuals$progress = 1.0F;
+        }
+
+        float leaving = -1.0F;
+        if (this.fadeOutStart >= 0L) {
             FrontEndLoading.splashLeaving();
             leaving = FrontEndLoading.splashMs();
-            if (leaving < 0) leaving = Math.max(0, now - fadeOutStart) * 1.6f;
+            if (leaving < 0.0F) {
+                leaving = (float) Math.max(0L, now - this.fadeOutStart) * 1.6F;
+            }
         }
-        float in = fadeIn ? Math.max(0, Math.min(1, (now - fadeInStart) / 300f)) : 1;
-        float alpha = in * in * (3 - 2 * in);
-        if ((leaving >= 0 || fadeIn && in < 1) && minecraft.screen != null)
-            minecraft.screen.renderWithTooltipAndSubtitles(g, mx, my, delta);
+
+        float in = this.fadeIn ? Math.max(0.0F, Math.min(1.0F, (float) (now - this.fadeInStart) / 300.0F)) : 1.0F;
+        float alpha = in * in * (3.0F - 2.0F * in);
+        if ((leaving >= 0.0F || this.fadeIn && in < 1.0F) && this.minecraft.screen != null) {
+            this.minecraft.screen.renderWithTooltipAndSubtitles(g, mx, my, delta);
+        }
+
         FrontEndLoading.scene(
-                g, arcanic$progress, alpha, "Загрузка ресурсов", fadeIn || fadeOutStart >= 0, true, leaving);
-        if (leaving >= FrontEndLoading.LEAVE_MS && minecraft.getOverlay() == (Object) this) {
+                g,
+                this.arcanicvisuals$progress,
+                alpha,
+                "Загрузка ресурсов",
+                this.fadeIn || this.fadeOutStart >= 0L,
+                true,
+                leaving);
+        if (leaving >= 1500.0F && this.minecraft.getOverlay() == (Object) this) {
             FrontEndLoading.splashGone();
-            minecraft.setOverlay(null);
+            this.minecraft.setOverlay((Overlay) null);
         }
     }
 }

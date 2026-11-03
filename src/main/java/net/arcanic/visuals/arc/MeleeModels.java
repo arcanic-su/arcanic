@@ -20,7 +20,7 @@ package net.arcanic.visuals.arc;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,13 +77,15 @@ public final class MeleeModels {
         }
     }
 
+    /** Keeps the model just loaded and the ones worn now: a knife and a gun can be in the hands together. */
     private static void evict(String justLoaded) {
-        MeleeDesign equipped = MeleeCatalog.equipped();
-        String equippedKey = equipped == null ? null : equipped.getGeometryKey();
-        for (Iterator<String> it = CACHE.keySet().iterator(); it.hasNext(); ) {
-            String key = it.next();
-            if (!key.equals(justLoaded) && !key.equals(equippedKey)) it.remove();
+        Set<String> kept = new HashSet<>();
+        kept.add(justLoaded);
+        for (MeleeSlot slot : MeleeSlot.values()) {
+            MeleeDesign equipped = MeleeCatalog.equipped(slot);
+            if (equipped != null) kept.add(equipped.getGeometryKey());
         }
+        CACHE.keySet().removeIf(key -> !kept.contains(key));
     }
 
     private static String read(String resource) throws Exception {

@@ -18,55 +18,77 @@
  */
 package net.arcanic.visuals.core;
 
+import java.util.Locale;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.DisplaySlot;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.ReadOnlyScoreInfo;
+import net.minecraft.world.scores.Scoreboard;
 
-/**
- * Health as the server reports it.
- *
- * Many PvP servers hide other players' health and put the real number on the scoreboard under the nick, so that score
- * is preferred. A value that cannot be real is reported as unknown.
- */
 public final class Health {
     private Health() {}
 
-    public record Reading(float hp, float max, float absorption, boolean known) {
-        public float total() {
-            return hp + absorption;
-        }
-
-        public float fraction() {
-            return known ? Math.min(1, hp / max) : 1;
-        }
-
-        public String text() {
-            if (!known) return "?";
-            float t = total();
-            return t >= 10 || Math.abs(t - Math.round(t)) < .05f
-                    ? String.valueOf(Math.round(t))
-                    : String.format(java.util.Locale.ROOT, "%.1f", t);
-        }
-    }
-
     public static Reading of(LivingEntity e) {
-        float hp = e.getHealth(), abs = Math.max(0, e.getAbsorptionAmount());
-        Integer score = e instanceof Player p ? belowName(p) : null;
-        if (score != null) hp = score;
-        if (!Float.isFinite(hp)) hp = 0;
-        boolean known = (hp > 0 || !e.isAlive()) && hp < 1000;
-        float max = Math.max(1, Math.max(e.getMaxHealth(), hp));
-        return new Reading(Math.max(0, hp), max, abs, known);
+        float hp = e.getHealth();
+        float abs = Math.max(0.0F, e.getAbsorptionAmount());
+        Integer var10000;
+        if (e instanceof Player p) {
+            var10000 = belowName(p);
+        } else {
+            var10000 = null;
+        }
+
+        Integer score = var10000;
+        if (score != null) {
+            hp = (float) score;
+        }
+
+        if (!Float.isFinite(hp)) {
+            hp = 0.0F;
+        }
+
+        boolean known = (hp > 0.0F || !e.isAlive()) && hp < 1000.0F;
+        float max = Math.max(1.0F, Math.max(e.getMaxHealth(), hp));
+        return new Reading(Math.max(0.0F, hp), max, abs, known);
     }
 
     private static Integer belowName(Player p) {
-        var level = Minecraft.getInstance().level;
-        if (level == null) return null;
-        var board = level.getScoreboard();
-        var objective = board.getDisplayObjective(DisplaySlot.BELOW_NAME);
-        if (objective == null) return null;
-        var score = board.getPlayerScoreInfo(p, objective);
-        return score == null ? null : score.value();
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) {
+            return null;
+        } else {
+            Scoreboard board = level.getScoreboard();
+            Objective objective = board.getDisplayObjective(DisplaySlot.BELOW_NAME);
+            if (objective == null) {
+                return null;
+            } else {
+                ReadOnlyScoreInfo score = board.getPlayerScoreInfo(p, objective);
+                return score == null ? null : score.value();
+            }
+        }
+    }
+
+    public static record Reading(float hp, float max, float absorption, boolean known) {
+        public float total() {
+            return this.hp + this.absorption;
+        }
+
+        public float fraction() {
+            return this.known ? Math.min(1.0F, this.hp / this.max) : 1.0F;
+        }
+
+        public String text() {
+            if (!this.known) {
+                return "?";
+            } else {
+                float t = this.total();
+                return !(t >= 10.0F) && !(Math.abs(t - (float) Math.round(t)) < 0.05F)
+                        ? String.format(Locale.ROOT, "%.1f", t)
+                        : String.valueOf(Math.round(t));
+            }
+        }
     }
 }

@@ -18,32 +18,50 @@
  */
 package net.arcanic.visuals.fx;
 
+import net.arcanic.visuals.core.Modules;
 import net.arcanic.visuals.mixin.GameRendererAccess;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector3fc;
+import org.joml.Vector4f;
 
-/** World point -> screen coordinates through the main camera. */
 public final class Projection {
+    private static final Matrix4f BOB = new Matrix4f();
+
     private Projection() {}
 
-    /** {x, y, depth} in GUI pixels, or null when behind the camera. */
+    public static void bob(Matrix4fc m) {
+        BOB.set(m);
+    }
+
     public static double[] toScreen(Vec3 p, int w, int h) {
         Minecraft mc = Minecraft.getInstance();
         Camera cam = mc.gameRenderer.getMainCamera();
         Vec3 rel = p.subtract(cam.position());
-        Vector3fc f = cam.forwardVector(), u = cam.upVector(), l = cam.leftVector();
-        double z = rel.x * f.x() + rel.y * f.y() + rel.z * f.z();
-        if (z < .1) return null;
-        double x = -(rel.x * l.x() + rel.y * l.y() + rel.z * l.z());
-        double y = rel.x * u.x() + rel.y * u.y() + rel.z * u.z();
-        double fov = Math.toRadians(fov());
-        double k = (h / 2.0) / Math.tan(fov / 2);
-        return new double[] {w / 2.0 + x / z * k, h / 2.0 - y / z * k, z};
+        Vector3fc f = cam.forwardVector();
+        Vector3fc u = cam.upVector();
+        Vector3fc l = cam.leftVector();
+        double z0 = rel.x * (double) f.x() + rel.y * (double) f.y() + rel.z * (double) f.z();
+        double x0 = -(rel.x * (double) l.x() + rel.y * (double) l.y() + rel.z * (double) l.z());
+        double y0 = rel.x * (double) u.x() + rel.y * (double) u.y() + rel.z * (double) u.z();
+        Vector4f v = BOB.transform(new Vector4f((float) x0, (float) y0, (float) (-z0), 1.0F));
+        double z = (double) (-v.z);
+        double x = (double) v.x;
+        double y = (double) v.y;
+        if (z < 0.1) {
+            return null;
+        } else {
+            double fov = Math.toRadians((double) fov());
+            double k = (double) h / 2.0 / Math.tan(fov / 2.0);
+            float window = (float) w / (float) Math.max(1, h);
+            double kx = k * (double) window / (double) Modules.ASPECT.now(window);
+            return new double[] {(double) w / 2.0 + x / z * kx, (double) h / 2.0 - y / z * k, z};
+        }
     }
 
-    /** The field of view the frame is really drawn with. Sprinting, speed effects and the zoom change it. */
     public static float fov() {
         Minecraft mc = Minecraft.getInstance();
         float pt = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);

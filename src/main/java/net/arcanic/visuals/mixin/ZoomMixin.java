@@ -26,10 +26,16 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(GameRenderer.class)
+@Mixin({GameRenderer.class})
 public abstract class ZoomMixin {
-    @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
-    private void arcanic$zoom(Camera camera, float partialTick, boolean useSetting, CallbackInfoReturnable<Float> cir) {
-        if (useSetting) cir.setReturnValue(Modules.ZOOM.fov(cir.getReturnValue()));
+    @Inject(
+            method = {"getFov"},
+            at = {@At("RETURN")},
+            cancellable = true)
+    private void arcanicvisuals$zoom(
+            Camera camera, float partialTick, boolean useSetting, CallbackInfoReturnable<Float> cir) {
+        if (useSetting) {
+            cir.setReturnValue(Modules.ZOOM.fov((Float) cir.getReturnValue()));
+        }
     }
 }

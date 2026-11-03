@@ -19,7 +19,11 @@
 package net.arcanic.visuals.fx;
 
 import java.awt.Color;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import net.arcanic.visuals.core.Category;
 import net.arcanic.visuals.core.Lang;
 import net.arcanic.visuals.core.Module;
@@ -31,17 +35,19 @@ import net.arcanic.visuals.render.Draw;
 import net.arcanic.visuals.render.Px;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-/** Hit particles, damage numbers and kill effects. */
 public final class CombatFx {
     private CombatFx() {}
 
@@ -50,423 +56,510 @@ public final class CombatFx {
     }
 
     static boolean critical(Player p) {
-        return p.fallDistance > 0
+        return p.fallDistance > 0.0
                 && !p.onGround()
                 && !p.onClimbable()
                 && !p.isInWater()
                 && !p.hasEffect(MobEffects.BLINDNESS)
                 && !p.isPassenger()
                 && !p.isSprinting()
-                && p.getAttackStrengthScale(.5f) > .9f;
+                && p.getAttackStrengthScale(0.5F) > 0.9F;
     }
 
-    /** Hit effects: glowing bursts on every hit, a brighter one with a shockwave on a crit. */
     public static final class HitEffects extends Module {
-        final Setting.Mode type = add(
-                new Setting.Mode("type", "Стиль", "Искры", "Искры", "Звёзды", "Волна", "Разрез", "Магия", "Сердца"));
-        final Setting.Mode colourMode =
-                add(new Setting.Mode("color_mode", "Окраска", "Тема", "Тема", "Радуга", "Цвет"));
+        public final Setting.Mode type = this.add(new Setting.Mode(
+                "type", "Стиль", "Стекло", new String[] {"Стекло", "Сакура", "Звёздная пыль", "Бабочки", "Пузыри"}));
+        final Setting.Mode colourMode = (Setting.Mode)
+                this.add(new Setting.Mode("color_mode", "Окраска", "Свои", new String[] {"Свои", "Тема", "Цвет"}));
         final Setting.Colour colour =
-                add(new Setting.Colour("color", "Цвет", false)).showIf(() -> colourMode.is("Цвет"));
-        final Setting.Num power = add(new Setting.Num("power", "Сила", 1, .4, 2, .05, "×"));
-        final Setting.Bool crit = add(new Setting.Bool("crit", "Вспышка на крит", true));
-        final Setting.Bool sound = add(new Setting.Bool("sound", "Звук попадания", false));
+                (this.add(new Setting.Colour("color", "Цвет", false))).showIf(() -> this.colourMode.is("Цвет"));
+        final Setting.Num size = (Setting.Num) this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
+        final Setting.Bool critsOnly = this.add(new Setting.Bool("crits_only", "Только криты", false));
+        final Setting.Bool sound = this.add(new Setting.Bool("sound", "Звук", true));
 
         public HitEffects() {
-            super("hit_effects", "Эффекты удара", "Светящиеся частицы при попадании", Category.COMBAT, false);
-            colour.set(0xFFF43F5E);
+            super(
+                    "hit_effects",
+                    "Эффекты удара",
+                    "Стекло, сакура, звёздная пыль, бабочки или пузыри там, куда пришёлся удар",
+                    Category.COMBAT,
+                    false);
+            this.colour.set(-770210);
         }
 
-        int colour() {
-            return colourMode.is("Радуга")
-                    ? Draw.rainbow(0, 1)
-                    : colourMode.is("Цвет") ? colour.get() : Theme.accent2();
+        Show.Pal pal() {
+            if (this.colourMode.is("Тема")) {
+                return Show.theme();
+            } else if (this.colourMode.is("Цвет")) {
+                int c = (Integer) this.colour.get() | 0xFF000000;
+                return new Show.Pal(Fx.lerp(c, -1, 0.5F), c, Fx.lerp(c, 0xFF000000, 0.5F));
+            } else {
+                return HitFx.own(this.type.index());
+            }
         }
 
         public void onAttack(Player p, Entity target) {
-            if (!(target instanceof LivingEntity)) return;
-            boolean isCrit = crit.on() && critical(p);
-            Vec3 at = target.position().add(0, target.getBbHeight() * .6, 0);
-            // shift the burst towards the attacker so it shows in front of the body
-            Vec3 toMe = p.getEyePosition().subtract(at);
-            at = at.add(toMe.normalize().scale(Math.min(.45, target.getBbWidth() * .6)));
-            Effects.hit(type.get(), at, colour(), power.f(), isCrit);
-            if (sound.on() && mc().level != null)
-                mc().level
-                        .playLocalSound(
-                                at.x,
-                                at.y,
-                                at.z,
-                                isCrit ? SoundEvents.AMETHYST_BLOCK_CHIME : SoundEvents.AMETHYST_BLOCK_HIT,
-                                SoundSource.PLAYERS,
-                                .6f,
-                                isCrit ? 1.6f : 1.2f,
-                                false);
+            if (target instanceof LivingEntity l) {
+                if (target != p) {
+                    boolean crit = CombatFx.critical(p);
+                    if (this.critsOnly.on() && !crit) {
+                        return;
+                    }
+
+                    Vec3 eye = p.getEyePosition(1.0F);
+                    Vec3 at = null;
+                    HitResult var8 = CombatFx.mc().hitResult;
+                    if (var8 instanceof EntityHitResult) {
+                        EntityHitResult eh = (EntityHitResult) var8;
+                        if (eh.getEntity() == target) {
+                            at = eh.getLocation();
+                        }
+                    }
+
+                    if (at == null) {
+                        AABB box = l.getBoundingBox();
+                        at = new Vec3(
+                                Math.max(box.minX, Math.min(box.maxX, eye.x)),
+                                Math.max(box.minY, Math.min(box.maxY, eye.y)),
+                                Math.max(box.minZ, Math.min(box.maxZ, eye.z)));
+                    }
+
+                    Vec3 dir = at.subtract(eye);
+                    dir = dir.lengthSqr() < 1.0E-6 ? new Vec3(0.0, 0.0, 1.0) : dir.normalize();
+                    at = at.subtract(dir.scale(0.08));
+                    HitFx.spawn(
+                            this.type.index(),
+                            at,
+                            dir,
+                            l.getBoundingBox(),
+                            HitFx.ground(l),
+                            crit,
+                            this.size.f(),
+                            this.pal(),
+                            this.sound.on(),
+                            false);
+                    return;
+                }
+            }
+        }
+
+        void preview(Vec3 at, Vec3 dir, boolean crit, AABB body) {
+            HitFx.spawn(
+                    this.type.index(),
+                    at,
+                    dir,
+                    body,
+                    HitFx.Ground.STUDIO,
+                    crit,
+                    this.size.f(),
+                    this.pal(),
+                    this.sound.on(),
+                    true);
+        }
+
+        protected void onDisable() {
+            HitFx.clear();
         }
     }
 
-    /** Damage numbers: numbers float up from anyone who loses health nearby. */
     public static final class DamageNumbers extends Module {
-        final Setting.Mode style = add(new Setting.Mode("style", "Вид", "Число", "Число", "Сердца"));
-        final Setting.Num size = add(new Setting.Num("size", "Размер", 1, .5, 2.5, .05, "×"));
-        final Setting.Num life = add(new Setting.Num("life", "Время", 1.2, .4, 3, .1, " с"));
-        final Setting.Bool self = add(new Setting.Bool("self", "Свой урон тоже", false));
-        final Setting.Colour colour = add(new Setting.Colour("color", "Цвет", false));
+        final Setting.Mode style =
+                this.add(new Setting.Mode("style", "Вид", "Число", new String[] {"Число", "Сердца"}));
+        final Setting.Num size = (Setting.Num) this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.5, 0.05, "×"));
+        final Setting.Num life = this.add(new Setting.Num("life", "Время", 1.2, 0.4, 3.0, 0.1, " с"));
+        final Setting.Bool self = this.add(new Setting.Bool("self", "Свой урон тоже", false));
+        final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет", false));
         private final Map<Integer, Float> health = new HashMap<>();
         private final List<Pop> pops = new ArrayList<>();
 
-        private record Pop(Vec3 at, String text, int colour, long born, double drift) {}
-
         public DamageNumbers() {
             super("damage_numbers", "Цифры урона", "Всплывающий урон над целью", Category.COMBAT, false);
-            colour.set(0xFFF43F5E);
+            this.colour.set(-770210);
         }
 
-        @Override
         public void tick() {
-            var level = mc().level;
-            var me = mc().player;
-            if (level == null || me == null) {
-                health.clear();
-                return;
+            ClientLevel level = CombatFx.mc().level;
+            LocalPlayer me = CombatFx.mc().player;
+            if (level != null && me != null) {
+                Map<Integer, Float> seen = new HashMap<>();
+
+                for (Entity e : level.entitiesForRendering()) {
+                    if (e instanceof LivingEntity) {
+                        LivingEntity l = (LivingEntity) e;
+                        if (!(l.distanceToSqr(me) > 2304.0)) {
+                            float hp = l.getHealth() + l.getAbsorptionAmount();
+                            Float before = (Float) this.health.get(l.getId());
+                            seen.put(l.getId(), hp);
+                            if (before != null && !(hp >= before - 0.01F) && (l != me || this.self.on())) {
+                                float dmg = before - hp;
+                                String text = this.style.is("Сердца")
+                                        ? String.format(Locale.ROOT, "-%.1f ❤", dmg / 2.0F)
+                                        : String.format(Locale.ROOT, dmg >= 10.0F ? "-%.0f" : "-%.1f", dmg);
+                                int c = dmg >= 6.0F ? -340971 : this.colour.argb();
+                                this.pops.add(new Pop(
+                                        l.position().add(0.0, (double) l.getBbHeight() + 0.3, 0.0),
+                                        text,
+                                        c,
+                                        System.currentTimeMillis(),
+                                        (Math.random() - 0.5) * 0.6));
+                            }
+                        }
+                    }
+                }
+
+                this.health.clear();
+                this.health.putAll(seen);
+                this.pops.removeIf(
+                        (p) -> (double) (System.currentTimeMillis() - p.born) > (Double) this.life.get() * 1000.0);
+                if (this.pops.size() > 60) {
+                    this.pops.subList(0, this.pops.size() - 60).clear();
+                }
+
+            } else {
+                this.health.clear();
             }
-            Map<Integer, Float> seen = new HashMap<>();
-            for (Entity e : level.entitiesForRendering()) {
-                if (!(e instanceof LivingEntity l) || l.distanceToSqr(me) > 48 * 48) continue;
-                float hp = l.getHealth() + l.getAbsorptionAmount();
-                Float before = health.get(l.getId());
-                seen.put(l.getId(), hp);
-                if (before == null || hp >= before - .01f || (l == me && !self.on())) continue;
-                float dmg = before - hp;
-                String text = style.is("Сердца")
-                        ? String.format(Locale.ROOT, "-%.1f ❤", dmg / 2)
-                        : String.format(Locale.ROOT, dmg >= 10 ? "-%.0f" : "-%.1f", dmg);
-                int c = dmg >= 6 ? 0xFFFACC15 : colour.argb();
-                pops.add(new Pop(
-                        l.position().add(0, l.getBbHeight() + .3, 0),
-                        text,
-                        c,
-                        System.currentTimeMillis(),
-                        (Math.random() - .5) * .6));
-            }
-            health.clear();
-            health.putAll(seen);
-            pops.removeIf(p -> System.currentTimeMillis() - p.born > life.get() * 1000);
-            if (pops.size() > 60) pops.subList(0, pops.size() - 60).clear();
         }
 
-        @Override
         protected void onDisable() {
-            pops.clear();
-            health.clear();
+            this.pops.clear();
+            this.health.clear();
         }
 
-        /** Called inside pixel space. */
         public void render(GuiGraphics g) {
-            if (pops.isEmpty()) return;
-            int sw = Px.width(), sh = Px.height();
-            float base = sh / 1080f;
-            for (Pop p : pops) {
-                float t = (System.currentTimeMillis() - p.born) / (float) (life.get() * 1000);
-                Vec3 world = p.at.add(p.drift * t, t * .9, 0);
-                double[] s = Projection.toScreen(world, sw, sh);
-                if (s == null) continue;
-                float pop = t < .12f ? .6f + t / .12f * .6f : 1.2f - Math.min(.2f, (t - .12f) * .5f);
-                int px = Math.round(
-                        (float) (22 * base * size.get() * pop * Math.max(.5, Math.min(1.3, 6 / Math.max(1, s[2])))));
-                float a = t > .7f ? 1 - (t - .7f) / .3f : 1;
-                var W = Px.Weight.BOLD;
-                int tw = Px.textWidth(Lang.tr(p.text), W, px);
-                Px.textShadow(
-                        g, Lang.tr(p.text), (int) s[0] - tw / 2, (int) s[1] - px / 2, W, px, Draw.am(p.colour, a));
+            if (!this.pops.isEmpty()) {
+                int sw = Px.width();
+                int sh = Px.height();
+                float base = (float) sh / 1080.0F;
+
+                for (Pop p : this.pops) {
+                    float t =
+                            (float) (System.currentTimeMillis() - p.born) / (float) ((Double) this.life.get() * 1000.0);
+                    Vec3 world = p.at.add(p.drift * (double) t, (double) t * 0.9, 0.0);
+                    double[] s = Projection.toScreen(world, sw, sh);
+                    if (s != null) {
+                        float pop = t < 0.12F ? 0.6F + t / 0.12F * 0.6F : 1.2F - Math.min(0.2F, (t - 0.12F) * 0.5F);
+                        int px = Math.round((float) ((double) (22.0F * base)
+                                * (Double) this.size.get()
+                                * (double) pop
+                                * Math.max(0.5, Math.min(1.3, 6.0 / Math.max(1.0, s[2])))));
+                        float a = t > 0.7F ? 1.0F - (t - 0.7F) / 0.3F : 1.0F;
+                        Px.Weight W = Px.Weight.BOLD;
+                        int tw = Px.textWidth(Lang.tr(p.text), W, px);
+                        Px.textShadow(
+                                g,
+                                Lang.tr(p.text),
+                                (int) s[0] - tw / 2,
+                                (int) s[1] - px / 2,
+                                W,
+                                px,
+                                Draw.am(p.colour, a));
+                    }
+                }
             }
         }
+
+        private static record Pop(Vec3 at, String text, int colour, long born, double drift) {}
     }
 
-    /** Kill effects: when someone you just hit dies. */
     public static final class KillEffects extends Module {
-        final Setting.Mode type =
-                add(new Setting.Mode("type", "Эффект", "Душа", "Душа", "Вознесение", "Взрыв", "Молния", "Конфетти"));
-        final Setting.Mode colourMode = add(new Setting.Mode("color_mode", "Окраска", "Тема", "Тема", "Цвет"));
+        public final Setting.Mode type = this.add(new Setting.Mode("type", "Эффект", "Пепел", new String[] {
+            "Пепел", "Казнь", "Чёрная дыра", "Глитч", "Рассечение", "Конфетти", "Метеорит", "Гроза"
+        }));
+        final Setting.Mode colourMode = (Setting.Mode)
+                this.add(new Setting.Mode("color_mode", "Окраска", "Свои", new String[] {"Свои", "Тема", "Цвет"}));
         final Setting.Colour colour =
-                add(new Setting.Colour("color", "Цвет", false)).showIf(() -> colourMode.is("Цвет"));
-        final Setting.Bool sound = add(new Setting.Bool("sound", "Звук", true));
-        final Setting.Bool players = add(new Setting.Bool("players", "Только игроки", false));
+                (this.add(new Setting.Colour("color", "Цвет", false))).showIf(() -> this.colourMode.is("Цвет"));
+        final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.6, 1.6, 0.05, "×"));
+        final Setting.Bool screen = this.add(new Setting.Bool("screen", "Эффекты на экране", true));
+        final Setting.Bool shake = this.add(new Setting.Bool("shake", "Тряска камеры", true));
+        final Setting.Bool sound = this.add(new Setting.Bool("sound", "Звук", true));
+        final Setting.Num volume =
+                (Setting.Num) (this.add(new Setting.Num("volume", "Громкость", 0.7, 0.1, 1.0, 0.05, "")))
+                        .showIf(() -> this.sound.on());
+        final Setting.Bool players = this.add(new Setting.Bool("players", "Только игроки", false));
         private final Map<Integer, Long> hit = new HashMap<>();
 
         public KillEffects() {
-            super("kill_effects", "Эффекты убийства", "Эффект, когда твоя цель умирает", Category.COMBAT, false);
-            colour.set(0xFF22D3EE);
+            super(
+                    "kill_effects",
+                    "Эффекты убийства",
+                    "Пепел, казнь, чёрная дыра, глитч, рассечение, конфетти, метеорит или гроза, когда твоя цель умирает",
+                    Category.COMBAT,
+                    false);
+            this.colour.set(-14494738);
+        }
+
+        Show.Pal pal() {
+            if (this.colourMode.is("Тема")) {
+                return Show.theme();
+            } else if (this.colourMode.is("Цвет")) {
+                int c = (Integer) this.colour.get() | 0xFF000000;
+                return new Show.Pal(Fx.lerp(c, -1, 0.5F), c, Fx.lerp(c, 0xFF000000, 0.45F));
+            } else {
+                return KillFx.own(this.type.index());
+            }
         }
 
         public void onAttack(Entity target) {
-            if (target instanceof LivingEntity) hit.put(target.getId(), System.currentTimeMillis());
+            if (target instanceof LivingEntity) {
+                this.hit.put(target.getId(), System.currentTimeMillis());
+            }
         }
 
-        @Override
         public void tick() {
-            var level = mc().level;
+            ClientLevel level = CombatFx.mc().level;
             if (level == null) {
-                hit.clear();
-                return;
+                this.hit.clear();
+            } else {
+                long now = System.currentTimeMillis();
+                this.hit.entrySet().removeIf((en) -> {
+                    if (now - (Long) en.getValue() > 4000L) {
+                        return true;
+                    } else {
+                        Entity e = level.getEntity((Integer) en.getKey());
+                        if (e instanceof LivingEntity) {
+                            LivingEntity l = (LivingEntity) e;
+                            if (!l.isDeadOrDying()) {
+                                return false;
+                            } else {
+                                if (!this.players.on() || l instanceof Player) {
+                                    KillFx.spawn(
+                                            this.type.index(),
+                                            l.position(),
+                                            l.getBbWidth(),
+                                            l.getBbHeight(),
+                                            l.yBodyRot,
+                                            this.size.f() * Math.max(0.6F, Math.min(1.6F, l.getBbHeight() / 1.8F)),
+                                            this.pal(),
+                                            false);
+                                }
+
+                                return true;
+                            }
+                        } else {
+                            return true;
+                        }
+                    }
+                });
             }
-            long now = System.currentTimeMillis();
-            hit.entrySet().removeIf(en -> {
-                if (now - en.getValue() > 3000) return true;
-                Entity e = level.getEntity(en.getKey());
-                if (!(e instanceof LivingEntity l)) return true;
-                if (l.isAlive() && l.getHealth() > 0) return false;
-                if (!players.on() || l instanceof Player) play(l);
-                return true;
-            });
         }
 
-        public void play(LivingEntity l) {
-            var level = mc().level;
-            if (level == null) return;
-            Vec3 at = l.position();
-            int c = colourMode.is("Цвет") ? colour.get() : Theme.accent2();
-            Effects.kill(type.get(), at, l.getBbHeight(), c);
-            if (type.is("Молния")) {
-                var bolt = EntityType.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
-                if (bolt != null) {
-                    bolt.setPos(at);
-                    bolt.setVisualOnly(true);
-                    level.addEntity(bolt);
-                }
-            }
-            if (!sound.on()) return;
-            switch (type.get()) {
-                case "Молния" ->
-                    level.playLocalSound(
-                            at.x,
-                            at.y,
-                            at.z,
-                            SoundEvents.LIGHTNING_BOLT_THUNDER,
-                            SoundSource.PLAYERS,
-                            .45f,
-                            1.3f,
-                            false);
-                case "Взрыв" ->
-                    level.playLocalSound(
-                            at.x,
-                            at.y,
-                            at.z,
-                            SoundEvents.GENERIC_EXPLODE.value(),
-                            SoundSource.PLAYERS,
-                            .45f,
-                            1.3f,
-                            false);
-                case "Конфетти" ->
-                    level.playLocalSound(
-                            at.x, at.y, at.z, SoundEvents.FIREWORK_ROCKET_TWINKLE, SoundSource.PLAYERS, .7f, 1f, false);
-                case "Вознесение" ->
-                    level.playLocalSound(
-                            at.x, at.y, at.z, SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, .6f, 1.6f, false);
-                default ->
-                    level.playLocalSound(
-                            at.x, at.y, at.z, SoundEvents.SOUL_ESCAPE.value(), SoundSource.PLAYERS, 1f, 1f, false);
-            }
+        void preview(Vec3 feet) {
+            KillFx.spawn(this.type.index(), feet, 0.6F, 1.8F, 90.0F, this.size.f(), this.pal(), true);
+        }
+
+        protected void onDisable() {
+            this.hit.clear();
+            KillFx.clear();
         }
     }
 
-    /** Swing trail: a glowing crescent left in the air by every swing of your weapon. */
     public static final class SwingTrail extends Module {
-        public final Setting.Mode colourMode =
-                add(new Setting.Mode("color_mode", "Окраска", "Тема", "Тема", "Радуга", "Цвет"));
+        public final Setting.Mode colourMode = (Setting.Mode)
+                this.add(new Setting.Mode("color_mode", "Окраска", "Тема", new String[] {"Тема", "Радуга", "Цвет"}));
         public final Setting.Colour colour =
-                add(new Setting.Colour("color", "Цвет", false)).showIf(() -> colourMode.is("Цвет"));
-        public final Setting.Num size = add(new Setting.Num("size", "Размер", 1, .5, 1.8, .05, "×"));
-        public final Setting.Num life = add(new Setting.Num("life", "Время", .35, .15, 1, .05, " с"));
-        public final Setting.Bool firstPerson = add(new Setting.Bool("fp", "Видно от 1-го лица", false));
+                (this.add(new Setting.Colour("color", "Цвет", false))).showIf(() -> this.colourMode.is("Цвет"));
+        public final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 1.8, 0.05, "×"));
+        public final Setting.Num life = this.add(new Setting.Num("life", "Время", 0.35, 0.15, 1.0, 0.05, " с"));
+        public final Setting.Bool firstPerson = this.add(new Setting.Bool("fp", "Видно от 1-го лица", false));
 
         public SwingTrail() {
             super("swing_trail", "След удара", "Светящаяся дуга за взмахом оружия", Category.COMBAT, false);
-            colour.set(0xFF22D3EE);
+            this.colour.set(-14494738);
         }
 
         public int colourAt(float f) {
-            if (colourMode.is("Радуга")) return Draw.rainbow(f * .5f, 1);
-            if (colourMode.is("Цвет")) return colour.get();
-            return Fx.lerp(Theme.accent() | 0xFF000000, Theme.accent2() | 0xFF000000, f);
+            if (this.colourMode.is("Радуга")) {
+                return Draw.rainbow(f * 0.5F, 1.0F);
+            } else {
+                return this.colourMode.is("Цвет")
+                        ? (Integer) this.colour.get()
+                        : Fx.lerp(Theme.accent() | 0xFF000000, Theme.accent2() | 0xFF000000, f);
+            }
         }
     }
 
-    /** Hit marker: a CS-style X on the crosshair for every hit (red on a kill), and a combo counter that pops. */
     public static final class HitMarker extends Module {
-        final Setting.Bool combo = add(new Setting.Bool("combo", "Счётчик комбо", true));
-        final Setting.Bool sound = add(new Setting.Bool("sound", "Щелчок", true));
-        final Setting.Num size = add(new Setting.Num("size", "Размер", 1, .5, 2, .05, "×"));
-        private long hitAt, comboAt;
-        private int comboCount, lastTargetId;
-        private boolean crit, killed;
+        final Setting.Bool combo = this.add(new Setting.Bool("combo", "Счётчик комбо", true));
+        final Setting.Bool sound = this.add(new Setting.Bool("sound", "Щелчок", true));
+        final Setting.Num size = (Setting.Num) this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
+        private long hitAt;
+        private long comboAt;
+        private int comboCount;
+        private int lastTargetId;
+        private boolean crit;
+        private boolean killed;
 
         public HitMarker() {
             super("hitmarker", "Хитмаркер", "Крестик при попадании и счётчик комбо", Category.COMBAT, false);
         }
 
         public void onHit(Player p, Entity target) {
-            if (!(target instanceof LivingEntity l)) return;
-            long now = System.currentTimeMillis();
-            comboCount = now - comboAt < 1600 ? comboCount + 1 : 1;
-            comboAt = now;
-            hitAt = now;
-            crit = critical(p);
-            killed = false;
-            lastTargetId = target.getId();
-            if (sound.on() && !Modules.HITSOUND.enabled() && mc().level != null)
-                mc().level
-                        .playLocalSound(
-                                p.getX(),
-                                p.getY(),
-                                p.getZ(),
-                                SoundEvents.NOTE_BLOCK_HAT.value(),
-                                SoundSource.PLAYERS,
-                                .35f,
-                                crit ? 1.9f : 1.6f,
-                                false);
-        }
-
-        @Override
-        public void tick() {
-            if (hitAt > 0 && !killed && System.currentTimeMillis() - hitAt < 600 && mc().level != null) {
-                Entity e = mc().level.getEntity(lastTargetId);
-                if (e instanceof LivingEntity l && (!l.isAlive() || l.getHealth() <= 0)) {
-                    killed = true;
-                    hitAt = System.currentTimeMillis();
+            if (target instanceof LivingEntity l) {
+                long now = System.currentTimeMillis();
+                this.comboCount = now - this.comboAt < 1600L ? this.comboCount + 1 : 1;
+                this.comboAt = now;
+                this.hitAt = now;
+                this.crit = CombatFx.critical(p);
+                this.killed = false;
+                this.lastTargetId = target.getId();
+                if (this.sound.on() && !Modules.HITSOUND.enabled() && CombatFx.mc().level != null) {
+                    CombatFx.mc()
+                            .level
+                            .playLocalSound(
+                                    p.getX(),
+                                    p.getY(),
+                                    p.getZ(),
+                                    SoundEvents.NOTE_BLOCK_HAT.value(),
+                                    SoundSource.PLAYERS,
+                                    0.35F,
+                                    this.crit ? 1.9F : 1.6F,
+                                    false);
                 }
             }
         }
-        /** Drawn in pixel space by the crosshair element. */
+
+        public void tick() {
+            if (this.hitAt > 0L
+                    && !this.killed
+                    && System.currentTimeMillis() - this.hitAt < 600L
+                    && CombatFx.mc().level != null) {
+                Entity e = CombatFx.mc().level.getEntity(this.lastTargetId);
+                if (e instanceof LivingEntity) {
+                    LivingEntity l = (LivingEntity) e;
+                    if (!l.isAlive() || l.getHealth() <= 0.0F) {
+                        this.killed = true;
+                        this.hitAt = System.currentTimeMillis();
+                    }
+                }
+            }
+        }
+
         public void render(GuiGraphics g) {
             long now = System.currentTimeMillis();
-            int cx = Px.width() / 2, cy = Px.height() / 2;
-            float u = Px.height() / 1080f * size.f();
-            float t = (now - hitAt) / (killed ? 600f : 340f);
-            if (hitAt > 0 && t < 1) {
-                float pop = t < .18f ? 1.35f - .35f * (t / .18f) : 1;
-                float a = t < .55f ? 1 : 1 - (t - .55f) / .45f;
-                int col = killed ? 0xFFFF3B4E : crit ? 0xFFFFD166 : 0xFFFFFFFF;
-                int gap = Math.round(9 * u * pop),
-                        len = Math.round(13 * u * pop),
-                        th = Math.max(3, Math.round(3.2f * u));
+            int cx = Px.width() / 2;
+            int cy = Px.height() / 2;
+            float u = (float) Px.height() / 1080.0F * this.size.f();
+            float t = (float) (now - this.hitAt) / (this.killed ? 600.0F : 340.0F);
+            if (this.hitAt > 0L && t < 1.0F) {
+                float pop = t < 0.18F ? 1.35F - 0.35F * (t / 0.18F) : 1.0F;
+                float a = t < 0.55F ? 1.0F : 1.0F - (t - 0.55F) / 0.45F;
+                int col = this.killed ? -50354 : (this.crit ? -11930 : -1);
+                int gap = Math.round(9.0F * u * pop);
+                int len = Math.round(13.0F * u * pop);
+                int th = Math.max(3, Math.round(3.2F * u));
                 Px.shadow(
                         g,
                         cx - gap - len,
                         cy - gap - len,
                         (gap + len) * 2,
                         (gap + len) * 2,
-                        Math.round(10 * u),
-                        Draw.am(col, a * .25f));
-                for (int i = 0; i < 4; i++) {
-                    double ang = Math.PI / 4 + i * Math.PI / 2 + (killed ? t * .6 : 0);
-                    for (int s = 0; s <= len; s++) {
-                        int x = Math.round((float) (cx + Math.cos(ang) * (gap + s))),
-                                y = Math.round((float) (cy + Math.sin(ang) * (gap + s)));
-                        Px.circle(g, x, y, Math.max(1, th / 2), Draw.am(0xFF000000, a * .35f));
+                        Math.round(10.0F * u),
+                        Draw.am(col, a * 0.25F));
+
+                for (int i = 0; i < 4; ++i) {
+                    double ang = (Math.PI / 4D) + (double) i * Math.PI / 2.0 + (this.killed ? (double) t * 0.6 : 0.0);
+
+                    for (int s = 0; s <= len; ++s) {
+                        int x = Math.round((float) ((double) cx + Math.cos(ang) * (double) (gap + s)));
+                        int y = Math.round((float) ((double) cy + Math.sin(ang) * (double) (gap + s)));
+                        Px.circle(g, x, y, Math.max(1, th / 2), Draw.am(0xFF000000, a * 0.35F));
                     }
-                    for (int s = 0; s <= len; s++) {
-                        int x = Math.round((float) (cx + Math.cos(ang) * (gap + s))),
-                                y = Math.round((float) (cy + Math.sin(ang) * (gap + s)));
+
+                    for (int s = 0; s <= len; ++s) {
+                        int x = Math.round((float) ((double) cx + Math.cos(ang) * (double) (gap + s)));
+                        int y = Math.round((float) ((double) cy + Math.sin(ang) * (double) (gap + s)));
                         Px.circle(g, x, y, Math.max(1, th / 2 - (s == len ? 1 : 0)), Draw.am(col, a));
                     }
                 }
             }
-            float ct = (now - comboAt) / 1600f;
-            if (combo.on() && comboCount >= 2 && ct < 1) {
-                float pop = Math.min(1, (now - comboAt) / 140f);
-                float scale = 1 + .45f * (1 - Anim.easeOutCubic(pop));
-                float a = ct < .7f ? 1 : 1 - (ct - .7f) / .3f;
-                int col = comboCount >= 10 ? 0xFFFF3B4E : comboCount >= 5 ? 0xFFFFB020 : Theme.accent2();
-                String txt = "x" + comboCount;
-                int px = Math.round(30 * u);
+
+            float ct = (float) (now - this.comboAt) / 1600.0F;
+            if (this.combo.on() && this.comboCount >= 2 && ct < 1.0F) {
+                float pop = Math.min(1.0F, (float) (now - this.comboAt) / 140.0F);
+                float scale = 1.0F + 0.45F * (1.0F - Anim.easeOutCubic(pop));
+                float a = ct < 0.7F ? 1.0F : 1.0F - (ct - 0.7F) / 0.3F;
+                int col = this.comboCount >= 10 ? -50354 : (this.comboCount >= 5 ? -20448 : Theme.accent2());
+                String txt = "x" + this.comboCount;
+                int px = Math.round(30.0F * u);
                 g.pose().pushMatrix();
-                g.pose().translate(cx + 48 * u, cy + 18 * u);
+                g.pose().translate((float) cx + 48.0F * u, (float) cy + 18.0F * u);
                 g.pose().scale(scale, scale);
                 float old = Px.fade;
                 Px.fade = old * a;
                 int tw = Px.textWidth(Lang.tr(txt), Px.Weight.BOLD, px);
                 Px.shadow(
                         g,
-                        -Math.round(6 * u),
+                        -Math.round(6.0F * u),
                         -px / 2,
-                        tw + Math.round(12 * u),
-                        Math.round(px * 1.6f),
-                        Math.round(14 * u),
-                        Draw.am(0xFF000000, a * .45f));
+                        tw + Math.round(12.0F * u),
+                        Math.round((float) px * 1.6F),
+                        Math.round(14.0F * u),
+                        Draw.am(0xFF000000, a * 0.45F));
                 Px.textShadow(g, Lang.tr(txt), 0, -px / 2, Px.Weight.BOLD, px, col);
                 Px.text(
                         g,
                         Lang.tr("КОМБО"),
                         0,
-                        Math.round(px * .62f),
+                        Math.round((float) px * 0.62F),
                         Px.Weight.BOLD,
-                        Math.round(12 * u),
-                        Draw.am(col, .8f));
+                        Math.round(12.0F * u),
+                        Draw.am(col, 0.8F));
                 Px.fade = old;
                 g.pose().popMatrix();
             }
         }
     }
 
-    /** Target ESP: animated marks on the entity you fight, drawn by {@link TargetEsp}. */
     public static final class TargetMarker extends Module {
-        public final Setting.Mode style = add(
-                new Setting.Mode("style", "Стиль", "Вихрь", "Вихрь", "Гирлянда", "Скобки", "Орбита", "Маркер", "Круг"));
-        public final Setting.Num size = add(new Setting.Num("size", "Размер", 1.2, .3, 3, .05, "×"))
-                .showIf(() -> !style.is("Маркер") && !style.is("Круг"));
-        public final Setting.Num circleRadius = add(new Setting.Num(
-                        "circle_radius", "Радиус круга", 1.4, 1.3, 1.5, .01, "×"))
-                .showIf(() -> style.is("Круг"));
-        public final Setting.Num tilt = add(new Setting.Num("circle_tilt", "Наклон круга", 40, 20, 60, 1, "°"))
-                .showIf(() -> style.is("Круг"));
-        public final Setting.Num thickness = add(new Setting.Num(
-                        "thickness", "Толщина серпов", 1.75, 1.5, 2.5, .05, "×"))
-                .showIf(() -> style.is("Круг"));
-        public final Setting.Num glow =
-                add(new Setting.Num("glow", "Сила свечения", 2, 0, 3, .1, "×")).showIf(() -> style.is("Круг"));
-        public final Setting.Bool throughWalls =
-                add(new Setting.Bool("through_walls", "Сквозь стены", false)).showIf(() -> style.is("Круг"));
-        public final Setting.Num markerSize = add(new Setting.Num("marker_size", "Размер маркера", 100, 30, 220, 5, ""))
-                .showIf(() -> style.is("Маркер"));
-        public final Setting.Bool markerGlow =
-                add(new Setting.Bool("marker_glow", "Свечение маркера", true)).showIf(() -> style.is("Маркер"));
-        public final Setting.Num speed = add(new Setting.Num("speed", "Скорость", 1, 0, 4, .05, "×"));
-        public final Setting.Bool hurtTint = add(new Setting.Bool("hurt_tint", "Вспышка при уроне", true));
-        final Setting.Mode colourMode =
-                add(new Setting.Mode("color_mode", "Окраска", "Тема", "Тема", "Радуга", "Цвет"));
+        public final Setting.Mode style = this.add(new Setting.Mode("style", "Стиль", "Дуги", new String[] {
+            "Дуги", "Трилистник", "Ромбы", "Прицел", "Треугольник", "Спутники", "Ореол"
+        }));
+        public final Setting.Num size =
+                (Setting.Num) this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
+        public final Setting.Num speed =
+                (Setting.Num) this.add(new Setting.Num("speed", "Скорость", 1.0, 0.0, 4.0, 0.05, "×"));
+        public final Setting.Bool hurtTint = this.add(new Setting.Bool("hurt_tint", "Краснеть при ударе", true));
+        final Setting.Mode colourMode = (Setting.Mode)
+                this.add(new Setting.Mode("color_mode", "Окраска", "Тема", new String[] {"Тема", "Радуга", "Цвет"}));
         final Setting.Colour colour =
-                add(new Setting.Colour("color", "Цвет", false)).showIf(() -> colourMode.is("Цвет"));
+                (this.add(new Setting.Colour("color", "Цвет", false))).showIf(() -> this.colourMode.is("Цвет"));
         private final long start = System.currentTimeMillis();
 
         public TargetMarker() {
             super(
                     "target_marker",
                     "Маркер цели",
-                    "Target ESP: вихрь, гирлянда, скобки, орбита, маркер и круг",
+                    "Target ESP: дуги, трилистник, ромбы, прицел, треугольник, спутники и ореол",
                     Category.COMBAT,
                     false);
-            colour.set(0xFFF43F5E);
+            this.colour.set(-770210);
         }
 
         public int colour(LivingEntity t, int offset, float alpha) {
-            int c = base(offset);
-            if (hurtTint.on() && t.hurtTime > 0)
-                c = Fx.lerp(c, 0xFFFF0000 | (c & 0xFF000000), Math.min(1, t.hurtTime / 10f));
+            int c = this.base(offset);
+            if (this.hurtTint.on() && t.hurtTime > 0) {
+                c = Fx.lerp(c, -65536 | c & 0xFF000000, Math.min(1.0F, (float) t.hurtTime / 10.0F));
+            }
+
             return TargetEsp.alpha(c, alpha);
         }
 
         private int base(int offset) {
             long now = System.currentTimeMillis();
-            if (colourMode.is("Цвет")) return colour.get();
-            if (colourMode.is("Радуга")) {
-                float hue = ((now % 4000) / 4000f + offset / 360f) % 1;
-                return 0xFF000000 | Color.HSBtoRGB(hue, .85f, 1);
+            if (this.colourMode.is("Цвет")) {
+                return (Integer) this.colour.get();
+            } else if (this.colourMode.is("Радуга")) {
+                float hue = ((float) (now % 4000L) / 4000.0F + (float) offset / 360.0F) % 1.0F;
+                return 0xFF000000 | Color.HSBtoRGB(hue, 0.85F, 1.0F);
+            } else {
+                float phase = ((float) (now - this.start) / 4.0F + (float) offset) % 360.0F;
+                if (phase >= 180.0F) {
+                    phase = 360.0F - phase;
+                }
+
+                return Fx.lerp(Theme.accent(), Theme.accent2(), phase * 2.0F / 360.0F);
             }
-            // theme: back and forth between the two accents
-            float phase = ((now - start) / 4f + offset) % 360;
-            if (phase >= 180) phase = 360 - phase;
-            return Fx.lerp(Theme.accent(), Theme.accent2(), phase * 2 / 360);
         }
     }
 }

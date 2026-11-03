@@ -27,11 +27,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Glyph coverage from FreeType is linear, and light text blended over a dark panel comes out thin and greyish at
- * small sizes.
- */
-@Mixin(NativeImage.class)
+@Mixin({NativeImage.class})
 public abstract class GlyphContrastMixin {
     @Shadow
     @Final
@@ -44,24 +40,30 @@ public abstract class GlyphContrastMixin {
     @Shadow
     private long pixels;
 
+    private static final byte[] CURVE = new byte[256];
+
     @Shadow
     public abstract NativeImage.Format format();
 
-    private static final byte[] CURVE = new byte[256];
+    @Inject(
+            method = {"copyFromFont"},
+            at = {@At("RETURN")})
+    private void arcanicvisuals$contrast(CallbackInfoReturnable<Boolean> cir) {
+        if (cir.getReturnValueZ() && this.format().components() == 1 && this.pixels != 0L) {
+            long n = (long) this.width * (long) this.height;
 
-    static {
-        for (int i = 0; i < 256; i++) {
-            double a = i / 255.0;
-            a = Math.max(0, Math.min(1, (a - .04) / .9)); // drop the faint haze, close the core
-            a = Math.pow(a, .78); // thicker light-on-dark stems
-            CURVE[i] = (byte) Math.round(a * 255);
+            for (long i = 0L; i < n; ++i) {
+                MemoryUtil.memPutByte(this.pixels + i, CURVE[MemoryUtil.memGetByte(this.pixels + i) & 255]);
+            }
         }
     }
 
-    @Inject(method = "copyFromFont", at = @At("RETURN"))
-    private void arcanic$contrast(CallbackInfoReturnable<Boolean> cir) {
-        if (!cir.getReturnValueZ() || format().components() != 1 || pixels == 0) return;
-        long n = (long) width * height;
-        for (long i = 0; i < n; i++) MemoryUtil.memPutByte(pixels + i, CURVE[MemoryUtil.memGetByte(pixels + i) & 0xFF]);
+    static {
+        for (int i = 0; i < 256; ++i) {
+            double a = (double) i / 255.0;
+            a = Math.max(0.0, Math.min(1.0, (a - 0.04) / 0.9));
+            a = Math.pow(a, 0.78);
+            CURVE[i] = (byte) ((int) Math.round(a * 255.0));
+        }
     }
 }

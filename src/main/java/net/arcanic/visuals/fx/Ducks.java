@@ -20,23 +20,23 @@ package net.arcanic.visuals.fx;
 
 import net.minecraft.world.entity.Entity;
 
-/** Fields our mixins add to vanilla classes. */
 public final class Ducks {
     private Ducks() {}
-    /** On EntityRenderState: the entity it was made from (render states do not keep it). */
+
+    public static Entity entityOf(Object state) {
+        Entity var10000;
+        if (state instanceof EntityLink l) {
+            var10000 = l.arcanicvisuals$entity();
+        } else {
+            var10000 = null;
+        }
+
+        return var10000;
+    }
+
     public interface EntityLink {
         Entity arcanicvisuals$entity();
 
-        void arcanicvisuals$setEntity(Entity e);
-    }
-    /** On ItemStackRenderState: this item is the local player's painted weapon (third person). */
-    public interface PaintFlag {
-        boolean arcanicvisuals$paint();
-
-        void arcanicvisuals$setPaint(boolean on);
-    }
-
-    public static Entity entityOf(Object state) {
-        return state instanceof EntityLink l ? l.arcanicvisuals$entity() : null;
+        void arcanicvisuals$setEntity(Entity var1);
     }
 }

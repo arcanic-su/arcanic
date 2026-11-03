@@ -20,562 +20,1119 @@ package net.arcanic.visuals.gui;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import java.awt.Color;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.BiConsumer;
-import net.arcanic.visuals.core.*;
-import net.arcanic.visuals.render.*;
-import net.arcanic.visuals.render.Px.Weight;
+import net.arcanic.visuals.core.Config;
+import net.arcanic.visuals.core.Lang;
+import net.arcanic.visuals.core.Setting;
+import net.arcanic.visuals.core.UiSound;
+import net.arcanic.visuals.render.Anim;
+import net.arcanic.visuals.render.Px;
+import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.input.*;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 
-/**
- * The colour picker: an eyedropper, a saturation/brightness square, hue and opacity bars, a HEX / RGB field and the
- * recent colours.
- */
 final class ColourPicker {
     private final String title;
     private final boolean enableAlpha;
     private final BiConsumer<Integer, Boolean> commit;
-    private final Anim anim = new Anim();
+    private final Anim anim;
     private final float scale;
-    private int x, y, w, h, colour, gesture;
-    private double grabX, grabY;
-    private float hue, sat, value, alpha;
-    private boolean closing, picking, theme, rgbMode;
-    private String editing; // text being typed into the value field (null = not editing)
+    private final int initial;
+    private int x;
+    private int y;
+    private int w;
+    private int h;
+    private int colour;
+    private int gesture;
+    private double grabX;
+    private double grabY;
+    private float hue;
+    private float sat;
+    private float value;
+    private float alpha;
+    private boolean closing;
+    private boolean picking;
+    private boolean theme;
+    private boolean rgbMode;
+    private boolean selectAll;
+    private String editing;
     private boolean editingAlpha;
     private NativeImage sample;
+    private static final float W = 166.0F;
+    private static final float PAD = 8.0F;
+    private static final float HEAD = 14.0F;
+    private static final float HUE_W = 10.0F;
+    private static final float GAP = 6.0F;
+    private static final float SV_H = 88.0F;
+    private static final float CAPS = 6.0F;
+    private static final float BAR_H = 10.0F;
+    private static final float PCT_W = 28.0F;
+    private static final float PREV = 31.0F;
+    private static final float FIELD_H = 13.0F;
+    private static final float SEG = 17.0F;
+    private static final float DOT = 10.0F;
 
     ColourPicker(String title, Setting.Colour setting) {
         this(title, setting.argb(), true, (c, th) -> {
             setting.set(c);
             setting.setTheme(th);
         });
-        theme = setting.followsTheme();
+        this.theme = setting.followsTheme();
     }
 
     ColourPicker(String title, int initial, boolean enableAlpha, BiConsumer<Integer, Boolean> commit) {
+        this.anim = new Anim();
         this.title = title;
         this.enableAlpha = enableAlpha;
         this.commit = commit;
-        scale = Math.max(1.2f, Math.min(3f, Px.height() / 540f));
-        w = s(134);
-        update(initial, false);
-        anim.set("open", 0);
-        layout();
+        this.initial = initial;
+        this.scale = Math.max(1.0F, Math.min(2.2F, (float) Px.height() / 1080.0F * 1.2F));
+        this.w = this.s(166.0F);
+        this.update(initial, false);
+        this.anim.set("open", 0.0F);
+        this.layout();
     }
 
     ColourPicker at(double mx, double my) {
-        x = (int) mx + s(8);
-        y = (int) my - s(20);
-        keepOnScreen();
+        this.x = (int) mx + this.s(10.0F);
+        this.y = (int) my - this.s(24.0F);
+        this.keepOnScreen();
         return this;
     }
 
-    private static final float PAD = 7, SV_Y = 28, SV_H = 64, BAR_H = 3.5f;
+    private float svY() {
+        return 29.0F;
+    }
 
-    private float hueY() {
-        return SV_Y + SV_H + 7;
+    private float svW() {
+        return this.inner() - 10.0F - 6.0F;
+    }
+
+    private float hueX() {
+        return 8.0F + this.inner() - 10.0F;
+    }
+
+    private float capsY() {
+        return this.svY() + 88.0F + 8.0F;
     }
 
     private float alphaY() {
-        return hueY() + 9;
+        return this.capsY() + 6.0F + 4.0F;
     }
 
-    private float fmtY() {
-        return (enableAlpha ? alphaY() : hueY()) + 10;
+    private float alphaW() {
+        return this.inner() - 28.0F - 5.0F;
+    }
+
+    private float bottomY() {
+        return (this.enableAlpha ? this.alphaY() + 10.0F : this.svY() + 88.0F) + 9.0F;
+    }
+
+    private float rightX() {
+        return 46.0F;
+    }
+
+    private float rightW() {
+        return 8.0F + this.inner() - this.rightX();
+    }
+
+    private float themeY() {
+        return this.bottomY() + 13.0F + 5.0F;
+    }
+
+    private float paletteY() {
+        return this.bottomY() + 31.0F + 9.0F;
     }
 
     private float recentY() {
-        return fmtY() + 19;
-    }
-
-    private int rows() {
-        return Math.max(1, (Setting.Colour.PRESETS.size() + 1 + 9) / 10);
+        return this.paletteY() + 10.0F + 4.0F;
     }
 
     private void layout() {
-        h = s(recentY() + 10 + rows() * 12 + PAD - 2);
-    }
-
-    private int s(float v) {
-        return Math.round(v * scale);
-    }
-
-    private int X(float u) {
-        return x + s(u);
-    }
-
-    private int Y(float u) {
-        return y + s(u);
-    }
-
-    private boolean hit(double mx, double my, float xx, float yy, float ww, float hh) {
-        return mx >= X(xx) && mx < X(xx + ww) && my >= Y(yy) && my < Y(yy + hh);
+        this.h = this.s(this.recentY() + 10.0F + 8.0F);
     }
 
     private float inner() {
-        return w / scale - PAD * 2;
+        return 150.0F;
+    }
+
+    private float dotStep(int n) {
+        return n <= 1 ? 0.0F : (this.inner() - 10.0F) / (float) (n - 1);
+    }
+
+    private int s(float v) {
+        return Math.round(v * this.scale);
+    }
+
+    private int X(float u) {
+        return this.x + this.s(u);
+    }
+
+    private int Y(float u) {
+        return this.y + this.s(u);
+    }
+
+    private boolean hit(double mx, double my, float xx, float yy, float ww, float hh) {
+        return mx >= (double) this.X(xx)
+                && mx < (double) this.X(xx + ww)
+                && my >= (double) this.Y(yy)
+                && my < (double) this.Y(yy + hh);
     }
 
     private void keepOnScreen() {
-        x = Math.max(4, Math.min(Px.width() - w - 4, x));
-        y = Math.max(4, Math.min(Px.height() - h - 4, y));
+        this.x = Math.max(4, Math.min(Px.width() - this.w - 4, this.x));
+        this.y = Math.max(4, Math.min(Px.height() - this.h - 4, this.y));
     }
 
     private static float clamp(double v) {
-        return (float) Math.max(0, Math.min(1, v));
+        return (float) Math.max(0.0, Math.min(1.0, v));
     }
 
     private void update(int c, boolean save) {
-        colour = c;
-        float[] hsv = Color.RGBtoHSB(c >> 16 & 255, c >> 8 & 255, c & 255, null);
-        if (hsv[1] > 0.001f && hsv[2] > 0.001f) hue = hsv[0];
-        sat = hsv[1];
-        value = hsv[2];
-        alpha = (c >>> 24) / 255f;
-        if (save) publish();
+        this.colour = c;
+        float[] hsv = Color.RGBtoHSB(c >> 16 & 255, c >> 8 & 255, c & 255, (float[]) null);
+        if (hsv[1] > 0.001F && hsv[2] > 0.001F) {
+            this.hue = hsv[0];
+        }
+
+        this.sat = hsv[1];
+        this.value = hsv[2];
+        this.alpha = (float) (c >>> 24) / 255.0F;
+        if (save) {
+            this.publish();
+        }
     }
 
     private int compose() {
-        return (Color.HSBtoRGB(hue, sat, value) & 0xFFFFFF) | ((enableAlpha ? Math.round(alpha * 255) : 255) << 24);
+        return Color.HSBtoRGB(this.hue, this.sat, this.value) & 0xFFFFFF
+                | (this.enableAlpha ? Math.round(this.alpha * 255.0F) : 255) << 24;
     }
 
     private void publish() {
-        colour = compose();
-        theme = false;
-        commit.accept(colour, false);
+        this.colour = this.compose();
+        this.theme = false;
+        this.commit.accept(this.colour, false);
         Config.dirty();
     }
 
     private String hex() {
-        return String.format(Locale.ROOT, "#%06X", colour & 0xFFFFFF);
+        return String.format(Locale.ROOT, "#%06X", this.colour & 0xFFFFFF);
     }
 
     private String rgb() {
-        return (colour >> 16 & 255) + " " + (colour >> 8 & 255) + " " + (colour & 255);
+        int var10000 = this.colour >> 16 & 255;
+        return var10000 + " " + (this.colour >> 8 & 255) + " " + (this.colour & 255);
     }
 
     void render(GuiGraphics g, double mx, double my) {
-        anim.frame();
-        drag(mx, my);
-        layout();
-        float open = anim.to("open", closing ? 0 : 1, 16), oldFade = Px.fade;
-        Px.fade *= Math.min(1, open * 1.3f);
+        this.anim.frame();
+        if (this.gesture != 0 && !ArcanicMenu.leftHeld()) {
+            this.release();
+        }
+
+        this.drag(mx, my);
+        this.layout();
+        float open = this.anim.to("open", this.closing ? 0.0F : 1.0F, 16.0F);
+        float oldFade = Px.fade;
+        Px.fade *= Math.min(1.0F, open * 1.3F);
         g.pose().pushMatrix();
-        float k = .94f + .06f * Anim.easeOutCubic(open);
-        g.pose().translate(x + w / 2f, y);
+        float k = 0.92F + 0.08F * Anim.easeOutCubic(open);
+        g.pose().translate((float) this.x, (float) this.y);
         g.pose().scale(k, k);
-        g.pose().translate(-x - w / 2f, -y);
-        var t = Theme.p();
-        boolean lt = t.light();
-        int bg = lt ? 0xFFFFFFFF : 0xF20C0D12, line = lt ? 0x1E000000 : 0x18FFFFFF, muted = lt ? t.muted() : 0xFF757D8A;
-        int acc = Theme.accent2() | 0xFF000000;
+        g.pose().translate((float) (-this.x), (float) (-this.y));
+        int bg = ArcanicMenu.panelBg();
+        int text = ArcanicMenu.T().text();
         g.nextStratum();
-        Px.shadow(g, x, y + s(3), w, h, s(9), 0x46000000);
-        boolean frost = !lt && false;
-        if (frost) Frost.backdrop(g, x, y, w, h, s(8));
-        Px.round(g, x, y, w, h, s(8), frost ? 0xDC0C0D12 : bg);
-        Px.outline(g, x, y, w, h, s(8), line);
-        g.nextStratum();
-
-        // Pick a colour + eyedropper, hex on the right; the setting's name and the "follow theme" ring under it
-        int f55 = Math.max(8, s(5.5f));
-        String head = Lang.tr("Выбор цвета");
-        Px.text(g, head, X(PAD), Y(PAD), Weight.SEMIBOLD, f55, acc);
-        int pipX = X(PAD) + Px.textWidth(head, Weight.SEMIBOLD, f55) + s(3);
-        boolean pipHv = hit(mx, my, (pipX - x) / scale, PAD - 1, 8, 8);
-        Px.icon(g, "w.pipette", pipX, Y(PAD - .5f), Math.max(8, s(6.5f)), pipHv ? t.text() : acc);
-        Px.textRight(g, hex(), X(PAD + inner()), Y(PAD), Weight.BOLD, f55, acc);
-        int f75 = Math.max(9, s(7.5f));
-        Px.text(
+        Px.shadow(
                 g,
-                Px.ellipsize(Lang.tr(title), Weight.SEMIBOLD, f75, s(inner() - 16)),
-                X(PAD),
-                Y(16),
-                Weight.SEMIBOLD,
-                f75,
-                t.text());
-        // theme ring: filled centre when the colour follows the theme accent
-        int rr = s(4), rcx = X(PAD + inner()) - rr, rcy = Y(16) + f75 / 2;
-        float th = anim.to("theme", theme ? 1 : 0, 14);
-        Px.circle(g, rcx, rcy, rr, Theme.accent() | 0xFF000000);
-        if (th < .99f)
-            Px.circle(g, rcx, rcy, Math.max(1, Math.round(rr * .6f * (1 - th))), lt ? 0xFFFFFFFF : 0xFF12141C);
-
-        // saturation / brightness square with rounded corners (the corners are masked with the panel colour)
-        int sx = X(PAD), sy = Y(SV_Y), sw = s(inner()), sh = s(SV_H), cr = s(3);
-        Px.hgrad(g, sx, sy, sw, sh, 0xFFFFFFFF, Color.HSBtoRGB(hue, 1, 1) | 0xFF000000);
+                this.x,
+                this.y + this.s(5.0F),
+                this.w,
+                this.h,
+                this.s(15.0F),
+                ArcanicMenu.light() ? 704643072 : 0x99000000);
+        Px.round(g, this.x, this.y, this.w, this.h, this.s(8.0F), bg);
+        Px.outline(g, this.x, this.y, this.w, this.h, this.s(8.0F), ArcanicMenu.edgeMedium());
         g.nextStratum();
-        Px.vgrad(g, sx, sy, sw, sh, 0x00000000, 0xFF000000);
-        g.nextStratum();
-        int mask = frost ? 0xFF0E0F14 : bg | 0xFF000000;
-        Px.wedge(g, sx, sy, cr, Px.TL, mask);
-        Px.wedge(g, sx + sw - cr, sy, cr, Px.TR, mask);
-        Px.wedge(g, sx, sy + sh - cr, cr, Px.BL, mask);
-        Px.wedge(g, sx + sw - cr, sy + sh - cr, cr, Px.BR, mask);
-        float ds = anim.to("sat", sat, 16),
-                dv = anim.to("value", value, 16),
-                dh = anim.to("hue", hue, 16),
-                da = anim.to("alpha", alpha, 16);
-        ring(g, sx + Math.round(sw * ds), sy + Math.round(sh * (1 - dv)), colour | 0xFF000000);
+        this.header(g, mx, my, text);
+        this.square(g, bg);
+        this.hueBar(g, bg);
+        if (this.enableAlpha) {
+            this.alphaBar(g, mx, my, bg, text);
+        }
 
-        // hue bar: six gradient pieces through the spectrum, rounded ends
-        int by = Y(hueY()), bh = Math.max(3, s(BAR_H));
-        for (int i = 0; i < 6; i++) {
-            int a = Math.round(sw * i / 6f), b = Math.round(sw * (i + 1) / 6f);
+        this.preview(g, mx, my, bg);
+        this.fields(g, mx, my, text);
+        this.themeRow(g, mx, my, text);
+        this.dots(g, mx, my);
+        g.pose().popMatrix();
+        Px.fade = oldFade;
+        if (this.picking) {
+            this.loupe(g, mx, my);
+        }
+    }
+
+    private void header(GuiGraphics g, double mx, double my, int text) {
+        int fs = Math.max(9, this.s(7.0F));
+        int cy = this.Y(15.0F);
+        Px.textCenter(
+                g,
+                Px.ellipsize(Lang.tr(this.title), Px.Weight.SEMIBOLD, fs, this.s(this.inner() - 40.0F)),
+                this.X(83.0F),
+                cy - fs / 2,
+                Px.Weight.SEMIBOLD,
+                fs,
+                text);
+        this.button(g, mx, my, "pick", "w.pipette", 8.0F, 8.0F, 14.0F, this.picking, false);
+        this.button(g, mx, my, "close", "x", 8.0F + this.inner() - 13.0F, 8.5F, 13.0F, false, true);
+    }
+
+    private void button(
+            GuiGraphics g,
+            double mx,
+            double my,
+            String id,
+            String icon,
+            float ux,
+            float uy,
+            float size,
+            boolean on,
+            boolean round) {
+        boolean hv = !this.picking && this.hit(mx, my, ux, uy, size, size);
+        float hk = this.anim.to("btn:" + id, hv ? 1.0F : 0.0F, 18.0F);
+        int bx = this.X(ux);
+        int by = this.Y(uy);
+        int bs = this.s(size);
+        Px.round(
+                g,
+                bx,
+                by,
+                bs,
+                bs,
+                round ? bs / 2 : this.s(4.5F),
+                on ? ArcanicMenu.acc() : Px.mix(ArcanicMenu.field(), ArcanicMenu.cardHi(), hk));
+        int is = this.s(size * 0.52F);
+        ArcanicMenu.glyph(
+                g,
+                icon,
+                bx + (bs - is) / 2,
+                by + (bs - is) / 2,
+                is,
+                on ? -1 : Px.mix(ArcanicMenu.sub(), ArcanicMenu.T().text(), hk));
+    }
+
+    private static void rounded(GuiGraphics g, int x0, int y0, int ww, int hh, int r, int bg, Row row) {
+        r = Math.min(r, Math.min(ww, hh) / 2);
+
+        for (int i = 0; i < hh; ++i) {
+            float dy = i < r ? (float) (r - i) - 0.5F : (i >= hh - r ? (float) (i - (hh - r)) + 0.5F : 0.0F);
+            int in = dy > 0.0F
+                    ? Math.round((float) r - (float) Math.sqrt((double) Math.max(0.0F, (float) (r * r) - dy * dy)))
+                    : 0;
+            row.at(y0 + i, x0 + in, x0 + ww - in, ((float) i + 0.5F) / (float) hh);
+        }
+
+        g.nextStratum();
+        if (r > 1) {
+            Px.outline(g, x0, y0, ww, hh, r, Px.a(bg, 200));
+        }
+    }
+
+    private void checkerRow(GuiGraphics g, int left, int top, int yy, int x0, int x1) {
+        int c = Math.max(2, this.s(3.0F));
+        boolean lt = ArcanicMenu.light();
+        Px.rect(g, x0, yy, x1 - x0, 1, lt ? -1 : -12961216);
+        int odd = (yy - top) / c % 2;
+
+        for (int cx = left + (x0 - left) / c * c; cx < x1; cx += c) {
+            if (((cx - left) / c + odd) % 2 == 0) {
+                int a = Math.max(cx, x0);
+                int b = Math.min(cx + c, x1);
+                if (b > a) {
+                    Px.rect(g, a, yy, b - a, 1, lt ? -2500130 : -14277077);
+                }
+            }
+        }
+    }
+
+    private void square(GuiGraphics g, int bg) {
+        int sx = this.X(8.0F);
+        int sy = this.Y(this.svY());
+        int sw = this.s(this.svW());
+        int sh = this.s(88.0F);
+        int pure = Color.HSBtoRGB(this.hue, 1.0F, 1.0F) | 0xFF000000;
+        rounded(g, sx, sy, sw, sh, this.s(5.0F), bg, (yy, x0, x1, t) -> {
+            float v = 1.0F - t;
+            int left = Px.mix(0xFF000000, -1, v);
+            int right = Px.mix(0xFF000000, pure, v);
+            int a = Math.round(sw == 0 ? 0.0F : (float) (x0 - sx) / (float) sw * 255.0F);
+            int b = Math.round((float) (x1 - sx) / (float) sw * 255.0F);
             Px.hgrad(
                     g,
-                    sx + a,
-                    by,
-                    b - a,
-                    bh,
-                    Color.HSBtoRGB(i / 6f, 1, 1) | 0xFF000000,
-                    Color.HSBtoRGB((i + 1) / 6f, 1, 1) | 0xFF000000);
-        }
-        ring(g, sx + Math.round(sw * dh), by + bh / 2, Color.HSBtoRGB(dh, 1, 1) | 0xFF000000);
-        if (enableAlpha) {
-            int ay = Y(alphaY());
-            g.blit(
-                    RenderPipelines.GUI_TEXTURED,
-                    Identifier.fromNamespaceAndPath("arcanicvisuals", "textures/gui/picker/empty.png"),
-                    sx,
-                    ay,
-                    0,
-                    0,
-                    sw,
-                    bh,
-                    sw,
-                    bh,
-                    sw,
-                    bh,
-                    Px.am(0xFFFFFFFF, Px.fade));
-            g.nextStratum();
-            Px.hgrad(g, sx, ay, sw, bh, colour & 0xFFFFFF, colour | 0xFF000000);
-            ring(g, sx + Math.round(sw * da), ay + bh / 2, colour | 0xFF000000);
-        }
+                    x0,
+                    yy,
+                    x1 - x0,
+                    1,
+                    Px.mix(left, right, (float) a / 255.0F),
+                    Px.mix(left, right, (float) b / 255.0F));
+        });
+        float ds = this.anim.to("sat", this.sat, 22.0F);
+        float dv = this.anim.to("value", this.value, 22.0F);
+        this.knob(
+                g,
+                sx + Math.round((float) sw * ds),
+                sy + Math.round((float) sh * (1.0F - dv)),
+                this.colour | 0xFF000000,
+                this.s(8.0F),
+                this.s(8.0F));
+    }
 
-        // HEX | RGB, the value field and the opacity
-        int fy = Y(fmtY()), fh = s(12), f6 = Math.max(8, s(6));
-        int segW = s(17), segX = X(PAD);
-        Px.round(g, segX, fy, segW * 2, fh, s(6), lt ? 0x10000000 : 0x6812141A);
-        Px.outline(g, segX, fy, segW * 2, fh, s(6), line);
-        float fm = anim.to("fmt", rgbMode ? 1 : 0, 16);
-        int thx = segX + s(1) + Math.round((segW - s(1)) * fm);
-        Px.round(g, thx, fy + s(1), segW - s(1), fh - s(2), s(5), Theme.accent() | 0xFF000000);
+    private void hueBar(GuiGraphics g, int bg) {
+        int hx = this.X(this.hueX());
+        int hy = this.Y(this.svY());
+        int hw = this.s(10.0F);
+        int hh = this.s(88.0F);
+        rounded(
+                g,
+                hx,
+                hy,
+                hw,
+                hh,
+                this.s(4.0F),
+                bg,
+                (yy, x0, x1, t) ->
+                        Px.rect(g, x0, yy, x1 - x0, 1, Color.HSBtoRGB(Math.min(0.9999F, t), 1.0F, 1.0F) | 0xFF000000));
+        float dh = this.anim.to("hue", this.hue, 22.0F);
+        this.knob(
+                g,
+                hx + hw / 2,
+                hy + Math.round((float) hh * dh),
+                Color.HSBtoRGB(dh, 1.0F, 1.0F) | 0xFF000000,
+                hw + this.s(4.0F),
+                this.s(5.5F));
+    }
+
+    private void alphaBar(GuiGraphics g, double mx, double my, int bg, int text) {
+        int fs = Math.max(8, this.s(5.5F));
+        Px.text(
+                g,
+                Lang.tr("ПРОЗРАЧНОСТЬ"),
+                this.X(8.0F),
+                this.Y(this.capsY()),
+                Px.Weight.SEMIBOLD,
+                fs,
+                ArcanicMenu.faint());
+        int ax = this.X(8.0F);
+        int ay = this.Y(this.alphaY());
+        int aw = this.s(this.alphaW());
+        int ah = this.s(10.0F);
+        int r = ah / 2;
+        int solid = this.colour | 0xFF000000;
+        rounded(g, ax, ay, aw, ah, r, bg, (yy, x0, x1, t) -> {
+            this.checkerRow(g, ax, ay, yy, x0, x1);
+            float a = (float) (x0 - ax) / (float) aw;
+            float b = (float) (x1 - ax) / (float) aw;
+            Px.hgrad(g, x0, yy, x1 - x0, 1, Px.am(solid, a), Px.am(solid, b));
+        });
+        float da = this.anim.to("alpha", this.alpha, 22.0F);
+        this.knob(g, ax + r + Math.round((float) (aw - r * 2) * da), ay + ah / 2, solid, this.s(8.0F), this.s(8.0F));
+        boolean active = this.editing != null && this.editingAlpha;
+        this.field(
+                g,
+                mx,
+                my,
+                "alpha",
+                this.X(8.0F + this.inner() - 28.0F),
+                ay,
+                this.s(28.0F),
+                ah,
+                active ? this.editing : Math.round(this.alpha * 100.0F) + "%",
+                active,
+                Math.max(8, this.s(5.8F)),
+                text);
+    }
+
+    private void knob(GuiGraphics g, int cx, int cy, int c, int kw, int kh) {
+        int r = Math.min(kw, kh) * 2 / 5;
+        int e = Math.max(2, this.s(1.4F));
+        Px.shadow(g, cx - kw / 2, cy - kh / 2 + this.s(0.8F), kw, kh, this.s(4.0F), 1610612736);
+        Px.round(g, cx - kw / 2, cy - kh / 2, kw, kh, r, -1);
+        Px.round(g, cx - kw / 2 + e, cy - kh / 2 + e, kw - e * 2, kh - e * 2, Math.max(1, r - e / 2), c);
+    }
+
+    private void preview(GuiGraphics g, double mx, double my, int bg) {
+        int px0 = this.X(8.0F);
+        int py0 = this.Y(this.bottomY());
+        int ps = this.s(31.0F);
+        int r = this.s(6.0F);
+        boolean clear = this.colour >>> 24 < 255;
+        rounded(g, px0, py0, ps, ps, r, bg, (yy, x0, x1, t) -> {
+            if (clear) {
+                this.checkerRow(g, px0, py0, yy, x0, x1);
+            }
+
+            Px.rect(g, x0, yy, x1 - x0, 1, this.colour);
+        });
+        Px.outline(g, px0, py0, ps, ps, r, ArcanicMenu.edgeMedium());
+        float diff = this.anim.to("diff", this.initial != this.colour ? 1.0F : 0.0F, 16.0F);
+        if (!(diff < 0.01F)) {
+            boolean hv = !this.picking && this.hit(mx, my, 27.0F, this.bottomY() + 31.0F - 12.0F, 14.0F, 14.0F);
+            float hk = this.anim.to("revert", hv ? 1.0F : 0.0F, 18.0F);
+            float kf = Px.fade;
+            Px.fade = kf * diff;
+            int cs = this.s(11.0F + 2.0F * hk);
+            int cx = px0 + ps - cs + this.s(3.0F);
+            int cy = py0 + ps - cs + this.s(3.0F);
+            int ring = Math.max(2, this.s(1.6F));
+            g.nextStratum();
+            Px.round(g, cx - ring, cy - ring, cs + ring * 2, cs + ring * 2, this.s(4.5F) + ring, bg);
+            Px.round(g, cx, cy, cs, cs, this.s(4.5F), this.initial | 0xFF000000);
+            if (hk > 0.01F) {
+                int is = this.s(7.0F);
+                Px.fade = kf * diff * hk;
+                ArcanicMenu.glyph(g, "rotate-ccw", cx + (cs - is) / 2, cy + (cs - is) / 2, is, ink(this.initial));
+            }
+
+            Px.fade = kf;
+        }
+    }
+
+    private static int ink(int c) {
+        double l = 0.2126 * (double) (c >> 16 & 255) + 0.7152 * (double) (c >> 8 & 255) + 0.0722 * (double) (c & 255);
+        return l > 150.0 ? -15395558 : -1;
+    }
+
+    private void fields(GuiGraphics g, double mx, double my, int text) {
+        int fy = this.Y(this.bottomY());
+        int fh = this.s(13.0F);
+        int fs = Math.max(8, this.s(6.0F));
+        int segW = this.s(17.0F);
+        int segX = this.X(this.rightX());
+        Px.round(g, segX, fy, segW * 2, fh, this.s(5.0F), ArcanicMenu.field());
+        float fm = this.anim.to("fmt", this.rgbMode ? 1.0F : 0.0F, 16.0F);
+        int thx = segX + this.s(1.5F) + Math.round((float) (segW - this.s(1.5F)) * fm);
+        Px.round(g, thx, fy + this.s(1.5F), segW - this.s(1.5F), fh - this.s(3.0F), this.s(4.0F), ArcanicMenu.acc());
+        int lfs = Math.max(7, this.s(5.2F));
         Px.textCenter(
-                g, "HEX", segX + segW / 2, fy + (fh - f6) / 2, Weight.SEMIBOLD, f6, Px.mix(0xFFFFFFFF, muted, fm));
+                g,
+                "HEX",
+                segX + segW / 2,
+                fy + (fh - lfs) / 2,
+                Px.Weight.SEMIBOLD,
+                lfs,
+                Px.mix(-1, ArcanicMenu.sub(), fm));
         Px.textCenter(
                 g,
                 "RGB",
                 segX + segW + segW / 2,
-                fy + (fh - f6) / 2,
-                Weight.SEMIBOLD,
-                f6,
-                Px.mix(muted, 0xFFFFFFFF, fm));
-        int alphaW = enableAlpha ? s(24) : 0,
-                fieldX = segX + segW * 2 + s(3),
-                fieldW = X(PAD + inner()) - fieldX - (enableAlpha ? alphaW + s(3) : 0);
-        field(
+                fy + (fh - lfs) / 2,
+                Px.Weight.SEMIBOLD,
+                lfs,
+                Px.mix(ArcanicMenu.sub(), -1, fm));
+        boolean valueEdit = this.editing != null && !this.editingAlpha;
+        int fieldX = segX + segW * 2 + this.s(3.0F);
+        int fieldW = this.X(8.0F + this.inner()) - fieldX;
+        this.field(
                 g,
+                mx,
+                my,
+                "value",
                 fieldX,
                 fy,
                 fieldW,
                 fh,
-                editing != null && !editingAlpha ? editing + caret() : rgbMode ? rgb() : hex(),
-                editing != null && !editingAlpha,
-                f6,
-                t.text(),
-                line);
-        if (enableAlpha)
-            field(
-                    g,
-                    fieldX + fieldW + s(3),
-                    fy,
-                    alphaW,
-                    fh,
-                    editing != null && editingAlpha ? editing + caret() : Math.round(alpha * 100) + "%",
-                    editing != null && editingAlpha,
-                    f6,
-                    t.text(),
-                    line);
-
-        // Recent colours: the palette as dots, the current colour ringed; the last dot adds the current colour
-        Px.text(g, Lang.tr("Предыдущие цвета"), X(PAD), Y(recentY()), Weight.SEMIBOLD, f55, muted);
-        var presets = Setting.Colour.PRESETS;
-        for (int i = 0; i <= presets.size() && i < 20; i++) {
-            float ux = PAD + (i % 10) * 12, uy = recentY() + 9 + (i / 10) * 12;
-            int cx = X(ux) + s(4.25f), cy = Y(uy) + s(4.25f), r = s(4.25f);
-            if (i == presets.size()) {
-                boolean hv = hit(mx, my, ux, uy, 8.5f, 8.5f);
-                Px.ring(g, cx, cy, r, hv ? t.text() : line | 0x30000000);
-                Px.icon(g, "w.plus", cx - s(3), cy - s(3), Math.max(8, s(6)), hv ? t.text() : muted);
-                continue;
-            }
-            int c = presets.get(i) | 0xFF000000;
-            boolean cur = (presets.get(i) & 0xFFFFFF) == (colour & 0xFFFFFF);
-            float sel = anim.to("sw" + i, cur ? 1 : 0, 14);
-            Px.circle(g, cx, cy, r, c);
-            if (sel > .02f) {
-                Px.ring(g, cx, cy, r + Math.max(1, s(1.2f)), Px.am(t.text(), sel));
-            }
-        }
-        g.pose().popMatrix();
-        Px.fade = oldFade;
-
-        if (picking) {
-            int c = sampleAt(mx, my),
-                    tx = (int) Math.max(0, Math.min(Px.width() - s(90), mx + s(8))),
-                    ty = (int) Math.max(0, Math.min(Px.height() - s(20), my + s(8)));
-            g.nextStratum();
-            Px.round(g, tx, ty, s(86), s(18), s(6), 0xF20C0D12);
-            Px.outline(g, tx, ty, s(86), s(18), s(6), 0x18FFFFFF);
-            Px.circle(g, tx + s(9), ty + s(9), s(5), c);
-            Px.text(
-                    g,
-                    String.format(Locale.ROOT, "#%06X", c & 0xFFFFFF),
-                    tx + s(18),
-                    ty + (s(18) - f6) / 2,
-                    Weight.BOLD,
-                    f6,
-                    0xFFF4F6FA);
-        }
-    }
-
-    private String caret() {
-        return (System.currentTimeMillis() / 500) % 2 == 0 ? "|" : "";
-    }
-
-    private void ring(GuiGraphics g, int cx, int cy, int c) {
-        int r = s(3.5f);
-        Px.circle(g, cx, cy, r + 1, 0x60000000);
-        Px.circle(g, cx, cy, r, 0xFFFFFFFF);
-        Px.circle(g, cx, cy, Math.max(1, r - s(1.2f)), c);
+                valueEdit ? this.editing : (this.rgbMode ? this.rgb() : this.hex()),
+                valueEdit,
+                fs,
+                text);
     }
 
     private void field(
-            GuiGraphics g, int fx, int fy, int fw, int fh, String text, boolean active, int fs, int colour, int line) {
-        boolean lt = Theme.p().light();
-        Px.round(g, fx, fy, fw, fh, s(6), lt ? 0x10000000 : 0x580E1016);
-        Px.outline(g, fx, fy, fw, fh, s(6), active ? Theme.accent() | 0xFF000000 : line);
-        Px.textCenter(g, text, fx + fw / 2, fy + (fh - fs) / 2, Weight.SEMIBOLD, fs, colour);
+            GuiGraphics g,
+            double mx,
+            double my,
+            String id,
+            int fx,
+            int fy,
+            int fw,
+            int fh,
+            String value,
+            boolean active,
+            int fs,
+            int text) {
+        boolean hv = !this.picking
+                && mx >= (double) fx
+                && mx < (double) (fx + fw)
+                && my >= (double) fy
+                && my < (double) (fy + fh);
+        float hk = this.anim.to("field:" + id, hv ? 1.0F : 0.0F, 18.0F);
+        float ak = this.anim.to("fieldOn:" + id, active ? 1.0F : 0.0F, 16.0F);
+        Px.round(g, fx, fy, fw, fh, this.s(4.5F), Px.mix(ArcanicMenu.field(), ArcanicMenu.cardHi(), hk * 0.8F));
+        if (ak > 0.01F) {
+            Px.outline(g, fx, fy, fw, fh, this.s(4.5F), Px.a(ArcanicMenu.acc(), Math.round(200.0F * ak)));
+        }
+
+        int tw = Px.textWidth(value, Px.Weight.SEMIBOLD, fs);
+        int tx = fx + (fw - tw) / 2;
+        int ty = fy + (fh - fs) / 2;
+        if (active && this.selectAll && !value.isEmpty()) {
+            Px.round(
+                    g,
+                    tx - this.s(1.5F),
+                    ty - this.s(1.0F),
+                    tw + this.s(3.0F),
+                    fs + this.s(2.0F),
+                    this.s(2.0F),
+                    Px.a(ArcanicMenu.acc(), 90));
+        }
+
+        Px.text(g, value, tx, ty, Px.Weight.SEMIBOLD, fs, text);
+        if (active && !this.selectAll && System.currentTimeMillis() / 520L % 2L == 0L) {
+            Px.rect(g, tx + tw + this.s(0.8F), ty, Math.max(1, this.s(0.6F)), fs, text);
+        }
+    }
+
+    private void themeRow(GuiGraphics g, double mx, double my, int text) {
+        int ty = this.Y(this.themeY());
+        int th = this.s(13.0F);
+        int fs = Math.max(8, this.s(6.2F));
+        boolean hv = !this.picking && this.hit(mx, my, this.rightX(), this.themeY(), this.rightW(), 13.0F);
+        float hk = this.anim.to("themeH", hv ? 1.0F : 0.0F, 18.0F);
+        float on = this.anim.to("theme", this.theme ? 1.0F : 0.0F, 16.0F);
+        Px.text(
+                g,
+                Lang.tr("Как в теме"),
+                this.X(this.rightX()) + this.s(2.0F),
+                ty + (th - fs) / 2,
+                Px.Weight.MEDIUM,
+                fs,
+                Px.mix(ArcanicMenu.sub(), text, Math.max(hk, on)));
+        int tw = this.s(20.0F);
+        int tk = this.s(11.0F);
+        int tx = this.X(8.0F + this.inner()) - tw;
+        int tyy = ty + (th - tk) / 2;
+        Px.round(
+                g,
+                tx,
+                tyy,
+                tw,
+                tk,
+                Math.round((float) tk * 0.38F),
+                Px.mix(Px.mix(ArcanicMenu.field(), ArcanicMenu.cardHi(), hk), ArcanicMenu.acc(), on));
+        int ks = tk - this.s(3.0F);
+        int kx = tx + this.s(1.5F) + Math.round((float) (tw - this.s(3.0F) - ks) * on);
+        Px.round(g, kx, tyy + this.s(1.5F), ks, ks, ks / 2, Px.mix(ArcanicMenu.sub(), -1, on));
+    }
+
+    private void dots(GuiGraphics g, double mx, double my) {
+        int[] pal = Setting.Colour.PALETTE;
+
+        for (int i = 0; i < pal.length; ++i) {
+            this.dot(
+                    g,
+                    mx,
+                    my,
+                    "p" + i,
+                    8.0F + (float) i * this.dotStep(pal.length),
+                    this.paletteY(),
+                    pal[i] | 0xFF000000,
+                    false);
+        }
+
+        List<Integer> recent = Setting.Colour.PRESETS;
+        int n = Math.min(recent.size(), 11);
+        float step = this.dotStep(12);
+
+        for (int i = 0; i < n; ++i) {
+            this.dot(
+                    g,
+                    mx,
+                    my,
+                    "r" + i,
+                    8.0F + (float) i * step,
+                    this.recentY(),
+                    (Integer) recent.get(i) | 0xFF000000,
+                    false);
+        }
+
+        this.dot(g, mx, my, "add", 8.0F + (float) n * step, this.recentY(), 0, true);
+    }
+
+    private void dot(GuiGraphics g, double mx, double my, String id, float ux, float uy, int c, boolean plus) {
+        boolean hv = !this.picking && this.hit(mx, my, ux, uy, 10.0F, 10.0F);
+        float hk = this.anim.to("dot:" + id, hv ? 1.0F : 0.0F, 18.0F);
+        int ds = this.s(10.0F);
+        int dx = this.X(ux);
+        int dy = this.Y(uy);
+        int r = this.s(4.2F);
+        if (plus) {
+            Px.round(g, dx, dy, ds, ds, r, Px.mix(ArcanicMenu.field(), ArcanicMenu.cardHi(), hk));
+            int is = this.s(6.0F);
+            ArcanicMenu.glyph(
+                    g,
+                    "plus",
+                    dx + (ds - is) / 2,
+                    dy + (ds - is) / 2,
+                    is,
+                    Px.mix(ArcanicMenu.faint(), ArcanicMenu.T().text(), hk));
+        } else {
+            boolean cur = (c & 0xFFFFFF) == (this.colour & 0xFFFFFF);
+            float sel = this.anim.to("sel:" + id, cur ? 1.0F : 0.0F, 14.0F);
+            int shrink = Math.round((float) this.s(2.0F) * sel);
+            int grow = Math.round((float) this.s(1.0F) * hk);
+            Px.round(
+                    g,
+                    dx + shrink - grow,
+                    dy + shrink - grow,
+                    ds - (shrink - grow) * 2,
+                    ds - (shrink - grow) * 2,
+                    r,
+                    c);
+            if (sel > 0.02F) {
+                int o = Math.max(1, this.s(0.5F));
+                Px.outline(
+                        g,
+                        dx - o,
+                        dy - o,
+                        ds + o * 2,
+                        ds + o * 2,
+                        r + o,
+                        Px.am(ArcanicMenu.T().text(), sel));
+            }
+        }
+    }
+
+    private void loupe(GuiGraphics g, double mx, double my) {
+        int c = this.sampleAt(mx, my);
+        int cells = 11;
+        int cs = Math.max(3, this.s(4.0F));
+        int grid = cells * cs;
+        int pad = this.s(5.0F);
+        int lw = grid + pad * 2;
+        int lh = grid + pad * 2 + this.s(14.0F);
+        int lx = (int) Math.max(4.0, Math.min((double) (Px.width() - lw - 4), mx + (double) this.s(14.0F)));
+        int ly = (int) Math.max(4.0, Math.min((double) (Px.height() - lh - 4), my + (double) this.s(14.0F)));
+        g.nextStratum();
+        Px.shadow(g, lx, ly + this.s(3.0F), lw, lh, this.s(10.0F), 0x8C000000);
+        Px.round(g, lx, ly, lw, lh, this.s(7.0F), ArcanicMenu.panelBg());
+        Px.outline(g, lx, ly, lw, lh, this.s(7.0F), ArcanicMenu.edgeMedium());
+        if (this.sample != null) {
+            int sx = (int) (mx * (double) this.sample.getWidth() / (double) Px.width());
+            int sy = (int) (my * (double) this.sample.getHeight() / (double) Px.height());
+
+            for (int j = 0; j < cells; ++j) {
+                for (int i = 0; i < cells; ++i) {
+                    int px = Math.max(0, Math.min(this.sample.getWidth() - 1, sx + i - cells / 2));
+                    int py = Math.max(0, Math.min(this.sample.getHeight() - 1, sy + j - cells / 2));
+                    Px.rect(g, lx + pad + i * cs, ly + pad + j * cs, cs, cs, this.sample.getPixel(px, py) | 0xFF000000);
+                }
+            }
+
+            int mid = cells / 2;
+            Px.outline(g, lx + pad + mid * cs - 1, ly + pad + mid * cs - 1, cs + 2, cs + 2, 1, -1);
+        }
+
+        int fs = Math.max(8, this.s(6.0F));
+        int ty = ly + pad + grid + this.s(4.0F);
+        Px.round(g, lx + pad, ty + (this.s(9.0F) - this.s(7.0F)) / 2, this.s(7.0F), this.s(7.0F), this.s(2.5F), c);
+        Px.text(
+                g,
+                String.format(Locale.ROOT, "#%06X", c & 0xFFFFFF),
+                lx + pad + this.s(10.0F),
+                ty + (this.s(9.0F) - fs) / 2,
+                Px.Weight.BOLD,
+                fs,
+                ArcanicMenu.T().text());
+    }
+
+    private boolean onHue(double mx, double my) {
+        return this.hit(mx, my, this.hueX() - 3.0F, this.svY() - 3.0F, 16.0F, 94.0F);
+    }
+
+    private boolean onAlpha(double mx, double my) {
+        return this.enableAlpha && this.hit(mx, my, 5.0F, this.alphaY() - 4.0F, this.alphaW() + 6.0F, 18.0F);
+    }
+
+    private boolean onSquare(double mx, double my) {
+        return this.hit(mx, my, 8.0F, this.svY(), this.svW(), 88.0F);
     }
 
     void click(double mx, double my, int button) {
-        if (closing) return;
-        if (picking) {
-            if (button == 0 && sample != null) update(sampleAt(mx, my), true);
-            stopPick();
-            return;
-        }
-        if (mx < x || mx >= x + w || my < y || my >= y + h) {
-            close();
-            return;
-        }
-        var presets = Setting.Colour.PRESETS;
-        for (int i = 0; i <= presets.size() && i < 20; i++) {
-            float ux = PAD + (i % 10) * 12, uy = recentY() + 9 + (i / 10) * 12;
-            if (!hit(mx, my, ux, uy, 8.5f, 8.5f)) continue;
-            if (i == presets.size()) {
-                if (button == 0 && !presets.contains(colour)) {
-                    presets.add(0, colour);
-                    Config.dirty();
-                    UiSound.play("click");
+        if (!this.closing) {
+            if (this.picking) {
+                if (button == 0 && this.sample != null) {
+                    this.update(this.sampleAt(mx, my), true);
+                    UiSound.play("select", 1.1F, 0.7F);
                 }
-            } else if (button == 0) {
-                update(presets.get(i), true);
-                UiSound.play("click", 1.1f, .6f);
+
+                this.stopPick();
+            } else if (!(mx < (double) this.x)
+                    && !(mx >= (double) (this.x + this.w))
+                    && !(my < (double) this.y)
+                    && !(my >= (double) (this.y + this.h))) {
+                this.commitEdit();
+                int[] pal = Setting.Colour.PALETTE;
+
+                for (int i = 0; i < pal.length; ++i) {
+                    if (this.hit(mx, my, 8.0F + (float) i * this.dotStep(pal.length), this.paletteY(), 10.0F, 10.0F)) {
+                        if (button == 0) {
+                            this.update(pal[i] | (this.enableAlpha ? this.colour & 0xFF000000 : 0xFF000000), true);
+                            UiSound.play("click", 1.1F, 0.6F);
+                        }
+
+                        return;
+                    }
+                }
+
+                List<Integer> recent = Setting.Colour.PRESETS;
+                int n = Math.min(recent.size(), 11);
+                float step = this.dotStep(12);
+
+                for (int i = 0; i <= n; ++i) {
+                    if (this.hit(mx, my, 8.0F + (float) i * step, this.recentY(), 10.0F, 10.0F)) {
+                        if (i == n) {
+                            if (button == 0 && !recent.contains(this.colour)) {
+                                recent.add(0, this.colour);
+
+                                while (recent.size() > 11) {
+                                    recent.remove(recent.size() - 1);
+                                }
+
+                                Config.dirty();
+                                UiSound.play("pop");
+                            }
+                        } else if (button == 0) {
+                            this.update((Integer) recent.get(i), true);
+                            UiSound.play("click", 1.1F, 0.6F);
+                        } else {
+                            recent.remove(i);
+                            Config.dirty();
+                            UiSound.play("reset", 1.0F, 0.6F);
+                        }
+
+                        return;
+                    }
+                }
+
+                if (button == 0) {
+                    if (this.hit(mx, my, 8.0F + this.inner() - 13.0F, 8.5F, 13.0F, 13.0F)) {
+                        UiSound.play("pop", 0.85F, 0.7F);
+                        this.close();
+                    } else if (this.hit(mx, my, 8.0F, 8.0F, 14.0F, 14.0F)) {
+                        UiSound.play("click");
+                        this.startPick();
+                    } else if (this.initial != this.colour
+                            && this.hit(mx, my, 27.0F, this.bottomY() + 31.0F - 12.0F, 14.0F, 14.0F)) {
+                        this.update(this.initial, true);
+                        UiSound.play("reset", 1.2F, 0.6F);
+                    } else if (this.hit(mx, my, this.rightX(), this.themeY(), this.rightW(), 13.0F)) {
+                        this.theme = !this.theme;
+                        this.commit.accept(this.colour, this.theme);
+                        Config.dirty();
+                        UiSound.play(this.theme ? "toggle_on" : "toggle_off");
+                    } else {
+                        float fy = this.bottomY();
+                        if (this.hit(mx, my, this.rightX(), fy, 17.0F, 13.0F)) {
+                            this.rgbMode = false;
+                            UiSound.play("tab");
+                        } else if (this.hit(mx, my, this.rightX() + 17.0F, fy, 17.0F, 13.0F)) {
+                            this.rgbMode = true;
+                            UiSound.play("tab");
+                        } else if (this.hit(
+                                mx, my, this.rightX() + 34.0F + 3.0F, fy, this.rightW() - 34.0F - 3.0F, 13.0F)) {
+                            this.editing = this.rgbMode ? this.rgb() : this.hex();
+                            this.editingAlpha = false;
+                            this.selectAll = true;
+                            UiSound.play("click", 1.2F, 0.5F);
+                        } else if (this.enableAlpha
+                                && this.hit(mx, my, 8.0F + this.inner() - 28.0F, this.alphaY(), 28.0F, 10.0F)) {
+                            this.editing = String.valueOf(Math.round(this.alpha * 100.0F));
+                            this.editingAlpha = true;
+                            this.selectAll = true;
+                            UiSound.play("click", 1.2F, 0.5F);
+                        } else {
+                            if (this.onSquare(mx, my)) {
+                                this.gesture = 2;
+                            } else if (this.onHue(mx, my)) {
+                                this.gesture = 1;
+                            } else if (this.onAlpha(mx, my)) {
+                                this.gesture = 3;
+                            } else {
+                                this.gesture = 4;
+                                this.grabX = mx - (double) this.x;
+                                this.grabY = my - (double) this.y;
+                            }
+
+                            if (this.gesture != 4) {
+                                UiSound.play("grab", 1.1F, 0.5F);
+                            }
+
+                            this.drag(mx, my);
+                        }
+                    }
+                }
             } else {
-                presets.remove(i);
-                Config.dirty();
-                UiSound.play("reset");
+                this.close();
             }
-            return;
         }
-        if (button != 0) return;
-        commitEdit();
-        float headW = Px.textWidth(Lang.tr("Выбор цвета"), Weight.SEMIBOLD, Math.max(8, s(5.5f))) / scale;
-        if (hit(mx, my, PAD + headW + 1, PAD - 1, 9, 9)) {
-            startPick();
-            return;
-        }
-        if (hit(mx, my, PAD + inner() - 9, 14, 9, 10)) { // theme ring
-            theme = !theme;
-            if (theme) commit.accept(colour, true);
-            else commit.accept(colour, false);
-            Config.dirty();
-            UiSound.play(theme ? "toggle_on" : "toggle_off");
-            return;
-        }
-        float fy = fmtY();
-        if (hit(mx, my, PAD, fy, 17, 12)) {
-            rgbMode = false;
-            UiSound.play("click");
-            return;
-        }
-        if (hit(mx, my, PAD + 17, fy, 17, 12)) {
-            rgbMode = true;
-            UiSound.play("click");
-            return;
-        }
-        float alphaW = enableAlpha ? 24 : 0,
-                fieldX = PAD + 37,
-                fieldW = PAD + inner() - fieldX - (enableAlpha ? alphaW + 3 : 0);
-        if (hit(mx, my, fieldX, fy, fieldW, 12)) {
-            editing = "";
-            editingAlpha = false;
-            return;
-        }
-        if (enableAlpha && hit(mx, my, fieldX + fieldW + 3, fy, alphaW, 12)) {
-            editing = "";
-            editingAlpha = true;
-            return;
-        }
-        if (hit(mx, my, PAD, SV_Y, inner(), SV_H)) gesture = 2;
-        else if (hit(mx, my, PAD - 2, hueY() - 2, inner() + 4, BAR_H + 4)) gesture = 1;
-        else if (enableAlpha && hit(mx, my, PAD - 2, alphaY() - 2, inner() + 4, BAR_H + 4)) gesture = 3;
-        else {
-            gesture = 4;
-            grabX = mx - x;
-            grabY = my - y;
-        }
-        drag(mx, my);
     }
 
     void drag(double mx, double my) {
-        if (gesture == 0 || closing) return;
-        if (gesture == 4) {
-            x = (int) (mx - grabX);
-            y = (int) (my - grabY);
-            keepOnScreen();
-            return;
+        if (this.gesture != 0 && !this.closing) {
+            if (this.gesture == 4) {
+                this.x = (int) (mx - this.grabX);
+                this.y = (int) (my - this.grabY);
+                this.keepOnScreen();
+            } else {
+                if (this.gesture == 1) {
+                    this.hue = Math.min(
+                            0.9999F, clamp((my - (double) this.Y(this.svY())) / (double) (88.0F * this.scale)));
+                }
+
+                if (this.gesture == 2) {
+                    this.sat = clamp((mx - (double) this.X(8.0F)) / (double) (this.svW() * this.scale));
+                    this.value = 1.0F - clamp((my - (double) this.Y(this.svY())) / (double) (88.0F * this.scale));
+                }
+
+                if (this.gesture == 3) {
+                    float r = 5.0F;
+                    this.alpha = clamp(
+                            (mx - (double) this.X(8.0F + r)) / (double) ((this.alphaW() - r * 2.0F) * this.scale));
+                }
+
+                if (this.compose() != this.colour) {
+                    this.publish();
+                }
+            }
         }
-        float u = (float) ((mx - X(PAD)) / (inner() * scale));
-        if (gesture == 1) hue = Math.min(.9999f, clamp(u));
-        if (gesture == 2) {
-            sat = clamp(u);
-            value = 1 - clamp((my - Y(SV_Y)) / (SV_H * scale));
-        }
-        if (gesture == 3) alpha = clamp(u);
-        if (compose() != colour) publish();
     }
 
     void release() {
-        gesture = 0;
+        if (this.gesture != 0 && this.gesture != 4) {
+            UiSound.play("drop", 1.1F, 0.4F);
+        }
+
+        this.gesture = 0;
     }
 
-    void wheel(double amount) {}
+    void wheel(double mx, double my, double amount) {
+        if (!this.closing && !this.picking && amount != 0.0) {
+            float d = (float) Math.signum(amount);
+            if (this.onHue(mx, my)) {
+                this.hue = (this.hue - d * 0.008F + 1.0F) % 1.0F;
+            } else if (this.onAlpha(mx, my)) {
+                this.alpha = clamp((double) (this.alpha + d * 0.02F));
+            } else {
+                if (!this.onSquare(mx, my)) {
+                    return;
+                }
+
+                this.value = clamp((double) (this.value + d * 0.02F));
+            }
+
+            if (this.compose() != this.colour) {
+                this.publish();
+                UiSound.play("tick", 1.0F + d * 0.05F, 0.6F);
+            }
+        }
+    }
 
     void character(CharacterEvent e) {
-        if (editing == null) return;
-        String ch = new String(Character.toChars(e.codepoint()));
-        boolean ok = editingAlpha ? ch.matches("[0-9]") : rgbMode ? ch.matches("[0-9 ,]") : ch.matches("[0-9a-fA-F#]");
-        if (ok && editing.length() < (editingAlpha ? 3 : rgbMode ? 11 : 7)) editing += ch;
+        if (this.editing != null) {
+            String ch = new String(Character.toChars(e.codepoint()));
+            boolean ok = this.editingAlpha
+                    ? ch.matches("[0-9]")
+                    : (this.rgbMode ? ch.matches("[0-9 ,]") : ch.matches("[0-9a-fA-F#]"));
+            if (ok) {
+                if (this.selectAll) {
+                    this.editing = "";
+                    this.selectAll = false;
+                }
+
+                if (this.editing.length() < (this.editingAlpha ? 3 : (this.rgbMode ? 11 : 7))) {
+                    this.editing = this.editing + ch;
+                    UiSound.play("type", 1.15F, 0.35F);
+                }
+            }
+        }
     }
 
     private void commitEdit() {
-        if (editing == null) return;
-        String v = editing.trim();
-        editing = null;
-        try {
-            if (editingAlpha) {
-                if (!v.isEmpty()) {
-                    alpha = clamp(Integer.parseInt(v) / 100.0);
-                    publish();
+        if (this.editing != null) {
+            String v = this.editing.trim();
+            this.editing = null;
+            this.selectAll = false;
+
+            try {
+                if (this.editingAlpha) {
+                    if (!v.isEmpty()) {
+                        this.alpha = clamp((double) Integer.parseInt(v) / 100.0);
+                        this.publish();
+                    }
+
+                    return;
                 }
-                return;
+
+                if (this.rgbMode) {
+                    String[] p = v.split("[ ,]+");
+                    if (p.length == 3) {
+                        this.update(
+                                Math.min(255, Integer.parseInt(p[0])) << 16
+                                        | Math.min(255, Integer.parseInt(p[1])) << 8
+                                        | Math.min(255, Integer.parseInt(p[2]))
+                                        | this.colour & 0xFF000000,
+                                true);
+                    }
+                } else {
+                    String hex = v.replaceFirst("^#", "");
+                    if (hex.matches("[0-9a-fA-F]{3}")) {
+                        char var10000 = hex.charAt(0);
+                        hex = "" + var10000 + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2)
+                                + hex.charAt(2);
+                    }
+
+                    if (hex.matches("[0-9a-fA-F]{6}")) {
+                        this.update((int) Long.parseLong(hex, 16) | this.colour & 0xFF000000, true);
+                    }
+                }
+            } catch (NumberFormatException ignored) {
             }
-            if (rgbMode) {
-                String[] p = v.split("[ ,]+");
-                if (p.length == 3)
-                    update(
-                            0xFF000000
-                                    | Math.min(255, Integer.parseInt(p[0])) << 16
-                                    | Math.min(255, Integer.parseInt(p[1])) << 8
-                                    | Math.min(255, Integer.parseInt(p[2]))
-                                    | (colour & 0xFF000000),
-                            true);
-            } else {
-                String hex = v.replaceFirst("^#", "");
-                if (hex.matches("[0-9a-fA-F]{6}")) update((int) Long.parseLong(hex, 16) | (colour & 0xFF000000), true);
-            }
-        } catch (NumberFormatException ignored) {
         }
     }
 
     void key(KeyEvent e) {
-        if (editing != null) {
-            if (e.key() == GLFW.GLFW_KEY_ENTER || e.key() == GLFW.GLFW_KEY_KP_ENTER || e.key() == GLFW.GLFW_KEY_TAB)
-                commitEdit();
-            else if (e.key() == GLFW.GLFW_KEY_ESCAPE) editing = null;
-            else if (e.key() == GLFW.GLFW_KEY_BACKSPACE && !editing.isEmpty())
-                editing = editing.substring(0, editing.length() - 1);
-            return;
-        }
-        if (e.key() == GLFW.GLFW_KEY_ESCAPE) {
-            if (picking) stopPick();
-            else close();
-            return;
-        }
-        if ((e.modifiers() & GLFW.GLFW_MOD_CONTROL) == 0) return;
-        var kb = Minecraft.getInstance().keyboardHandler;
-        if (e.key() == GLFW.GLFW_KEY_C)
-            kb.setClipboard(String.format(Locale.ROOT, "#%06X%02X", colour & 0xFFFFFF, colour >>> 24));
-        if (e.key() == GLFW.GLFW_KEY_V) {
-            String hex = kb.getClipboard().trim().replaceFirst("^#", "");
-            if (!hex.matches("[0-9a-fA-F]{6}([0-9a-fA-F]{2})?")) return;
-            long p = Long.parseLong(hex, 16);
-            update(hex.length() == 6 ? (int) p | 0xFF000000 : (int) (p >>> 8) | ((int) p & 255) << 24, true);
+        int k = e.key();
+        boolean shift = (e.modifiers() & 1) != 0;
+        if (this.editing == null) {
+            if (k != 256 && k != 257 && k != 335) {
+                float step = shift ? 0.05F : 0.01F;
+                boolean moved = true;
+                switch (k) {
+                    case 262 -> this.sat = clamp((double) (this.sat + step));
+                    case 263 -> this.sat = clamp((double) (this.sat - step));
+                    case 264 -> this.value = clamp((double) (this.value - step));
+                    case 265 -> this.value = clamp((double) (this.value + step));
+                    default -> moved = false;
+                }
+
+                if (moved) {
+                    if (this.compose() != this.colour) {
+                        this.publish();
+                    }
+
+                } else if ((e.modifiers() & 2) != 0) {
+                    KeyboardHandler kb = Minecraft.getInstance().keyboardHandler;
+                    if (k == 67) {
+                        kb.setClipboard(
+                                String.format(Locale.ROOT, "#%06X%02X", this.colour & 0xFFFFFF, this.colour >>> 24));
+                        UiSound.play("click", 1.2F, 0.5F);
+                    }
+
+                    if (k == 86) {
+                        String hex = kb.getClipboard().trim().replaceFirst("^#", "");
+                        if (!hex.matches("[0-9a-fA-F]{6}([0-9a-fA-F]{2})?")) {
+                            return;
+                        }
+
+                        long p = Long.parseLong(hex, 16);
+                        this.update(
+                                hex.length() == 6
+                                        ? (int) p | this.colour & 0xFF000000
+                                        : (int) (p >>> 8) | ((int) p & 255) << 24,
+                                true);
+                        UiSound.play("select", 1.1F, 0.6F);
+                    }
+                }
+            } else {
+                if (this.picking) {
+                    this.stopPick();
+                } else {
+                    this.close();
+                }
+            }
+        } else {
+            if (k != 257 && k != 335 && k != 258) {
+                if (k == 256) {
+                    this.editing = null;
+                    this.selectAll = false;
+                } else if (k == 259 && !this.editing.isEmpty()) {
+                    this.editing = this.selectAll ? "" : this.editing.substring(0, this.editing.length() - 1);
+                    this.selectAll = false;
+                    UiSound.play("type", 0.9F, 0.3F);
+                }
+            } else {
+                this.commitEdit();
+                UiSound.play("select", 1.1F, 0.6F);
+            }
         }
     }
 
     private void startPick() {
-        picking = true;
-        Screenshot.takeScreenshot(Minecraft.getInstance().getMainRenderTarget(), image -> Minecraft.getInstance()
+        this.picking = true;
+        Screenshot.takeScreenshot(Minecraft.getInstance().getMainRenderTarget(), (image) -> Minecraft.getInstance()
                 .execute(() -> {
-                    if (picking && !closing) {
-                        if (sample != null) sample.close();
-                        sample = image;
-                    } else image.close();
+                    if (this.picking && !this.closing) {
+                        if (this.sample != null) {
+                            this.sample.close();
+                        }
+
+                        this.sample = image;
+                    } else {
+                        image.close();
+                    }
                 }));
     }
 
     private int sampleAt(double mx, double my) {
-        if (sample == null) return colour;
-        return sample.getPixel(
-                        Math.max(0, Math.min(sample.getWidth() - 1, (int) (mx * sample.getWidth() / Px.width()))),
-                        Math.max(0, Math.min(sample.getHeight() - 1, (int) (my * sample.getHeight() / Px.height()))))
-                | 0xFF000000;
+        return this.sample == null
+                ? this.colour
+                : this.sample.getPixel(
+                                Math.max(0, Math.min(this.sample.getWidth() - 1, (int)
+                                        (mx * (double) this.sample.getWidth() / (double) Px.width()))),
+                                Math.max(0, Math.min(this.sample.getHeight() - 1, (int)
+                                        (my * (double) this.sample.getHeight() / (double) Px.height()))))
+                        | 0xFF000000;
     }
 
     private void stopPick() {
-        picking = false;
-        if (sample != null) {
-            sample.close();
-            sample = null;
+        this.picking = false;
+        if (this.sample != null) {
+            this.sample.close();
+            this.sample = null;
         }
     }
-    /** Closing remembers the colour among Recent colours (newest first, ten at most). */
+
     void close() {
-        if (!closing && !theme) {
-            var presets = Setting.Colour.PRESETS;
-            presets.removeIf(c -> (c & 0xFFFFFF) == (colour & 0xFFFFFF));
-            presets.add(0, colour | 0xFF000000);
-            while (presets.size() > 10) presets.remove(presets.size() - 1);
-            Config.dirty();
+        if (!this.closing) {
+            this.commitEdit();
+            if (!this.theme && this.colour != this.initial) {
+                List<Integer> recent = Setting.Colour.PRESETS;
+                recent.removeIf((c) -> (c & 0xFFFFFF) == (this.colour & 0xFFFFFF));
+                recent.add(0, this.colour | 0xFF000000);
+
+                while (recent.size() > 11) {
+                    recent.remove(recent.size() - 1);
+                }
+
+                Config.dirty();
+            }
+
+            this.closing = true;
+            this.release();
+            this.stopPick();
         }
-        closing = true;
-        commitEdit();
-        release();
-        stopPick();
     }
 
     boolean finished() {
-        return closing && anim.get("open", 0) < .01f;
+        return this.closing && this.anim.get("open", 0.0F) < 0.01F;
+    }
+
+    private interface Row {
+        void at(int var1, int var2, int var3, float var4);
     }
 }

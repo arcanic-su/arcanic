@@ -31,76 +31,62 @@ import java.util.Map;
 import java.util.Random;
 import net.arcanic.visuals.core.Modules;
 import net.arcanic.visuals.hud.TargetHud;
-import net.arcanic.visuals.mixin.GuiGraphicsAccess;
 import net.arcanic.visuals.mixin.RenderPipelinesAccess;
 import net.arcanic.visuals.mixin.RenderTypeAccess;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.gui.render.state.GuiElementRenderState;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix3x2f;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 
-/**
- * Target ESP: three spinning discs (Vortex, Brackets), bead rings (Garland), comets (Orbit), a pair of crescents
- * facing the camera (Circle) and a screen-space marker over the head (Marker).
- */
 public final class TargetEsp {
-    private TargetEsp() {}
-
-    private static final BlendFunction GLOW = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE);
-    private static final Identifier VORTEX = texture("vortex"),
-            BRACKETS = texture("brackets"),
-            MARKER = texture("marker");
-    private static final RenderPipeline TRANSLUCENT = pipeline("target_esp", BlendFunction.TRANSLUCENT, false);
-    private static final RenderPipeline ADDITIVE = pipeline("target_esp_glow", GLOW, false);
-    private static final RenderPipeline ADDITIVE_TOP = pipeline("target_esp_glow_top", GLOW, true);
-    private static final RenderPipeline HUD = hudPipeline("target_esp_hud", BlendFunction.TRANSLUCENT);
-    private static final RenderPipeline HUD_GLOW = hudPipeline("target_esp_hud_glow", GLOW);
-    private static final Map<String, RenderType> TYPES = new HashMap<>();
-
-    private static final int SEGMENTS = 48, RING_COLOURS = 24;
-    private static final float[] CRESCENT_COS = new float[SEGMENTS + 1],
-            CRESCENT_SIN = new float[SEGMENTS + 1],
-            CRESCENT_TAPER = new float[SEGMENTS + 1],
-            CRESCENT_DEG = new float[SEGMENTS + 1];
-
-    static {
-        // each crescent covers a bit more than half a turn and tapers to points at both ends
-        double arc = 3.5255651, start = -(arc - Math.PI) * .5;
-        for (int i = 0; i <= SEGMENTS; i++) {
-            double t = i / (double) SEGMENTS, angle = start + arc * t;
-            CRESCENT_COS[i] = (float) Math.cos(angle);
-            CRESCENT_SIN[i] = (float) Math.sin(angle);
-            CRESCENT_TAPER[i] = (float) Math.sin(Math.PI * t);
-            CRESCENT_DEG[i] = (float) Math.toDegrees(angle);
-        }
-    }
-
-    private static final long START = System.nanoTime();
-    private static final Random RANDOM = new Random();
-    private static final float[] spinScale = {1, 1, 1}, wobbleSpeed = {1, 1, 1}, wobblePhase = new float[3];
-    private static final float[] offset = {-30, 0, 30};
-    private static final float[] pulse = new float[3], ringYaw = new float[3], ringPitch = new float[3];
-    private static final float[] yawCos = new float[3],
-            yawSin = new float[3],
-            pitchCos = new float[3],
-            pitchSin = new float[3];
-    private static final int[] ringColours = new int[RING_COLOURS];
+    private static final BlendFunction GLOW;
+    private static final RenderPipeline TRANSLUCENT;
+    private static final RenderPipeline TRANSLUCENT_TOP;
+    private static final RenderPipeline ADDITIVE;
+    private static final RenderPipeline ADDITIVE_TOP;
+    private static final Map<String, RenderType> TYPES;
+    private static final Identifier ARCS;
+    private static final Identifier TREFOIL;
+    private static final Identifier DIAMONDS;
+    private static final Identifier SIGHT;
+    private static final Identifier TRIANGLE;
+    private static final Identifier HALO;
+    private static final Identifier LIGHT;
+    private static final float TAU = ((float) Math.PI * 2F);
+    private static final long START;
     private static LivingEntity last;
-    private static float circleSpin;
-    private static long lastSpin;
-    private static boolean markerPlaced;
-    private static double markerX, markerY;
+    private static float clock;
+    private static float acquired;
+    private static float step;
+    private static float owed;
+    private static long lastFrame;
+    private static int lastHurt;
+    private static final Random RANDOM;
+    private static final float[] discSpin;
+    private static final float[] discRock;
+    private static final float[] discPhase;
+    private static final float[] discLean;
+    private static float markerTurn;
+    private static float markerSpin;
+    private static boolean markerBack;
+    private static boolean sight;
+    private static long sightAt;
+    private static LivingEntity sightOf;
+    private static float studioClock;
+    private static float studioOwed;
+    private static final float[][] ORBITS;
+    private static final int TAIL = 16;
+
+    private TargetEsp() {}
 
     private static Identifier texture(String name) {
         return Identifier.fromNamespaceAndPath("arcanic", "textures/targetesp/" + name + ".png");
@@ -117,403 +103,457 @@ public final class TargetEsp {
                 .withBlend(blend)
                 .withDepthWrite(false)
                 .withCull(false);
-        if (throughWalls) b = b.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST);
+        if (throughWalls) {
+            b = b.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST);
+        }
+
         return b.build();
     }
 
-    private static RenderPipeline hudPipeline(String name, BlendFunction blend) {
-        return RenderPipeline.builder(RenderPipelinesAccess.arcanicvisuals$guiTextureSnippet())
-                .withLocation(Identifier.fromNamespaceAndPath("arcanicvisuals", "pipeline/" + name))
-                .withBlend(blend)
-                .withCull(false)
-                .build();
+    private static RenderType type(RenderPipeline pipeline, Identifier texture) {
+        return (RenderType)
+                TYPES.computeIfAbsent(String.valueOf(pipeline.getLocation()) + "|" + String.valueOf(texture), (k) -> {
+                    Fx.irisAssign(pipeline);
+                    return RenderTypeAccess.arcanicvisuals$create(
+                            "arcanicvisuals_target_esp",
+                            RenderSetup.builder(pipeline)
+                                    .withTexture("Sampler0", texture, () -> RenderSystem.getSamplerCache()
+                                            .getClampToEdge(FilterMode.LINEAR))
+                                    .sortOnUpload()
+                                    .createRenderSetup());
+                });
     }
 
-    private static RenderType type(RenderPipeline pipeline, Identifier texture) {
-        return TYPES.computeIfAbsent(pipeline.getLocation() + "|" + texture, k -> {
-            Fx.irisAssign(pipeline);
-            return RenderTypeAccess.arcanicvisuals$create(
-                    "arcanicvisuals_target_esp",
-                    RenderSetup.builder(pipeline)
-                            .withTexture("Sampler0", texture, () -> RenderSystem.getSamplerCache()
-                                    .getClampToEdge(FilterMode.LINEAR))
-                            .sortOnUpload()
-                            .createRenderSetup());
-        });
+    private static VertexConsumer shape(MultiBufferSource buffers, Identifier tex, boolean top) {
+        return buffers.getBuffer(type(top ? TRANSLUCENT_TOP : TRANSLUCENT, tex));
+    }
+
+    private static VertexConsumer glow(MultiBufferSource buffers, Identifier tex, boolean top) {
+        return buffers.getBuffer(type(top ? ADDITIVE_TOP : ADDITIVE, tex));
+    }
+
+    private static boolean inSight(LivingEntity t) {
+        LocalPlayer me = Minecraft.getInstance().player;
+        if (me == null) {
+            return false;
+        } else {
+            long now = System.currentTimeMillis();
+            if (t != sightOf || now - sightAt >= 100L) {
+                sight = me.hasLineOfSight(t);
+                sightAt = now;
+                sightOf = t;
+            }
+
+            return sight;
+        }
     }
 
     private static float seconds() {
-        return (System.nanoTime() - START) / 1e9f;
+        return (float) (System.nanoTime() - START) / 1.0E9F;
+    }
+
+    private static float clamp(float v) {
+        return Math.max(0.0F, Math.min(1.0F, v));
+    }
+
+    private static float smooth(float t) {
+        t = clamp(t);
+        return t * t * (3.0F - 2.0F * t);
+    }
+
+    private static float backOut(float t) {
+        t = clamp(t) - 1.0F;
+        return 1.0F + t * t * (1.7F * t + 0.7F);
+    }
+
+    private static float sin(double a) {
+        return (float) Math.sin(a);
+    }
+
+    private static float cos(double a) {
+        return (float) Math.cos(a);
     }
 
     private static LivingEntity target() {
         LivingEntity t = TargetHud.current();
-        if (t == null || t == Minecraft.getInstance().player || TargetHud.presence() <= .01f) return null;
-        if (t != last) {
-            last = t;
-            randomizeRings();
-            markerPlaced = false;
+        if (t != null && t != Minecraft.getInstance().player && !(TargetHud.presence() <= 0.01F)) {
+            if (t != last) {
+                last = t;
+                acquired = seconds();
+                lastHurt = t.hurtTime;
+                roll();
+            }
+
+            return t;
+        } else {
+            return null;
         }
-        return t;
+    }
+
+    private static void roll() {
+        for (int j = 0; j < 3; ++j) {
+            discSpin[j] = 0.75F + RANDOM.nextFloat() * 0.5F;
+            discRock[j] = 0.8F + RANDOM.nextFloat() * 0.8F;
+            discPhase[j] = RANDOM.nextFloat() * ((float) Math.PI * 2F);
+        }
+
+        for (int tries = 0; tries < 64; ++tries) {
+            for (int j = 0; j < 3; ++j) {
+                discLean[j] = -30.0F + RANDOM.nextFloat() * 60.0F;
+            }
+
+            if (Math.abs(discLean[0] - discLean[1]) >= 22.0F
+                    && Math.abs(discLean[0] - discLean[2]) >= 22.0F
+                    && Math.abs(discLean[1] - discLean[2]) >= 22.0F) {
+                return;
+            }
+        }
+
+        discLean[0] = -30.0F + RANDOM.nextFloat() * 4.0F;
+        discLean[1] = -2.0F + RANDOM.nextFloat() * 4.0F;
+        discLean[2] = 30.0F - RANDOM.nextFloat() * 4.0F;
+    }
+
+    private static void advance(float speed) {
+        long now = System.nanoTime();
+        float dt = lastFrame == 0L ? 0.0F : Math.max(0.0F, Math.min(0.1F, (float) (now - lastFrame) / 1.0E9F));
+        lastFrame = now;
+        step = Minecraft.getInstance().isPaused() ? 0.0F : dt;
+        clock = (clock + dt * speed) % 3600.0F;
+        swing(step, speed);
+    }
+
+    private static void swing(float dt, float speed) {
+        float ticks = dt * 20.0F;
+        if (markerSpin > 25.0F || markerSpin < -25.0F) {
+            markerBack = markerSpin > 25.0F;
+        }
+
+        markerSpin += (markerBack ? -0.5F : 0.5F) * ticks;
+        markerTurn = (markerTurn + markerSpin * ticks * speed) % 360.0F;
     }
 
     public static void world(WorldRenderContext ctx, Vec3 cam, Vector3f left, Vector3f up, float partialTick) {
-        var m = Modules.MARKER;
-        if (m.style.is("Маркер")) return;
+        CombatFx.TargetMarker m = Modules.MARKER;
+        advance(m.speed.f());
         LivingEntity t = target();
-        if (t == null) return;
-        float fade = TargetHud.presence();
-        AABB box = t.getBoundingBox();
-        double ix = t.xo + (t.getX() - t.xo) * partialTick - t.getX(),
-                iy = t.yo + (t.getY() - t.yo) * partialTick - t.getY(),
-                iz = t.zo + (t.getZ() - t.zo) * partialTick - t.getZ();
-        float dx = (float) ((box.minX + box.maxX) * .5 + ix - cam.x),
-                dy = (float) (box.minY + iy - cam.y),
-                dz = (float) ((box.minZ + box.maxZ) * .5 + iz - cam.z);
-        float height = (float) box.getYsize(), width = (float) Math.max(box.getXsize(), box.getZsize());
-        Matrix4f pose = ctx.matrices().last().pose();
-        float speed = m.speed.f(), time = seconds();
-        if (m.style.is("Круг")) {
-            circle(ctx, pose, t, dx, dy, dz, width, height, fade, left, up);
-            return;
-        }
-        updateRings(time, speed);
-        float base = width * 5 * m.size.f(), lift = height * .62f - .006f;
-        int colour = m.colour(t, 90, fade);
-        switch (m.style.get()) {
-            case "Вихрь" -> discs(ctx, pose, VORTEX, dx, dy + lift, dz, base * .5f, colour);
-            case "Скобки" -> discs(ctx, pose, BRACKETS, dx, dy + lift, dz, base * .5f, colour);
-            case "Гирлянда" -> garland(ctx, pose, left, up, dx, dy + lift, dz, base, colour, time);
-            case "Орбита" -> orbit(ctx, pose, left, up, dx, dy + height * .5f, dz, width, colour, time, speed);
-            default -> {}
-        }
-    }
-
-    private static void randomizeRings() {
-        for (int i = 0; i < 3; i++) {
-            spinScale[i] = .75f + RANDOM.nextFloat() * .5f;
-            wobbleSpeed[i] = .8f + RANDOM.nextFloat() * .8f;
-            wobblePhase[i] = RANDOM.nextFloat() * (float) Math.PI * 2;
-        }
-        // three yaw offsets in [-30, 30], kept at least 22 degrees apart so the rings never stack
-        for (int attempt = 0; attempt < 64; attempt++) {
-            for (int i = 0; i < 3; i++) offset[i] = -30 + RANDOM.nextFloat() * 60;
-            if (Math.abs(offset[0] - offset[1]) >= 22
-                    && Math.abs(offset[0] - offset[2]) >= 22
-                    && Math.abs(offset[1] - offset[2]) >= 22) return;
-        }
-        offset[0] = -30 + RANDOM.nextFloat() * 4;
-        offset[1] = -2 + RANDOM.nextFloat() * 4;
-        offset[2] = 30 - RANDOM.nextFloat() * 4;
-    }
-
-    private static void updateRings(float time, float speed) {
-        for (int i = 0; i < 3; i++) {
-            float wave = ((float) Math.sin(time * speed * 3.4f + i * Math.PI * 2 / 3) + 1) / 2;
-            pulse[i] = .35f + wave * .65f;
-            float yaw = -time * 140 * speed * spinScale[i] + offset[i];
-            ringPitch[i] = (float) Math.sin(time * wobbleSpeed[i] + wobblePhase[i]) * 30;
-            ringYaw[i] = (float) Math.toRadians(90 + yaw);
-            double y = ringYaw[i], p = Math.toRadians(ringPitch[i]);
-            yawCos[i] = (float) Math.cos(y);
-            yawSin[i] = (float) Math.sin(y);
-            pitchCos[i] = (float) Math.cos(p);
-            pitchSin[i] = (float) Math.sin(p);
-        }
-    }
-
-    private static void discs(
-            WorldRenderContext ctx, Matrix4f pose, Identifier texture, float x, float y, float z, float half, int c) {
-        for (int pass = 0; pass < 2; pass++) {
-            VertexConsumer vc = ctx.consumers().getBuffer(type(pass == 0 ? TRANSLUCENT : ADDITIVE, texture));
-            float passAlpha = pass == 0 ? 1 : .85f;
-            for (int i = 0; i < 3; i++) {
-                Matrix4f m = new Matrix4f(pose)
-                        .translate(x, y + .006f * i, z)
-                        .rotateY(ringYaw[i])
-                        .rotateX((float) Math.toRadians(ringPitch[i]));
-                int col = alpha(c, pulse[i] * passAlpha);
-                vertex(vc, m, -half, 0, -half, 0, 0, col);
-                vertex(vc, m, -half, 0, half, 0, 1, col);
-                vertex(vc, m, half, 0, half, 1, 1, col);
-                vertex(vc, m, half, 0, -half, 1, 0, col);
-            }
-        }
-    }
-
-    private static void garland(
-            WorldRenderContext ctx,
-            Matrix4f pose,
-            Vector3f left,
-            Vector3f up,
-            float x,
-            float y,
-            float z,
-            float base,
-            int c,
-            float time) {
-        VertexConsumer vc = ctx.consumers().getBuffer(type(ADDITIVE, Fx.Tex.WHITE.id));
-        float radius = base * .34f, beadRadius = Math.max(.045f, Math.min(.085f, base * .025f));
-        float[][] beads = new float[3 * 24][];
-        for (int i = 0; i < 3; i++)
-            for (int k = 0; k < 24; k++) {
-                double angle = Math.PI * 2 * k / 24;
-                float px = (float) Math.cos(angle) * radius, py = (float) Math.sin(angle) * radius;
-                float twinkle = ((float) Math.sin(time * 4 + k * .9f + i) + 1) / 2;
-                float ox = px * yawCos[i] + py * pitchCos[i] * yawSin[i];
-                float oy = -py * pitchSin[i];
-                float oz = -px * yawSin[i] + py * pitchCos[i] * yawCos[i];
-                beads[i * 24 + k] = new float[] {
-                    x + ox, y + .006f * i + oy, z + oz, beadRadius * (.9f + twinkle * .28f), twinkle, pulse[i]
-                };
-            }
-        // all halos first, so no bead is hidden behind the glow of its neighbour
-        for (float[] b : beads) {
-            float r = b[3], tw = b[4], p = b[5];
-            glow(vc, pose, left, up, b[0], b[1], b[2], r * (3.6f + tw * .7f), alpha(c, (.105f + tw * .035f) * p));
-            glow(vc, pose, left, up, b[0], b[1], b[2], r * (1.9f + tw * .3f), alpha(c, (.18f + tw * .055f) * p));
-        }
-        for (float[] b : beads) bead(vc, pose, b[0], b[1], b[2], b[3], alpha(c, (.78f + b[4] * .22f) * b[5]));
-    }
-
-    private static void orbit(
-            WorldRenderContext ctx,
-            Matrix4f pose,
-            Vector3f left,
-            Vector3f up,
-            float x,
-            float y,
-            float z,
-            float width,
-            int c,
-            float time,
-            float speed) {
-        VertexConsumer vc = ctx.consumers().getBuffer(type(ADDITIVE, Fx.Tex.WHITE.id));
-        float size = Modules.MARKER.size.f();
-        float radius = (width * .5f + .55f) * size;
-        float ball = Math.max(.09f, Math.min(.24f, width * .16f * size));
-        for (int i = 0; i < 3; i++) {
-            double yaw = Math.toRadians(offset[i] * 3), pitch = Math.toRadians(35 + ringPitch[i] * .5f);
-            float yc = (float) Math.cos(yaw), ys = (float) Math.sin(yaw);
-            float pc = (float) Math.cos(pitch), ps = (float) Math.sin(pitch);
-            float spin = time * 150 * speed * spinScale[i] + offset[i] * 6;
-            for (int k = 0; k < 20; k++) {
-                float fade = 1 - k / 20f;
-                double angle = Math.toRadians(spin - k * 7);
-                float a = (float) Math.cos(angle) * radius, b = (float) Math.sin(angle) * radius;
-                float ox = a * yc + b * pc * ys, oy = -b * ps, oz = -a * ys + b * pc * yc;
-                float r = ball * fade * (k == 0 ? 1.8f : 1);
-                glow(
-                        vc,
-                        pose,
+        if (t != null) {
+            float since = seconds() - acquired;
+            float fade = TargetHud.presence() * smooth(since / 0.3F);
+            if (!(fade <= 0.01F)) {
+                AABB box = t.getBoundingBox();
+                double ix = t.xo + (t.getX() - t.xo) * (double) partialTick - t.getX();
+                double iy = t.yo + (t.getY() - t.yo) * (double) partialTick - t.getY();
+                double iz = t.zo + (t.getZ() - t.zo) * (double) partialTick - t.getZ();
+                float hit = t.hurtTime > 0 ? (float) t.hurtTime / 10.0F : 0.0F;
+                boolean struck = t.hurtTime > lastHurt;
+                lastHurt = t.hurtTime;
+                draw(new Mark(
+                        ctx.consumers(),
+                        ctx.matrices().last().pose(),
+                        t,
                         left,
                         up,
-                        x + ox,
-                        y + oy,
-                        z + oz,
-                        r,
-                        alpha(c, fade * fade * (k == 0 ? .85f : .32f) * pulse[i]));
+                        cam,
+                        (float) ((box.minX + box.maxX) * 0.5 + ix - cam.x),
+                        (float) (box.minY + iy - cam.y),
+                        (float) ((box.minZ + box.maxZ) * 0.5 + iz - cam.z),
+                        (float) Math.max(box.getXsize(), box.getZsize()),
+                        (float) box.getYsize(),
+                        fade,
+                        since,
+                        m.size.f(),
+                        hit * hit,
+                        struck,
+                        inSight(t)));
             }
         }
     }
 
-    private static void circle(
-            WorldRenderContext ctx,
+    private static void draw(Mark mark) {
+        switch ((String) Modules.MARKER.style.get()) {
+            case "Трилистник" -> discs(mark, TREFOIL);
+            case "Ромбы" -> discs(mark, DIAMONDS);
+            case "Прицел" -> marker(mark, SIGHT);
+            case "Треугольник" -> marker(mark, TRIANGLE);
+            case "Спутники" -> satellites(mark);
+            case "Ореол" -> halo(mark);
+            default -> discs(mark, ARCS);
+        }
+    }
+
+    public static void studio(
+            MultiBufferSource buffers,
             Matrix4f pose,
-            LivingEntity t,
-            float dx,
-            float dy,
-            float dz,
-            float width,
-            float height,
-            float fade,
             Vector3f left,
-            Vector3f up) {
-        var m = Modules.MARKER;
-        float radius = Math.max(.35f, (width * .5f + .3f) * m.circleRadius.f());
-        float thick = radius * ((m.thickness.f() - 1) / 4 * .6f);
-        float cy = dy + height * .5f;
-        float distance = (float) Math.sqrt(dx * dx + cy * cy + dz * dz);
-        // fades out as the camera comes inside the ring
-        float a = fade * Math.max(0, Math.min(1, (distance - radius) / Math.max(radius, .01f)));
-        advanceSpin(m.speed.f());
-        if (a <= .02f) return;
-        for (int i = 0; i < RING_COLOURS; i++) ringColours[i] = mixWhite(m.colour(t, Math.round(i * 15f), a));
-        VertexConsumer vc =
-                ctx.consumers().getBuffer(type(m.throughWalls.on() ? ADDITIVE_TOP : ADDITIVE, Fx.Tex.WHITE.id));
-        // a billboard: x along the camera's left, y along its up
-        Matrix4f mat = new Matrix4f(pose).translate(dx, cy, dz).mul(new Matrix4f().set(new float[] {
-                    left.x, left.y, left.z, 0, up.x, up.y, up.z, 0, 0, 0, 1, 0, 0, 0, 0, 1
-                }));
-        float tilt = (float) Math.cos(Math.toRadians(m.tilt.get()));
-        float glow = m.glow.f();
-        if (glow > 0)
-            for (int g = 3; g >= 1; g--) crescents(vc, mat, radius, thick * (1 + g * .35f * glow), tilt, .13f / g);
-        crescents(vc, mat, radius, thick, tilt, 1);
+            Vector3f up,
+            Vector3f forward,
+            LivingEntity t,
+            AABB box,
+            float since,
+            float hit,
+            boolean struck,
+            float dt) {
+        CombatFx.TargetMarker m = Modules.MARKER;
+        float worldClock = clock;
+        float worldStep = step;
+        float worldOwed = owed;
+        studioClock = (studioClock + dt * m.speed.f()) % 3600.0F;
+        clock = studioClock;
+        step = dt;
+        owed = studioOwed;
+
+        try {
+            draw(new Mark(
+                    buffers,
+                    pose,
+                    t,
+                    left,
+                    up,
+                    Vec3.ZERO,
+                    (float) ((box.minX + box.maxX) * 0.5),
+                    (float) box.minY,
+                    (float) ((box.minZ + box.maxZ) * 0.5),
+                    (float) Math.max(box.getXsize(), box.getZsize()),
+                    (float) box.getYsize(),
+                    smooth(since / 0.3F),
+                    since,
+                    m.size.f(),
+                    hit * hit,
+                    struck,
+                    true));
+        } finally {
+            studioOwed = owed;
+            clock = worldClock;
+            step = worldStep;
+            owed = worldOwed;
+        }
     }
 
-    private static int mixWhite(int c) {
-        return (c & 0xFF000000) | (Fx.lerp(c | 0xFF000000, 0xFFFFFFFF, .2f) & 0xFFFFFF);
+    private static void discs(Mark k, Identifier tex) {
+        float half = k.width * 3.0F * k.size * (1.0F + 0.08F * k.hit);
+        float y = k.y + k.height * 0.62F;
+        Matrix4f[] at = new Matrix4f[3];
+        float[] bright = new float[3];
+
+        for (int j = 0; j < 3; ++j) {
+            bright[j] = 0.35F
+                    + 0.65F * (sin((double) (clock * 3.4F + (float) j * ((float) Math.PI * 2F) / 3.0F)) + 1.0F) * 0.5F;
+            float spin = -clock * 140.0F * discSpin[j] + discLean[j];
+            float rock = sin((double) (clock * discRock[j] + discPhase[j])) * 30.0F;
+            at[j] = (new Matrix4f(k.pose))
+                    .translate(k.x, y + (float) j * 0.006F, k.z)
+                    .rotateY((float) Math.toRadians((double) (90.0F + spin)))
+                    .rotateX((float) Math.toRadians((double) rock));
+        }
+
+        VertexConsumer vc = shape(k.buffers, tex, false);
+
+        for (int j = 0; j < 3; ++j) {
+            disc(vc, at[j], half, k.colour(j * 30, bright[j]));
+        }
+
+        vc = glow(k.buffers, tex, false);
+
+        for (int j = 0; j < 3; ++j) {
+            disc(vc, at[j], half, k.colour(j * 30, bright[j] * (0.85F + 0.8F * k.hit)));
+        }
     }
 
-    private static void advanceSpin(float speed) {
-        long now = System.nanoTime();
-        float dt = lastSpin == 0 ? 0 : Math.max(0, Math.min(.1f, (now - lastSpin) / 1e9f));
-        lastSpin = now;
-        circleSpin = (float) ((circleSpin + 2 * speed * dt) % (Math.PI * 2));
+    private static void disc(VertexConsumer vc, Matrix4f m, float half, int c) {
+        vertex(vc, m, -half, 0.0F, -half, 0.0F, 0.0F, c);
+        vertex(vc, m, -half, 0.0F, half, 0.0F, 1.0F, c);
+        vertex(vc, m, half, 0.0F, half, 1.0F, 1.0F, c);
+        vertex(vc, m, half, 0.0F, -half, 1.0F, 0.0F, c);
     }
 
-    private static void crescents(VertexConsumer vc, Matrix4f m, float radius, float thick, float tilt, float alpha) {
-        float c = (float) Math.cos(circleSpin), s = (float) Math.sin(circleSpin);
-        for (int crescent = 0; crescent < 2; crescent++) {
-            float sign = crescent == 0 ? 1 : -1;
-            for (int k = 0; k < SEGMENTS; k++) {
-                float w0 = thick * CRESCENT_TAPER[k] * .5f, w1 = thick * CRESCENT_TAPER[k + 1] * .5f;
-                if (w0 <= 0 && w1 <= 0) continue;
-                float x0 = CRESCENT_COS[k] * sign, y0 = CRESCENT_SIN[k] * sign;
-                float x1 = CRESCENT_COS[k + 1] * sign, y1 = CRESCENT_SIN[k + 1] * sign;
-                float rx0 = x0 * c - y0 * s, ry0 = x0 * s + y0 * c;
-                float rx1 = x1 * c - y1 * s, ry1 = x1 * s + y1 * c;
-                int index = Math.floorMod(
-                        Math.round((CRESCENT_DEG[k] + crescent * 180) / 360 * RING_COLOURS), RING_COLOURS);
-                int col = alpha < 1 ? alpha(ringColours[index], alpha) : ringColours[index];
-                ringVertex(vc, m, rx0, ry0, radius - w0, tilt, col);
-                ringVertex(vc, m, rx0, ry0, radius + w0, tilt, col);
-                ringVertex(vc, m, rx1, ry1, radius + w1, tilt, col);
-                ringVertex(vc, m, rx1, ry1, radius - w1, tilt, col);
+    private static void marker(Mark k, Identifier tex) {
+        float half = (2.2F - k.fade) * 0.24F * k.size * (1.0F - 0.12F * k.hit);
+        float cy = k.y + k.height * 0.5F;
+        float angle = (float) Math.toRadians((double) markerTurn);
+        int[] c = new int[] {k.colour(0, 1.0F), k.colour(0, 1.0F), k.colour(90, 1.0F), k.colour(180, 1.0F)};
+        card(shape(k.buffers, tex, k.seen), k, k.x, cy, k.z, half, angle, c, 1.0F);
+        card(glow(k.buffers, tex, k.seen), k, k.x, cy, k.z, half, angle, c, 0.45F + 0.8F * k.hit);
+    }
+
+    private static void card(
+            VertexConsumer vc, Mark k, float x, float y, float z, float r, float angle, int[] c, float a) {
+        float ca = cos((double) angle);
+        float sa = sin((double) angle);
+        Vector3f l = k.left;
+        Vector3f u = k.up;
+        float lx = (l.x * ca + u.x * sa) * r;
+        float ly = (l.y * ca + u.y * sa) * r;
+        float lz = (l.z * ca + u.z * sa) * r;
+        float ux = (u.x * ca - l.x * sa) * r;
+        float uy = (u.y * ca - l.y * sa) * r;
+        float uz = (u.z * ca - l.z * sa) * r;
+        vertex(vc, k.pose, x - lx + ux, y - ly + uy, z - lz + uz, 0.0F, 1.0F, alpha(c[0], a));
+        vertex(vc, k.pose, x + lx + ux, y + ly + uy, z + lz + uz, 1.0F, 1.0F, alpha(c[1], a));
+        vertex(vc, k.pose, x + lx - ux, y + ly - uy, z + lz - uz, 1.0F, 0.0F, alpha(c[2], a));
+        vertex(vc, k.pose, x - lx - ux, y - ly - uy, z - lz - uz, 0.0F, 0.0F, alpha(c[3], a));
+    }
+
+    private static void satellites(Mark k) {
+        float r = k.width * (0.9F + 0.5F * (1.0F - backOut(k.since / 0.5F))) * k.size * (1.0F + 0.25F * k.hit);
+        float cy = k.y + k.height * 0.55F;
+        float big = 0.2F * k.size * (1.0F + 0.5F * k.hit);
+        VertexConsumer vc = glow(k.buffers, LIGHT, false);
+
+        for (int o = 0; o < ORBITS.length; ++o) {
+            float[] orbit = ORBITS[o];
+            Matrix4f m = (new Matrix4f())
+                    .rotateY((float) Math.toRadians((double) orbit[1]) + clock * 0.2F)
+                    .rotateX((float) Math.toRadians((double) orbit[0]));
+
+            for (int s = 15; s >= 0; --s) {
+                float f = 1.0F - (float) s / 16.0F;
+                float a = clock * orbit[2] + (float) o * 2.1F - Math.signum(orbit[2]) * (float) s * 0.07F;
+                Vector3f p = m.transformPosition(new Vector3f(cos((double) a) * r, 0.0F, sin((double) a) * r));
+                sprite(
+                        vc,
+                        k.pose,
+                        k.left,
+                        k.up,
+                        k.x + p.x,
+                        cy + p.y,
+                        k.z + p.z,
+                        big * (0.25F + 0.75F * f) * 0.5F,
+                        k.colour(o * 120 + s * 3, 0.75F * f * f));
+                if (s == 0) {
+                    sprite(
+                            vc,
+                            k.pose,
+                            k.left,
+                            k.up,
+                            k.x + p.x,
+                            cy + p.y,
+                            k.z + p.z,
+                            big * 0.22F,
+                            whiter(k.colour(o * 120, 0.9F)));
+                }
             }
         }
     }
 
-    private static void ringVertex(VertexConsumer vc, Matrix4f m, float x, float y, float r, float tilt, int c) {
-        vertex(vc, m, x * r * tilt, y * r, 0, .5f, .5f, c);
+    private static void halo(Mark k) {
+        float settle = backOut(k.since / 0.5F);
+        float r = 0.34F * k.size * (1.0F + 0.18F * k.hit) / 0.8F;
+        float y = k.y + k.height + 0.3F * k.size + 0.05F * sin((double) (clock * 2.1F)) + (1.0F - settle) * 0.5F;
+        Matrix4f m = (new Matrix4f(k.pose))
+                .translate(k.x, y, k.z)
+                .rotateY(clock * 0.6F)
+                .rotateX((float) Math.toRadians((double) (8.0F * sin((double) (clock * 1.3F)))))
+                .rotateZ((float) Math.toRadians((double) (8.0F * cos((double) (clock * 1.1F)))));
+        disc(shape(k.buffers, HALO, false), m, r, k.colour(0, 0.9F));
+        disc(glow(k.buffers, HALO, false), m, r, k.colour(90, 0.55F + 0.8F * k.hit));
+        emit(4.0F, () -> {
+            float a = RANDOM.nextFloat() * ((float) Math.PI * 2F);
+            float rr = 0.34F * k.size;
+            int c = whiter(k.colour(RANDOM.nextInt(360), 1.0F));
+            Fx.spawn()
+                    .at(k.world(k.x + cos((double) a) * rr, y, k.z + sin((double) a) * rr))
+                    .vel(0.0, -0.25 - RANDOM.nextDouble() * 0.15, 0.0)
+                    .tex(Fx.Tex.GLOW)
+                    .size(0.03F * k.size, 0.0F)
+                    .life(0.8F + RANDOM.nextFloat() * 0.4F)
+                    .drag(0.5F)
+                    .twinkle(0.5F)
+                    .colour(c, c & 0xFFFFFF);
+        });
     }
 
-    private static void glow(
+    private static void emit(float rate, Runnable one) {
+        owed = Math.min(owed + step * rate, 8.0F);
+
+        while (owed >= 1.0F) {
+            --owed;
+            one.run();
+        }
+    }
+
+    private static void sprite(
             VertexConsumer vc, Matrix4f m, Vector3f left, Vector3f up, float x, float y, float z, float r, int c) {
-        int rim = c & 0xFFFFFF;
-        for (int i = 0; i < 36; i++) {
-            double a0 = Math.PI * 2 * i / 36, a1 = Math.PI * 2 * (i + 1) / 36;
-            float c0 = (float) Math.cos(a0) * r, s0 = (float) Math.sin(a0) * r;
-            float c1 = (float) Math.cos(a1) * r, s1 = (float) Math.sin(a1) * r;
-            float x1 = x + left.x * c1 + up.x * s1, y1 = y + left.y * c1 + up.y * s1, z1 = z + left.z * c1 + up.z * s1;
-            vertex(vc, m, x, y, z, .5f, .5f, c);
-            vertex(
-                    vc,
-                    m,
-                    x + left.x * c0 + up.x * s0,
-                    y + left.y * c0 + up.y * s0,
-                    z + left.z * c0 + up.z * s0,
-                    .5f,
-                    .5f,
-                    rim);
-            vertex(vc, m, x1, y1, z1, .5f, .5f, rim);
-            vertex(vc, m, x1, y1, z1, .5f, .5f, rim);
+        if (c >>> 24 != 0) {
+            float lx = left.x * r;
+            float ly = left.y * r;
+            float lz = left.z * r;
+            float ux = up.x * r;
+            float uy = up.y * r;
+            float uz = up.z * r;
+            vertex(vc, m, x - lx - ux, y - ly - uy, z - lz - uz, 0.0F, 1.0F, c);
+            vertex(vc, m, x + lx - ux, y + ly - uy, z + lz - uz, 1.0F, 1.0F, c);
+            vertex(vc, m, x + lx + ux, y + ly + uy, z + lz + uz, 1.0F, 0.0F, c);
+            vertex(vc, m, x - lx + ux, y - ly + uy, z - lz + uz, 0.0F, 0.0F, c);
         }
     }
 
-    private static void bead(VertexConsumer vc, Matrix4f m, float x, float y, float z, float r, int c) {
-        for (int stack = 0; stack < 8; stack++) {
-            double lat0 = Math.PI * stack / 8 - Math.PI / 2, lat1 = lat0 + Math.PI / 8;
-            float y0 = (float) Math.sin(lat0) * r, r0 = (float) Math.cos(lat0) * r;
-            float y1 = (float) Math.sin(lat1) * r, r1 = (float) Math.cos(lat1) * r;
-            for (int slice = 0; slice < 12; slice++) {
-                double lon0 = Math.PI * 2 * slice / 12, lon1 = Math.PI * 2 * (slice + 1) / 12;
-                float c0 = (float) Math.cos(lon0), s0 = (float) Math.sin(lon0);
-                float c1 = (float) Math.cos(lon1), s1 = (float) Math.sin(lon1);
-                vertex(vc, m, x + c0 * r0, y + y0, z + s0 * r0, .5f, .5f, c);
-                vertex(vc, m, x + c0 * r1, y + y1, z + s0 * r1, .5f, .5f, c);
-                vertex(vc, m, x + c1 * r1, y + y1, z + s1 * r1, .5f, .5f, c);
-                vertex(vc, m, x + c1 * r0, y + y0, z + s1 * r0, .5f, .5f, c);
-            }
-        }
+    private static int whiter(int c) {
+        return c & 0xFF000000 | Fx.lerp(c | 0xFF000000, -1, 0.45F) & 0xFFFFFF;
     }
 
     private static void vertex(VertexConsumer vc, Matrix4f m, float x, float y, float z, float u, float v, int c) {
-        vc.addVertex(m, x, y, z)
+        vc.addVertex((Matrix4fc) m, x, y, z)
                 .setUv(u, v)
                 .setColor(c)
                 .setOverlay(0)
-                .setLight(0xF000F0)
-                .setNormal(0, 1, 0);
+                .setLight(15728880)
+                .setNormal(0.0F, 1.0F, 0.0F);
     }
 
     static int alpha(int c, float a) {
-        return (Math.round(Math.max(0, Math.min(1, a)) * (c >>> 24)) << 24) | (c & 0xFFFFFF);
+        return Math.round(Math.max(0.0F, Math.min(1.0F, a)) * (float) (c >>> 24)) << 24 | c & 0xFFFFFF;
     }
 
-    /** The Marker style: a spinning, breathing sprite over the target's head; drawn with the HUD in GUI units. */
-    public static void hud(GuiGraphics g) {
-        var m = Modules.MARKER;
-        if (!m.enabled() || !m.style.is("Маркер")) return;
-        LivingEntity t = target();
-        if (t == null) return;
-        Minecraft mc = Minecraft.getInstance();
-        float pt = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-        Vec3 at = t.getPosition(pt).add(0, (t.getEyeHeight() + .4) * .5, 0);
-        int w = mc.getWindow().getGuiScaledWidth(), h = mc.getWindow().getGuiScaledHeight();
-        double[] p = Projection.toScreen(at, w, h);
-        if (p == null) return;
-        if (!markerPlaced) {
-            markerX = p[0];
-            markerY = p[1];
-            markerPlaced = true;
-        } else {
-            markerX += (p[0] - markerX) * .5;
-            markerY += (p[1] - markerY) * .5;
-        }
-        float fade = TargetHud.presence();
-        double time = (System.nanoTime() - START) / 1e6 * m.speed.get();
-        float breathe = (float) (Math.sin(time / 500) + 1) / 2;
-        float spin = (float) (Math.sin(time / 1000) + 1) / 2 * 360;
-        float tilt = Math.max(0, Math.min(90, breathe * 90));
-        float scale = Math.max(.9f, Math.min(1.1f, breathe * 1.1f));
-        float size = m.markerSize.f() * scale;
-        float x = (float) markerX, y = (float) markerY;
-        Matrix3x2f pose = new Matrix3x2f(g.pose())
-                .translate(x, y)
-                .rotate((float) Math.toRadians(90 - tilt + spin))
-                .translate(-x, -y);
-        var texture = mc.getTextureManager().getTexture(MARKER);
-        float half = size / 2;
-        var bounds = new ScreenRectangle((int) (x - size), (int) (y - size), (int) (size * 2), (int) (size * 2));
-        ((GuiGraphicsAccess) g)
-                .arcanicvisuals$state()
-                .submitGuiElement(new MarkerState(
-                        pose,
-                        x - half,
-                        y - half,
-                        size,
-                        new int[] {
-                            m.colour(t, 0, fade), m.colour(t, 270, fade), m.colour(t, 180, fade), m.colour(t, 90, fade)
-                        },
-                        m.markerGlow.on() ? HUD_GLOW : HUD,
-                        TextureSetup.singleTexture(
-                                texture.getTextureView(),
-                                RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR)),
-                        bounds));
+    static {
+        GLOW = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE);
+        TRANSLUCENT = pipeline("target_esp", BlendFunction.TRANSLUCENT, false);
+        TRANSLUCENT_TOP = pipeline("target_esp_top", BlendFunction.TRANSLUCENT, true);
+        ADDITIVE = pipeline("target_esp_glow", GLOW, false);
+        ADDITIVE_TOP = pipeline("target_esp_glow_top", GLOW, true);
+        TYPES = new HashMap<>();
+        ARCS = texture("disc_arcs");
+        TREFOIL = texture("disc_trefoil");
+        DIAMONDS = texture("disc_diamonds");
+        SIGHT = texture("marker_sight");
+        TRIANGLE = texture("marker_triangle");
+        HALO = texture("halo");
+        LIGHT = texture("glow");
+        START = System.nanoTime();
+        RANDOM = new Random();
+        discSpin = new float[3];
+        discRock = new float[3];
+        discPhase = new float[3];
+        discLean = new float[3];
+        markerSpin = 1.0F;
+        roll();
+        ORBITS = new float[][] {{24.0F, 0.0F, 1.6F}, {-28.0F, 120.0F, -1.3F}, {62.0F, 240.0F, 1.1F}};
     }
 
-    /** Corner colours run top-left, bottom-left, bottom-right, top-right. */
-    private record MarkerState(
-            Matrix3x2f pose,
+    private static record Mark(
+            MultiBufferSource buffers,
+            Matrix4f pose,
+            LivingEntity t,
+            Vector3f left,
+            Vector3f up,
+            Vec3 cam,
             float x,
             float y,
+            float z,
+            float width,
+            float height,
+            float fade,
+            float since,
             float size,
-            int[] corners,
-            RenderPipeline pipeline,
-            TextureSetup textureSetup,
-            ScreenRectangle bounds)
-            implements GuiElementRenderState {
-        public ScreenRectangle scissorArea() {
-            return null;
+            float hit,
+            boolean struck,
+            boolean seen) {
+        int colour(int offset, float alpha) {
+            return Modules.MARKER.colour(this.t, offset, alpha * this.fade);
         }
 
-        public void buildVertices(VertexConsumer v) {
-            v.addVertexWith2DPose(pose, x, y).setUv(0, 0).setColor(corners[0]);
-            v.addVertexWith2DPose(pose, x, y + size).setUv(0, 1).setColor(corners[1]);
-            v.addVertexWith2DPose(pose, x + size, y + size).setUv(1, 1).setColor(corners[2]);
-            v.addVertexWith2DPose(pose, x + size, y).setUv(1, 0).setColor(corners[3]);
+        Vec3 world(float px, float py, float pz) {
+            return new Vec3(this.cam.x + (double) px, this.cam.y + (double) py, this.cam.z + (double) pz);
         }
     }
 }

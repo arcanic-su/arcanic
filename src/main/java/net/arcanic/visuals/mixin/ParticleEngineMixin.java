@@ -19,29 +19,27 @@
 package net.arcanic.visuals.mixin;
 
 import net.arcanic.visuals.core.Modules;
-import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Hide sweep: drops the big white sweep-attack arc that covers the screen on full-charge hits. */
-@Mixin(ParticleEngine.class)
+@Mixin({ParticleEngine.class})
 public abstract class ParticleEngineMixin {
-    @Inject(method = "createParticle", at = @At("HEAD"), cancellable = true, require = 0)
-    private void arcanicvisuals$noSweep(
-            ParticleOptions options,
-            double x,
-            double y,
-            double z,
-            double vx,
-            double vy,
-            double vz,
-            CallbackInfoReturnable<Particle> cir) {
-        if (options.getType() == ParticleTypes.SWEEP_ATTACK && Modules.ANIM.enabled() && Modules.ANIM.noSweep.on())
-            cir.setReturnValue(null);
+    @Inject(
+            method = {
+                "createTrackingEmitter(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/particles/ParticleOptions;I)V"
+            },
+            at = {@At("HEAD")},
+            cancellable = true,
+            require = 0)
+    private void arcanicvisuals$hideVanillaTotem(Entity entity, ParticleOptions options, int life, CallbackInfo ci) {
+        if (options.getType() == ParticleTypes.TOTEM_OF_UNDYING && Modules.TOTEM.hides(entity)) {
+            ci.cancel();
+        }
     }
 }

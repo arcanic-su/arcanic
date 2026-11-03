@@ -18,50 +18,88 @@
  */
 package net.arcanic.visuals.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanic.visuals.core.Modules;
-import net.arcanic.visuals.fx.CustomSky;
-import net.minecraft.client.Camera;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.arcanic.visuals.fx.ShaderSky;
+import net.arcanic.visuals.fx.ThemeSky;
 import net.minecraft.client.renderer.SkyRenderer;
-import net.minecraft.client.renderer.state.SkyRenderState;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Atmosphere: tints the sky dome colour. */
-@Mixin(SkyRenderer.class)
+@Mixin({SkyRenderer.class})
 public abstract class SkyRendererMixin {
-    @Inject(method = "renderSkyDisc", at = @At("HEAD"), cancellable = true)
+    @ModifyVariable(
+            method = {"renderSkyDisc"},
+            at = {@At("HEAD")},
+            argsOnly = true)
+    private int arcanicvisuals$ambienceSky(int colour) {
+        return Modules.AMBIENCE.sky(colour);
+    }
+
+    @Redirect(
+            method = {"renderStars"},
+            at = {@At(value = "NEW", target = "(FFFF)Lorg/joml/Vector4f;")})
+    private Vector4f arcanicvisuals$ambienceStars(float r, float g, float b, float a) {
+        return Modules.AMBIENCE.stars(r, g, b, a);
+    }
+
+    @Inject(
+            method = {"renderSkyDisc"},
+            at = {@At("HEAD")},
+            cancellable = true)
     private void arcanicvisuals$sky(int colour, CallbackInfo ci) {
-        if (CustomSky.render()) ci.cancel();
+        if (Modules.SKY_SHADER.replaces()) {
+            ShaderSky.render(Modules.SKY_SHADER);
+            ci.cancel();
+        } else if (Modules.CUSTOM_FOG.hidesSky()) {
+            ci.cancel();
+        }
     }
 
-    @Inject(method = "renderSunriseAndSunset", at = @At("HEAD"), cancellable = true)
-    private void arcanicvisuals$sunrise(PoseStack pose, float angle, int colour, CallbackInfo ci) {
-        if (Modules.WORLD.skyActive()) ci.cancel();
+    @Inject(
+            method = {"renderSkyDisc"},
+            at = {@At("RETURN")})
+    private void arcanicvisuals$themeSky(int colour, CallbackInfo ci) {
+        if (Modules.SKY_SHADER.overlays()) {
+            ThemeSky.render(Modules.SKY_SHADER);
+        }
     }
 
-    @Inject(method = "renderDarkDisc", at = @At("HEAD"), cancellable = true)
+    @Inject(
+            method = {"renderSunriseAndSunset"},
+            at = {@At("HEAD")},
+            cancellable = true)
+    private void arcanicvisuals$sunrise(CallbackInfo ci) {
+        if (hidden()) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(
+            method = {"renderDarkDisc"},
+            at = {@At("HEAD")},
+            cancellable = true)
     private void arcanicvisuals$dark(CallbackInfo ci) {
-        if (Modules.WORLD.skyActive()) ci.cancel();
+        if (hidden()) {
+            ci.cancel();
+        }
     }
 
-    @Inject(method = "renderSunMoonAndStars", at = @At("HEAD"), cancellable = true)
+    @Inject(
+            method = {"renderSunMoonAndStars"},
+            at = {@At("HEAD")},
+            cancellable = true)
     private void arcanicvisuals$sun(CallbackInfo ci) {
-        if (Modules.WORLD.skyActive() && !Modules.WORLD.sunMoon.on()) ci.cancel();
+        if (hidden()) {
+            ci.cancel();
+        }
     }
 
-    @Inject(method = "extractRenderState", at = @At("TAIL"), require = 0)
-    private void arcanicvisuals$tintSky(
-            ClientLevel level, float partialTick, Camera camera, SkyRenderState state, CallbackInfo ci) {
-        int c = state.skyColor;
-        float[] t = Modules.ATMOS.apply((c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f, true);
-        if (t != null)
-            state.skyColor = (c & 0xFF000000)
-                    | Math.round(t[0] * 255) << 16
-                    | Math.round(t[1] * 255) << 8
-                    | Math.round(t[2] * 255);
+    private static boolean hidden() {
+        return Modules.SKY_SHADER.replaces() || Modules.CUSTOM_FOG.hidesSky();
     }
 }

@@ -7,6 +7,13 @@ build/
 
 # the development game folder: logs, settings, the names of players that were met
 run/
+logs/
+
+# Python caches and the sync server's live data
+__pycache__/
+*.pyc
+server/tokens.json
+server/friends.json
 
 # IDE and OS
 .idea/

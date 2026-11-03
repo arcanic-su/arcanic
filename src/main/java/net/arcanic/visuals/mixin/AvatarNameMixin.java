@@ -30,19 +30,22 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(AvatarRenderer.class)
+@Mixin({AvatarRenderer.class})
 public abstract class AvatarNameMixin {
     @Inject(
-            method =
-                    "submitNameTag(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V",
-            at = @At("HEAD"),
+            method = {
+                "submitNameTag(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V"
+            },
+            at = {@At("HEAD")},
             cancellable = true)
-    private void arcanic$name(
+    private void arcanicvisuals$name(
             AvatarRenderState state,
             PoseStack pose,
             SubmitNodeCollector collector,
             CameraRenderState camera,
             CallbackInfo ci) {
-        if (Modules.NAMETAGS.replaces(Ducks.entityOf(state))) ci.cancel();
+        if (Modules.NAMETAGS.replaces(Ducks.entityOf(state))) {
+            ci.cancel();
+        }
     }
 }

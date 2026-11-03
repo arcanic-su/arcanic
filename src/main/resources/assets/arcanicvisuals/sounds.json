@@ -254,5 +254,141 @@
     "stream": false
    }
   ]
+ },
+ "impact.railgun_equip": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:impact/railgun_equip",
+    "stream": false
+   }
+  ]
+ },
+ "impact.railgun_scope_on": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:impact/railgun_scope_on",
+    "stream": false
+   }
+  ]
+ },
+ "ui.unlock": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/unlock",
+    "stream": false
+   }
+  ]
+ },
+ "ui.lock": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/lock",
+    "stream": false
+   }
+  ]
+ },
+ "ui.interact_open": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/interact_open",
+    "stream": false
+   }
+  ]
+ },
+ "ui.interact_close": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/interact_close",
+    "stream": false
+   }
+  ]
+ },
+ "ui.interact_hover": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/interact_hover",
+    "stream": false
+   }
+  ]
+ },
+ "ui.interact_pick": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/interact_pick",
+    "stream": false
+   }
+  ]
+ },
+ "ui.friend_request": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/friend_request",
+    "stream": false
+   }
+  ]
+ },
+ "ui.friend_accept": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/friend_accept",
+    "stream": false
+   }
+  ]
+ },
+ "ui.friend_online": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/friend_online",
+    "stream": false
+   }
+  ]
+ },
+ "ui.friend_sent": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/friend_sent",
+    "stream": false
+   }
+  ]
+ },
+ "ui.ping_location": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/ping_location",
+    "stream": false
+   }
+  ]
+ },
+ "ui.ping_enemy": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/ping_enemy",
+    "stream": false
+   }
+  ]
+ },
+ "ui.ping_loot": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/ping_loot",
+    "stream": false
+   }
+  ]
+ },
+ "ui.ping_danger": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/ping_danger",
+    "stream": false
+   }
+  ]
+ },
+ "ui.ping_ack": {
+  "sounds": [
+   {
+    "name": "arcanicvisuals:ui/ping_ack",
+    "stream": false
+   }
+  ]
  }
 }

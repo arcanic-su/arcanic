@@ -19,10 +19,8 @@
 package net.arcanic.visuals.mixin;
 
 import net.arcanic.visuals.arc.MeleeAnimator;
-import net.arcanic.visuals.arc.MeleeSkins;
 import net.arcanic.visuals.core.Modules;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.InteractionHand;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -39,7 +37,9 @@ public abstract class MeleeAttackMixin {
 
     @Inject(method = "startUseItem", at = @At("RETURN"))
     private void arcanicvisuals$secondary(CallbackInfo ci) {
-        if (MeleeSkins.usesHand(Minecraft.getInstance().player, InteractionHand.OFF_HAND)) return;
+        // raising a shield (or eating) is not a heavy attack, whichever hand the item is in
+        var player = Minecraft.getInstance().player;
+        if (player != null && player.isUsingItem()) return;
         if (Modules.KNIVES.handlesAnyHand()) MeleeAnimator.getInstance().onAttack(false);
     }
 }

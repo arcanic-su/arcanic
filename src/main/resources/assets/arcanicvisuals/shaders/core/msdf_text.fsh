@@ -6,7 +6,14 @@ uniform sampler2D Sampler0;
 in vec2 texCoord0;
 in vec4 vertexColor;
 out vec4 fragColor;
+// the atlas' distance range in texels: 10 for the menu faces, 12 and 6 for the HUD faces and icons
+#if defined(RANGE_12)
+const float RANGE = 12.0;
+#elif defined(RANGE_6)
+const float RANGE = 6.0;
+#else
 const float RANGE = 10.0;
+#endif
 const float EDGE = 0.2;
 float median(vec3 m) { return max(min(m.r, m.g), min(max(m.r, m.g), m.b)); }
 float cover(vec2 uv, float px, float thick) { return smoothstep(-EDGE, EDGE, (median(texture(Sampler0, uv).rgb) - 0.5 + thick) * px); }

@@ -25,14 +25,14 @@ import net.minecraft.client.Minecraft;
 public final class OptimizerMod {
     private OptimizerMod() {}
 
-    private static final String SCREEN = "net.arcanic.optimizer.OptimizerScreen";
+    private static final String SCREEN = "zako.opt.ZakoOptScreen";
     private static Boolean state;
 
     public static void set(boolean on) {
         if (state != null && state == on) return;
         state = on;
         try {
-            Class<?> config = Class.forName("net.arcanic.optimizer.OptimizerConfig");
+            Class<?> config = Class.forName("zako.opt.ZakoOptConfig");
             Object values = config.getField("values").get(null);
             Object defaults = values.getClass().getDeclaredConstructor().newInstance();
             for (Field f : values.getClass().getFields()) {
