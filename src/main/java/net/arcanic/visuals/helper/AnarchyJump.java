@@ -53,7 +53,7 @@ import net.minecraft.world.item.component.ItemLore;
 
 public final class AnarchyJump {
     private static final Path LOG = FabricLoader.getInstance().getConfigDir().resolve("arcanicvisuals/jump.txt");
-    private static final String[] KINDS = new String[] {"solo", "duo", "trio", "clans"};
+    private static final String[] KINDS = {"solo", "duo", "trio", "clans"};
     private static State state;
     private static String target;
     private static String title;
@@ -157,7 +157,7 @@ public final class AnarchyJump {
             Files.createDirectories(LOG.getParent());
             Files.writeString(
                     LOG,
-                    "# Arcanic jump, " + String.valueOf(LocalDateTime.now()) + "\n" + String.join("\n", notes) + "\n",
+                    "# Arcanic jump, " + LocalDateTime.now() + "\n" + String.join("\n", notes) + "\n",
                     StandardCharsets.UTF_8);
         } catch (IOException ignored) {
         }
@@ -174,7 +174,7 @@ public final class AnarchyJump {
         if (p == null) {
             return -1;
         } else {
-            for (int i = 0; i < 9; ++i) {
+            for (int i = 0; i < 9; i++) {
                 ItemStack s = p.getInventory().getItem(i);
                 if (!s.isEmpty()
                         && (data(s).contains("server-menu")
@@ -234,14 +234,14 @@ public final class AnarchyJump {
                     if (now - started > 45000L) {
                         fail("Не получилось перейти");
                     } else if (now >= stepAt + 350L) {
-                        switch (state.ordinal()) {
-                            case 1:
+                        switch (state) {
+                            case HUB:
                                 if (now - stepAt > 6000L) {
                                     state = AnarchyJump.State.OPENING;
                                     stepAt = now;
                                 }
                                 break;
-                            case 2:
+                            case OPENING:
                                 if (mc.screen instanceof AbstractContainerScreen) {
                                     state = AnarchyJump.State.MENU;
                                     return;
@@ -271,10 +271,10 @@ public final class AnarchyJump {
                                 state = AnarchyJump.State.MENU;
                                 stepAt = now;
                                 break;
-                            case 3:
-                                Screen var5 = mc.screen;
-                                if (var5 instanceof AbstractContainerScreen) {
-                                    AbstractContainerScreen<?> s = (AbstractContainerScreen) var5;
+                            case MENU:
+                                Screen screen2 = mc.screen;
+                                if (screen2 instanceof AbstractContainerScreen) {
+                                    AbstractContainerScreen<?> s = (AbstractContainerScreen) screen2;
                                     choose(s, now);
                                 } else if (now - stepAt > 3000L && !joining) {
                                     state = AnarchyJump.State.OPENING;
@@ -365,16 +365,13 @@ public final class AnarchyJump {
     }
 
     private static String kindName() {
-        String var10000;
-        switch (kind == null ? "" : kind) {
-            case "solo" -> var10000 = "СолоЛайт";
-            case "duo" -> var10000 = "ДуоЛайт";
-            case "trio" -> var10000 = "ТриоЛайт";
-            case "clans" -> var10000 = "КланЛайт";
-            default -> var10000 = "анархии";
-        }
-
-        return var10000;
+        return switch (kind == null ? "" : kind) {
+            case "solo" -> "СолоЛайт";
+            case "duo" -> "ДуоЛайт";
+            case "trio" -> "ТриоЛайт";
+            case "clans" -> "КланЛайт";
+            default -> "анархии";
+        };
     }
 
     public static void hud(GuiGraphics g) {
@@ -400,7 +397,7 @@ public final class AnarchyJump {
                 int acc2 = Theme.accent2() | 0xFF000000;
                 int tone = state == AnarchyJump.State.FAILED
                         ? -41620
-                        : (state == AnarchyJump.State.DONE ? -8658784 : Theme.accent() | 0xFF000000);
+                        : (state == AnarchyJump.State.DONE ? 0xFF7BE0A0 : Theme.accent() | 0xFF000000);
                 float old = Px.fade;
                 Px.fade = old * Math.min(1.0F, in * 1.5F) * (1.0F - o);
                 Px.shadow(g, x, y + Math.round(4.0F * k), w, h, Math.round(18.0F * k), 1879048192);
@@ -412,7 +409,7 @@ public final class AnarchyJump {
                 if (busy()) {
                     float t = (float) (now % 900L) / 900.0F;
 
-                    for (int i = 0; i < 8; ++i) {
+                    for (int i = 0; i < 8; i++) {
                         double a = (Math.PI * 2D) * (double) i / 8.0;
                         float lit = 1.0F - ((float) i / 8.0F - t + 1.0F) % 1.0F;
                         int ds = Math.max(2, Math.round(4.0F * k));
@@ -435,7 +432,7 @@ public final class AnarchyJump {
                         y + Math.round(11.0F * k),
                         Px.Weight.MEDIUM,
                         fs1,
-                        -6643532);
+                        0xFF9AA0B4);
                 Px.text(
                         g,
                         Px.ellipsize(step, Px.Weight.SEMIBOLD, fs2, tw),
@@ -443,7 +440,7 @@ public final class AnarchyJump {
                         y + Math.round(29.0F * k),
                         Px.Weight.SEMIBOLD,
                         fs2,
-                        -723206);
+                        0xFFF4F6FA);
                 Px.fade = old;
             }
         }

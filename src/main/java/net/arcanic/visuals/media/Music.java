@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
@@ -128,7 +127,7 @@ public final class Music {
                     (int) Math.round(r / sum * 255.0),
                     (int) Math.round(g / sum * 255.0),
                     (int) Math.round(b / sum * 255.0),
-                    (float[]) null);
+                    null);
             int rgb = Color.HSBtoRGB(hsv[0], Math.max(0.45F, Math.min(0.85F, hsv[1])), Math.max(0.92F, hsv[2]));
             return rgb | 0xFF000000;
         }
@@ -164,7 +163,7 @@ public final class Music {
                                 StandardOpenOption.CREATE,
                                 StandardOpenOption.APPEND);
                     }
-                } catch (IOException var2) {
+                } catch (IOException e) {
                     stopHelper();
                 }
             });
@@ -225,7 +224,7 @@ public final class Music {
                                 new InputStreamReader(helper.getInputStream(), StandardCharsets.UTF_8));
                     }
 
-                    for (int i = 0; i < 16 && reader.ready(); ++i) {
+                    for (int i = 0; i < 16 && reader.ready(); i++) {
                         String line = reader.readLine();
                         if (line == null) {
                             stopHelper();
@@ -387,7 +386,7 @@ public final class Music {
     private static long number(String s) {
         try {
             return Math.max(0L, Math.min(86400000L, Long.parseLong(s)));
-        } catch (NumberFormatException var2) {
+        } catch (NumberFormatException e) {
             return 0L;
         }
     }
@@ -425,10 +424,7 @@ public final class Music {
 
     private static void updateCover() throws Exception {
         Track current = track;
-        if (current.present()
-                && !current.artwork().isBlank()
-                && artwork != null
-                && Files.isRegularFile(artwork, new LinkOption[0])) {
+        if (current.present() && !current.artwork().isBlank() && artwork != null && Files.isRegularFile(artwork)) {
             long size = Files.size(artwork);
             if (size > 0L && size <= 4194304L) {
                 byte[] bytes = Files.readAllBytes(artwork);
@@ -440,14 +436,14 @@ public final class Music {
                     NativeImage image;
                     try {
                         image = NativeImage.read((InputStream) in);
-                    } catch (Throwable var20) {
+                    } catch (Throwable e) {
                         try {
                             in.close();
-                        } catch (Throwable var19) {
-                            var20.addSuppressed(var19);
+                        } catch (Throwable e2) {
+                            e.addSuppressed(e2);
                         }
 
-                        throw var20;
+                        throw e;
                     }
 
                     in.close();
@@ -457,8 +453,8 @@ public final class Music {
                         int offsetX = (image.getWidth() - side) / 2;
                         int offsetY = (image.getHeight() - side) / 2;
 
-                        for (int y = 0; y < 128; ++y) {
-                            for (int x = 0; x < 128; ++x) {
+                        for (int y = 0; y < 128; y++) {
+                            for (int x = 0; x < 128; x++) {
                                 int color = image.getPixel(offsetX + x * side / 128, offsetY + y * side / 128);
                                 double dx = Math.max(0.0, Math.abs((double) x + 0.5 - 64.0) - 40.0);
                                 double dy = Math.max(0.0, Math.abs((double) y + 0.5 - 64.0) - 40.0);

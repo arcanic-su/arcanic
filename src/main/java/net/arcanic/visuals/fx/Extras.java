@@ -174,7 +174,7 @@ public final class Extras {
         void render(WorldRenderContext ctx, Vec3 cam) {
             if (this.bubbles.isEmpty()) return;
             long now = System.currentTimeMillis();
-            long life = Math.round((Double) this.life.get() * 50.0);
+            long life = Math.round(this.life.get() * 50.0);
             this.bubbles.removeIf(b -> now - b.born() >= life);
             if (!this.enabled() || this.bubbles.isEmpty()) return;
             Identifier tex = TEXTURES[this.texture.is("Пузырь 2") ? 1 : 0];
@@ -221,7 +221,7 @@ public final class Extras {
         }
 
         void glow(EntityModel<?> model, LivingEntityRenderState state, PoseStack pose, SubmitNodeCollector c) {
-            float a = ((Double) this.opacity.get()).floatValue() / 100.0F;
+            float a = this.opacity.get().floatValue() / 100.0F;
             if (a <= 0.0F) return;
             List<float[]> sprites = new ArrayList<>();
             Vector3f at = new Vector3f();
@@ -240,7 +240,7 @@ public final class Extras {
             if (sprites.isEmpty()) return;
             Quaternionf facing = mc().gameRenderer.getMainCamera().rotation();
             int col = WorldFx.alpha(this.colour.argb() | 0xFF000000, a);
-            float scale = ((Double) this.size.get()).floatValue() * 0.5F;
+            float scale = this.size.get().floatValue() * 0.5F;
             c.submitCustomGeometry(new PoseStack(), Fx.type(Fx.Tex.GLOW, true), (last, vc) -> {
                 Vector3f r = new Vector3f();
                 Vector3f u = new Vector3f();
@@ -287,8 +287,8 @@ public final class Extras {
         void draw(HumanoidModel<?> m, PoseStack pose, SubmitNodeCollector c) {
             pose.pushPose();
             toHead(m, pose);
-            float y = -0.72F - ((Double) this.height.get()).floatValue();
-            float r = ((Double) this.radius.get()).floatValue();
+            float y = -0.72F - this.height.get().floatValue();
+            float r = this.radius.get().floatValue();
             float t = (System.nanoTime() % 100000000000L) / 1.0E9F;
             float breathe = 0.85F + 0.15F * (float) Math.sin(t * 2.4);
             int col = this.colour.argb() | 0xFF000000;
@@ -329,8 +329,8 @@ public final class Extras {
             pose.pushPose();
             toHead(m, pose);
             float base = -0.52F;
-            float apex = base - ((Double) this.rise.get()).floatValue();
-            float r = ((Double) this.width.get()).floatValue();
+            float apex = base - this.rise.get().floatValue();
+            float r = this.width.get().floatValue();
             int col = this.colour.argb() | 0xFF000000;
             int top = WorldFx.alpha(Fx.lerp(col, -1, 0.25F), 0.55F);
             int rim = WorldFx.alpha(col, 0.3F);
@@ -403,9 +403,9 @@ public final class Extras {
         public void tick() {
             LocalPlayer me = mc().player;
             if (me == null || mc().level == null || mc().isPaused()) return;
-            this.owed += ((Double) this.rate.get()).floatValue() / 20.0F;
+            this.owed += this.rate.get().floatValue() / 20.0F;
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
-            double r = (Double) this.range.get();
+            double r = this.range.get();
             boolean stars = this.kind.is("Звёзды");
             int c = this.colour.argb() | 0xFF000000;
             while (this.owed >= 1.0F) {

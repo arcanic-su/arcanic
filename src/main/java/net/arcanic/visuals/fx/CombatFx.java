@@ -67,13 +67,13 @@ public final class CombatFx {
     }
 
     public static final class HitEffects extends Module {
-        public final Setting.Mode type = this.add(new Setting.Mode(
-                "type", "Стиль", "Стекло", new String[] {"Стекло", "Сакура", "Звёздная пыль", "Бабочки", "Пузыри"}));
-        final Setting.Mode colourMode = (Setting.Mode)
-                this.add(new Setting.Mode("color_mode", "Окраска", "Свои", new String[] {"Свои", "Тема", "Цвет"}));
+        public final Setting.Mode type = this.add(
+                new Setting.Mode("type", "Стиль", "Стекло", "Стекло", "Сакура", "Звёздная пыль", "Бабочки", "Пузыри"));
+        final Setting.Mode colourMode =
+                this.add(new Setting.Mode("color_mode", "Окраска", "Свои", "Свои", "Тема", "Цвет"));
         final Setting.Colour colour =
                 (this.add(new Setting.Colour("color", "Цвет", false))).showIf(() -> this.colourMode.is("Цвет"));
-        final Setting.Num size = (Setting.Num) this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
+        final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
         final Setting.Bool critsOnly = this.add(new Setting.Bool("crits_only", "Только криты", false));
         final Setting.Bool sound = this.add(new Setting.Bool("sound", "Звук", true));
 
@@ -84,14 +84,14 @@ public final class CombatFx {
                     "Стекло, сакура, звёздная пыль, бабочки или пузыри там, куда пришёлся удар",
                     Category.COMBAT,
                     false);
-            this.colour.set(-770210);
+            this.colour.set(0xFFF43F5E);
         }
 
         Show.Pal pal() {
             if (this.colourMode.is("Тема")) {
                 return Show.theme();
             } else if (this.colourMode.is("Цвет")) {
-                int c = (Integer) this.colour.get() | 0xFF000000;
+                int c = this.colour.get() | 0xFF000000;
                 return new Show.Pal(Fx.lerp(c, -1, 0.5F), c, Fx.lerp(c, 0xFF000000, 0.5F));
             } else {
                 return HitFx.own(this.type.index());
@@ -108,9 +108,9 @@ public final class CombatFx {
 
                     Vec3 eye = p.getEyePosition(1.0F);
                     Vec3 at = null;
-                    HitResult var8 = CombatFx.mc().hitResult;
-                    if (var8 instanceof EntityHitResult) {
-                        EntityHitResult eh = (EntityHitResult) var8;
+                    HitResult hitResult2 = CombatFx.mc().hitResult;
+                    if (hitResult2 instanceof EntityHitResult) {
+                        EntityHitResult eh = (EntityHitResult) hitResult2;
                         if (eh.getEntity() == target) {
                             at = eh.getLocation();
                         }
@@ -163,9 +163,8 @@ public final class CombatFx {
     }
 
     public static final class DamageNumbers extends Module {
-        final Setting.Mode style =
-                this.add(new Setting.Mode("style", "Вид", "Число", new String[] {"Число", "Сердца"}));
-        final Setting.Num size = (Setting.Num) this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.5, 0.05, "×"));
+        final Setting.Mode style = this.add(new Setting.Mode("style", "Вид", "Число", "Число", "Сердца"));
+        final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.5, 0.05, "×"));
         final Setting.Num life = this.add(new Setting.Num("life", "Время", 1.2, 0.4, 3.0, 0.1, " с"));
         final Setting.Bool self = this.add(new Setting.Bool("self", "Свой урон тоже", false));
         final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет", false));
@@ -174,7 +173,7 @@ public final class CombatFx {
 
         public DamageNumbers() {
             super("damage_numbers", "Цифры урона", "Всплывающий урон над целью", Category.COMBAT, false);
-            this.colour.set(-770210);
+            this.colour.set(0xFFF43F5E);
         }
 
         public void tick() {
@@ -188,14 +187,14 @@ public final class CombatFx {
                         LivingEntity l = (LivingEntity) e;
                         if (!(l.distanceToSqr(me) > 2304.0)) {
                             float hp = l.getHealth() + l.getAbsorptionAmount();
-                            Float before = (Float) this.health.get(l.getId());
+                            Float before = this.health.get(l.getId());
                             seen.put(l.getId(), hp);
                             if (before != null && !(hp >= before - 0.01F) && (l != me || this.self.on())) {
                                 float dmg = before - hp;
                                 String text = this.style.is("Сердца")
                                         ? String.format(Locale.ROOT, "-%.1f ❤", dmg / 2.0F)
                                         : String.format(Locale.ROOT, dmg >= 10.0F ? "-%.0f" : "-%.1f", dmg);
-                                int c = dmg >= 6.0F ? -340971 : this.colour.argb();
+                                int c = dmg >= 6.0F ? 0xFFFACC15 : this.colour.argb();
                                 this.pops.add(new Pop(
                                         l.position().add(0.0, (double) l.getBbHeight() + 0.3, 0.0),
                                         text,
@@ -209,8 +208,7 @@ public final class CombatFx {
 
                 this.health.clear();
                 this.health.putAll(seen);
-                this.pops.removeIf(
-                        (p) -> (double) (System.currentTimeMillis() - p.born) > (Double) this.life.get() * 1000.0);
+                this.pops.removeIf((p) -> (double) (System.currentTimeMillis() - p.born) > this.life.get() * 1000.0);
                 if (this.pops.size() > 60) {
                     this.pops.subList(0, this.pops.size() - 60).clear();
                 }
@@ -232,14 +230,13 @@ public final class CombatFx {
                 float base = (float) sh / 1080.0F;
 
                 for (Pop p : this.pops) {
-                    float t =
-                            (float) (System.currentTimeMillis() - p.born) / (float) ((Double) this.life.get() * 1000.0);
+                    float t = (float) (System.currentTimeMillis() - p.born) / (float) (this.life.get() * 1000.0);
                     Vec3 world = p.at.add(p.drift * (double) t, (double) t * 0.9, 0.0);
                     double[] s = Projection.toScreen(world, sw, sh);
                     if (s != null) {
                         float pop = t < 0.12F ? 0.6F + t / 0.12F * 0.6F : 1.2F - Math.min(0.2F, (t - 0.12F) * 0.5F);
                         int px = Math.round((float) ((double) (22.0F * base)
-                                * (Double) this.size.get()
+                                * this.size.get()
                                 * (double) pop
                                 * Math.max(0.5, Math.min(1.3, 6.0 / Math.max(1.0, s[2])))));
                         float a = t > 0.7F ? 1.0F - (t - 0.7F) / 0.3F : 1.0F;
@@ -262,20 +259,28 @@ public final class CombatFx {
     }
 
     public static final class KillEffects extends Module {
-        public final Setting.Mode type = this.add(new Setting.Mode("type", "Эффект", "Пепел", new String[] {
-            "Пепел", "Казнь", "Чёрная дыра", "Глитч", "Рассечение", "Конфетти", "Метеорит", "Гроза"
-        }));
-        final Setting.Mode colourMode = (Setting.Mode)
-                this.add(new Setting.Mode("color_mode", "Окраска", "Свои", new String[] {"Свои", "Тема", "Цвет"}));
+        public final Setting.Mode type = this.add(new Setting.Mode(
+                "type",
+                "Эффект",
+                "Пепел",
+                "Пепел",
+                "Казнь",
+                "Чёрная дыра",
+                "Глитч",
+                "Рассечение",
+                "Конфетти",
+                "Метеорит",
+                "Гроза"));
+        final Setting.Mode colourMode =
+                this.add(new Setting.Mode("color_mode", "Окраска", "Свои", "Свои", "Тема", "Цвет"));
         final Setting.Colour colour =
                 (this.add(new Setting.Colour("color", "Цвет", false))).showIf(() -> this.colourMode.is("Цвет"));
         final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.6, 1.6, 0.05, "×"));
         final Setting.Bool screen = this.add(new Setting.Bool("screen", "Эффекты на экране", true));
         final Setting.Bool shake = this.add(new Setting.Bool("shake", "Тряска камеры", true));
         final Setting.Bool sound = this.add(new Setting.Bool("sound", "Звук", true));
-        final Setting.Num volume =
-                (Setting.Num) (this.add(new Setting.Num("volume", "Громкость", 0.7, 0.1, 1.0, 0.05, "")))
-                        .showIf(() -> this.sound.on());
+        final Setting.Num volume = (this.add(new Setting.Num("volume", "Громкость", 0.7, 0.1, 1.0, 0.05, "")))
+                .showIf(() -> this.sound.on());
         final Setting.Bool players = this.add(new Setting.Bool("players", "Только игроки", false));
         private final Map<Integer, Long> hit = new HashMap<>();
 
@@ -286,14 +291,14 @@ public final class CombatFx {
                     "Пепел, казнь, чёрная дыра, глитч, рассечение, конфетти, метеорит или гроза, когда твоя цель умирает",
                     Category.COMBAT,
                     false);
-            this.colour.set(-14494738);
+            this.colour.set(0xFF22D3EE);
         }
 
         Show.Pal pal() {
             if (this.colourMode.is("Тема")) {
                 return Show.theme();
             } else if (this.colourMode.is("Цвет")) {
-                int c = (Integer) this.colour.get() | 0xFF000000;
+                int c = this.colour.get() | 0xFF000000;
                 return new Show.Pal(Fx.lerp(c, -1, 0.5F), c, Fx.lerp(c, 0xFF000000, 0.45F));
             } else {
                 return KillFx.own(this.type.index());
@@ -313,10 +318,10 @@ public final class CombatFx {
             } else {
                 long now = System.currentTimeMillis();
                 this.hit.entrySet().removeIf((en) -> {
-                    if (now - (Long) en.getValue() > 4000L) {
+                    if (now - en.getValue() > 4000L) {
                         return true;
                     } else {
-                        Entity e = level.getEntity((Integer) en.getKey());
+                        Entity e = level.getEntity(en.getKey());
                         if (e instanceof LivingEntity) {
                             LivingEntity l = (LivingEntity) e;
                             if (!l.isDeadOrDying()) {
@@ -355,8 +360,8 @@ public final class CombatFx {
     }
 
     public static final class SwingTrail extends Module {
-        public final Setting.Mode colourMode = (Setting.Mode)
-                this.add(new Setting.Mode("color_mode", "Окраска", "Тема", new String[] {"Тема", "Радуга", "Цвет"}));
+        public final Setting.Mode colourMode =
+                this.add(new Setting.Mode("color_mode", "Окраска", "Тема", "Тема", "Радуга", "Цвет"));
         public final Setting.Colour colour =
                 (this.add(new Setting.Colour("color", "Цвет", false))).showIf(() -> this.colourMode.is("Цвет"));
         public final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 1.8, 0.05, "×"));
@@ -365,7 +370,7 @@ public final class CombatFx {
 
         public SwingTrail() {
             super("swing_trail", "След удара", "Светящаяся дуга за взмахом оружия", Category.COMBAT, false);
-            this.colour.set(-14494738);
+            this.colour.set(0xFF22D3EE);
         }
 
         public int colourAt(float f) {
@@ -373,7 +378,7 @@ public final class CombatFx {
                 return Draw.rainbow(f * 0.5F, 1.0F);
             } else {
                 return this.colourMode.is("Цвет")
-                        ? (Integer) this.colour.get()
+                        ? this.colour.get()
                         : Fx.lerp(Theme.accent() | 0xFF000000, Theme.accent2() | 0xFF000000, f);
             }
         }
@@ -382,7 +387,7 @@ public final class CombatFx {
     public static final class HitMarker extends Module {
         final Setting.Bool combo = this.add(new Setting.Bool("combo", "Счётчик комбо", true));
         final Setting.Bool sound = this.add(new Setting.Bool("sound", "Щелчок", true));
-        final Setting.Num size = (Setting.Num) this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
+        final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
         private long hitAt;
         private long comboAt;
         private int comboCount;
@@ -457,16 +462,16 @@ public final class CombatFx {
                         Math.round(10.0F * u),
                         Draw.am(col, a * 0.25F));
 
-                for (int i = 0; i < 4; ++i) {
+                for (int i = 0; i < 4; i++) {
                     double ang = (Math.PI / 4D) + (double) i * Math.PI / 2.0 + (this.killed ? (double) t * 0.6 : 0.0);
 
-                    for (int s = 0; s <= len; ++s) {
+                    for (int s = 0; s <= len; s++) {
                         int x = Math.round((float) ((double) cx + Math.cos(ang) * (double) (gap + s)));
                         int y = Math.round((float) ((double) cy + Math.sin(ang) * (double) (gap + s)));
                         Px.circle(g, x, y, Math.max(1, th / 2), Draw.am(0xFF000000, a * 0.35F));
                     }
 
-                    for (int s = 0; s <= len; ++s) {
+                    for (int s = 0; s <= len; s++) {
                         int x = Math.round((float) ((double) cx + Math.cos(ang) * (double) (gap + s)));
                         int y = Math.round((float) ((double) cy + Math.sin(ang) * (double) (gap + s)));
                         Px.circle(g, x, y, Math.max(1, th / 2 - (s == len ? 1 : 0)), Draw.am(col, a));
@@ -512,16 +517,13 @@ public final class CombatFx {
     }
 
     public static final class TargetMarker extends Module {
-        public final Setting.Mode style = this.add(new Setting.Mode("style", "Стиль", "Дуги", new String[] {
-            "Дуги", "Трилистник", "Ромбы", "Прицел", "Треугольник", "Спутники", "Ореол"
-        }));
-        public final Setting.Num size =
-                (Setting.Num) this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
-        public final Setting.Num speed =
-                (Setting.Num) this.add(new Setting.Num("speed", "Скорость", 1.0, 0.0, 4.0, 0.05, "×"));
+        public final Setting.Mode style = this.add(new Setting.Mode(
+                "style", "Стиль", "Дуги", "Дуги", "Трилистник", "Ромбы", "Прицел", "Треугольник", "Спутники", "Ореол"));
+        public final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
+        public final Setting.Num speed = this.add(new Setting.Num("speed", "Скорость", 1.0, 0.0, 4.0, 0.05, "×"));
         public final Setting.Bool hurtTint = this.add(new Setting.Bool("hurt_tint", "Краснеть при ударе", true));
-        final Setting.Mode colourMode = (Setting.Mode)
-                this.add(new Setting.Mode("color_mode", "Окраска", "Тема", new String[] {"Тема", "Радуга", "Цвет"}));
+        final Setting.Mode colourMode =
+                this.add(new Setting.Mode("color_mode", "Окраска", "Тема", "Тема", "Радуга", "Цвет"));
         final Setting.Colour colour =
                 (this.add(new Setting.Colour("color", "Цвет", false))).showIf(() -> this.colourMode.is("Цвет"));
         private final long start = System.currentTimeMillis();
@@ -533,7 +535,7 @@ public final class CombatFx {
                     "Target ESP: дуги, трилистник, ромбы, прицел, треугольник, спутники и ореол",
                     Category.COMBAT,
                     false);
-            this.colour.set(-770210);
+            this.colour.set(0xFFF43F5E);
         }
 
         public int colour(LivingEntity t, int offset, float alpha) {
@@ -548,7 +550,7 @@ public final class CombatFx {
         private int base(int offset) {
             long now = System.currentTimeMillis();
             if (this.colourMode.is("Цвет")) {
-                return (Integer) this.colour.get();
+                return this.colour.get();
             } else if (this.colourMode.is("Радуга")) {
                 float hue = ((float) (now % 4000L) / 4000.0F + (float) offset / 360.0F) % 1.0F;
                 return 0xFF000000 | Color.HSBtoRGB(hue, 0.85F, 1.0F);

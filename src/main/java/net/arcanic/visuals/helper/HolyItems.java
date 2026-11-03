@@ -123,7 +123,7 @@ public final class HolyItems {
     }
 
     public static float explosionDamage(LivingEntity e, Vec3 at, float power) {
-        return explosionDamage(e, at, power, (BlockPos) null, true);
+        return explosionDamage(e, at, power, null, true);
     }
 
     public static float explosionDamage(LivingEntity e, Vec3 at, float power, BlockPos self, boolean lift) {
@@ -137,25 +137,21 @@ public final class HolyItems {
     }
 
     public static float seenFrom(LivingEntity e, Vec3 at, BlockPos self) {
-        return self == null ? ServerExplosion.getSeenPercent(at, e) : seen(at, e, self, (BlockPos) null, Vec3.ZERO);
+        return self == null ? ServerExplosion.getSeenPercent(at, e) : seen(at, e, self, null, Vec3.ZERO);
     }
 
     public static float explosionDamage(LivingEntity e, Vec3 at, float power, BlockPos self, Vec3 shift) {
         double dist = e.position().add(shift).distanceTo(at);
-        return dist > (double) (power * 2.0F)
-                ? 0.0F
-                : damageAt(e, dist, seen(at, e, self, (BlockPos) null, shift), power);
+        return dist > (double) (power * 2.0F) ? 0.0F : damageAt(e, dist, seen(at, e, self, null, shift), power);
     }
 
     public static float explosionDamageBehind(LivingEntity e, Vec3 at, float power, BlockPos solid, Vec3 shift) {
         double dist = e.position().add(shift).distanceTo(at);
-        return dist > (double) (power * 2.0F)
-                ? 0.0F
-                : damageAt(e, dist, seen(at, e, (BlockPos) null, solid, shift), power);
+        return dist > (double) (power * 2.0F) ? 0.0F : damageAt(e, dist, seen(at, e, null, solid, shift), power);
     }
 
     public static float seenBehind(LivingEntity e, Vec3 at, BlockPos solid) {
-        return seen(at, e, (BlockPos) null, solid, Vec3.ZERO);
+        return seen(at, e, null, solid, Vec3.ZERO);
     }
 
     public static float damageAt(LivingEntity e, double dist, float seen, float power) {
@@ -167,16 +163,14 @@ public final class HolyItems {
             double impact = Math.max(0.0, (1.0 - d) * (double) seen);
             float dmg = (float) ((impact * impact + impact) / 2.0 * 7.0 * reach + 1.0);
             if (e instanceof Player) {
-                float var10000;
-                switch (HolyEvents.onHolyWorld() ? Difficulty.NORMAL : e.level().getDifficulty()) {
-                    case PEACEFUL -> var10000 = 0.0F;
-                    case EASY -> var10000 = Math.min(dmg / 2.0F + 1.0F, dmg);
-                    case NORMAL -> var10000 = dmg;
-                    case HARD -> var10000 = dmg * 3.0F / 2.0F;
-                    default -> throw new MatchException((String) null, (Throwable) null);
-                }
-
-                dmg = var10000;
+                dmg = switch (HolyEvents.onHolyWorld()
+                        ? Difficulty.NORMAL
+                        : e.level().getDifficulty()) {
+                    case PEACEFUL -> 0.0F;
+                    case EASY -> Math.min(dmg / 2.0F + 1.0F, dmg);
+                    case NORMAL -> dmg;
+                    case HARD -> dmg * 3.0F / 2.0F;
+                };
             }
 
             if (dmg <= 0.0F) {
@@ -220,16 +214,16 @@ public final class HolyItems {
         for (char c : s.replaceAll("[&§][0-9a-fk-orA-FK-OR]", "")
                 .toUpperCase(Locale.ROOT)
                 .toCharArray()) {
-            char var10001;
+            char c2;
             switch (c) {
-                case 'А' -> var10001 = 'A';
-                case 'В' -> var10001 = 'B';
-                case 'Е' -> var10001 = 'E';
-                case 'С' -> var10001 = 'C';
-                default -> var10001 = c;
+                case 'А' -> c2 = 'A';
+                case 'В' -> c2 = 'B';
+                case 'Е' -> c2 = 'E';
+                case 'С' -> c2 = 'C';
+                default -> c2 = c;
             }
 
-            b.append(var10001);
+            b.append(c2);
         }
 
         return b.toString();

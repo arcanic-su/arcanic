@@ -36,7 +36,7 @@ public abstract class ChatInputMixin {
             if (!ChatTools.send(m)) {
                 return;
             }
-        } catch (RuntimeException var6) {
+        } catch (RuntimeException e) {
             m = message;
         }
 

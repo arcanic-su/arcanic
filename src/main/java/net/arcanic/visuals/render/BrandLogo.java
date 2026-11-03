@@ -57,13 +57,10 @@ public final class BrandLogo {
     private static void prepare() {
         if (!registered) {
             try {
-                InputStream meta = BrandLogo.class.getResourceAsStream("/assets/arcanicvisuals/logo_animation.json");
-
-                try {
-                    InputStream png = BrandLogo.class.getResourceAsStream(
-                            "/assets/arcanicvisuals/textures/gui/arcanic_A_frames.png");
-
-                    try {
+                try (InputStream meta =
+                        BrandLogo.class.getResourceAsStream("/assets/arcanicvisuals/logo_animation.json")) {
+                    try (InputStream png = BrandLogo.class.getResourceAsStream(
+                            "/assets/arcanicvisuals/textures/gui/arcanic_A_frames.png")) {
                         JsonObject root = JsonParser.parseReader(new InputStreamReader(meta, StandardCharsets.UTF_8))
                                 .getAsJsonObject();
                         size = root.get("size").getAsInt();
@@ -75,7 +72,7 @@ public final class BrandLogo {
                         JsonArray times = root.getAsJsonArray("durations");
                         ends = new int[times.size()];
 
-                        for (int i = 0; i < ends.length; ++i) {
+                        for (int i = 0; i < ends.length; i++) {
                             total += times.get(i).getAsInt();
                             ends[i] = total;
                         }
@@ -84,35 +81,7 @@ public final class BrandLogo {
                         Minecraft.getInstance().getTextureManager().register(ID, new LogoTexture(image));
                         started = System.nanoTime();
                         registered = true;
-                    } catch (Throwable var7) {
-                        if (png != null) {
-                            try {
-                                png.close();
-                            } catch (Throwable var6) {
-                                var7.addSuppressed(var6);
-                            }
-                        }
-
-                        throw var7;
                     }
-
-                    if (png != null) {
-                        png.close();
-                    }
-                } catch (Throwable var8) {
-                    if (meta != null) {
-                        try {
-                            meta.close();
-                        } catch (Throwable var5) {
-                            var8.addSuppressed(var5);
-                        }
-                    }
-
-                    throw var8;
-                }
-
-                if (meta != null) {
-                    meta.close();
                 }
 
             } catch (IOException ex) {

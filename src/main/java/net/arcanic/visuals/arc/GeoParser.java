@@ -36,7 +36,7 @@ public class GeoParser {
     public static GeoParts parse(String json) {
         try {
             return parse(JsonParser.parseString(json).getAsJsonObject());
-        } catch (Exception var2) {
+        } catch (Exception e) {
             return null;
         }
     }
@@ -405,12 +405,12 @@ public class GeoParser {
             float[] us = new float[4];
             float[] vs = new float[4];
 
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < 4; i++) {
                 us[i] = corners[i].u;
                 vs[i] = corners[i].v;
             }
 
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < 4; i++) {
                 int from = (i + quarterTurns) % 4;
                 corners[i].u = us[from];
                 corners[i].v = vs[from];
@@ -509,7 +509,7 @@ public class GeoParser {
             JsonArray array = json.getAsJsonArray(field);
             float[] out = new float[array.size()];
 
-            for (int i = 0; i < out.length; ++i) {
+            for (int i = 0; i < out.length; i++) {
                 out[i] = array.get(i).getAsFloat();
             }
 

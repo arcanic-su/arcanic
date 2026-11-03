@@ -85,10 +85,10 @@ public final class KillSound extends Module {
         } else {
             long now = System.currentTimeMillis();
             this.hit.entrySet().removeIf((en) -> {
-                if (now - (Long) en.getValue() > 3000L) {
+                if (now - en.getValue() > 3000L) {
                     return true;
                 } else {
-                    Entity e = level.getEntity((Integer) en.getKey());
+                    Entity e = level.getEntity(en.getKey());
                     if (e instanceof LivingEntity) {
                         LivingEntity l = (LivingEntity) e;
                         if (l.isAlive() && l.getHealth() > 0.0F) {
@@ -110,7 +110,7 @@ public final class KillSound extends Module {
 
     public void play(Sound s) {
         long now = System.currentTimeMillis();
-        if (now - this.playedAt >= 250L && !((Double) this.volume.get() <= 0.0)) {
+        if (now - this.playedAt >= 250L && !(this.volume.get() <= 0.0)) {
             this.playedAt = now;
             SoundEvent ev = (SoundEvent) this.events.computeIfAbsent(
                     s.id(),

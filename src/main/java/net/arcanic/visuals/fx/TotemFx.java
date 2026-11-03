@@ -53,17 +53,17 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 public final class TotemFx extends Module {
-    public final Setting.Mode style = this.add(
-            new Setting.Mode("style", "Эффект", "Феникс", new String[] {"Феникс", "Сингулярность", "Осколки"}));
+    public final Setting.Mode style =
+            this.add(new Setting.Mode("style", "Эффект", "Феникс", "Феникс", "Сингулярность", "Осколки"));
     final Setting.Bool self = this.add(new Setting.Bool("self", "Свой тотем", true));
     final Setting.Bool players = this.add(new Setting.Bool("players", "Тотемы игроков", true));
     final Setting.Bool mobs = this.add(new Setting.Bool("mobs", "Тотемы мобов", false));
-    final Setting.Mode palette = this.add(new Setting.Mode("palette", "Цвета", "Свои", new String[] {"Свои", "Тема"}));
+    final Setting.Mode palette = this.add(new Setting.Mode("palette", "Цвета", "Свои", "Свои", "Тема"));
     final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.6, 1.6, 0.05, "×"));
     final Setting.Bool screen = this.add(new Setting.Bool("screen", "Эффекты на экране", true));
     final Setting.Bool shake = this.add(new Setting.Bool("shake", "Тряска камеры", true));
     final Setting.Bool sound = this.add(new Setting.Bool("sound", "Звук", true));
-    final Setting.Num volume = (Setting.Num)
+    final Setting.Num volume =
             (this.add(new Setting.Num("volume", "Громкость", 0.7, 0.1, 1.0, 0.05, ""))).showIf(() -> this.sound.on());
     final Setting.Bool hideVanilla = this.add(new Setting.Bool("hide_vanilla", "Скрыть ванильный тотем", true));
     private static final Identifier PLUME = texture("plume");
@@ -77,7 +77,7 @@ public final class TotemFx extends Module {
     private static final Identifier TRAIL = Identifier.fromNamespaceAndPath("arcanic", "textures/targetesp/trail.png");
     private static final float RING_FRONT = 0.86F;
     private static final float HORIZON_EDGE = 0.42F;
-    private static final float[] LIFE = new float[] {2.9F, 2.7F, 3.1F};
+    private static final float[] LIFE = {2.9F, 2.7F, 3.1F};
     private final List<Pop> pops = new ArrayList<>();
     private final List<Pop> studioPops = new ArrayList<>();
     private ClientLevel level;
@@ -106,14 +106,11 @@ public final class TotemFx extends Module {
             int b = Theme.accent2() | 0xFF000000;
             return new Pal(Fx.lerp(a, -1, 0.5F), a, b);
         } else {
-            Pal var10000;
-            switch (style) {
-                case 0 -> var10000 = new Pal(-6234, -25808, -1953233);
-                case 1 -> var10000 = new Pal(-1318913, -5669633, -10863617);
-                default -> var10000 = new Pal(-852481, -7346177, -12671233);
-            }
-
-            return var10000;
+            return switch (style) {
+                case 0 -> new Pal(-6234, -25808, 0xFFE2322F);
+                case 1 -> new Pal(0xFFEBDFFF, 0xFFA97CFF, 0xFF5A3BFF);
+                default -> new Pal(0xFFF2FDFF, 0xFF8FE7FF, 0xFF3EA6FF);
+            };
         }
     }
 
@@ -126,16 +123,14 @@ public final class TotemFx extends Module {
     }
 
     public boolean hides(Entity e) {
-        boolean var10000;
+        boolean flag;
         if (this.enabled() && this.hideVanilla.on() && e instanceof LivingEntity l) {
             if (this.targets(l)) {
-                var10000 = true;
-                return var10000;
+                return true;
             }
         }
 
-        var10000 = false;
-        return var10000;
+        return false;
     }
 
     public void popped(LivingEntity e) {
@@ -361,7 +356,7 @@ public final class TotemFx extends Module {
             }
         }
 
-        for (int i = 0; i < PLUMES.size() * 2; ++i) {
+        for (int i = 0; i < PLUMES.size() * 2; i++) {
             if (t >= ((Plume) PLUMES.get(i % PLUMES.size())).burn + 0.34F) {
                 p.burnt[i] = true;
             }
@@ -418,7 +413,7 @@ public final class TotemFx extends Module {
             this.play(p, SoundEvents.ENDER_DRAGON_FLAP, 1.0F, 1.25F);
             this.jolt(p, 2.0F);
 
-            for (int i = 0; i < 80; ++i) {
+            for (int i = 0; i < 80; i++) {
                 Feather f = (Feather) feathers.get(p.rnd.nextInt(feathers.size()));
                 int side = f.side;
                 Vec3 from = v.world(f.point(0.6F + p.rnd.nextFloat() * 0.4F));
@@ -439,7 +434,7 @@ public final class TotemFx extends Module {
                         .colour(c.light, c.deep & 0xFFFFFF);
             }
 
-            for (int i = 0; i < 14; ++i) {
+            for (int i = 0; i < 14; i++) {
                 Feather f = (Feather) feathers.get(p.rnd.nextInt(feathers.size()));
                 int side = f.side;
                 Fx.spawn()
@@ -486,7 +481,7 @@ public final class TotemFx extends Module {
     private static List<Plume> plumes() {
         List<Plume> out = new ArrayList<>();
 
-        for (int i = 0; i < 26; ++i) {
+        for (int i = 0; i < 26; i++) {
             float u = (float) i / 25.0F;
             out.add(new Plume(
                     0,
@@ -498,7 +493,7 @@ public final class TotemFx extends Module {
                     1.24F + (1.0F - u) * 0.46F));
         }
 
-        for (int i = 0; i < 18; ++i) {
+        for (int i = 0; i < 18; i++) {
             float u = (float) i / 17.0F;
             out.add(new Plume(
                     1,
@@ -510,7 +505,7 @@ public final class TotemFx extends Module {
                     1.36F + (1.0F - u) * 0.44F));
         }
 
-        for (int i = 0; i < 12; ++i) {
+        for (int i = 0; i < 12; i++) {
             float u = (float) i / 11.0F;
             out.add(new Plume(2, 0.08F + 0.86F * u, u, 0.27F, 0.046F, 0.12F + 0.32F * u, 1.46F + (1.0F - u) * 0.4F));
         }
@@ -531,7 +526,7 @@ public final class TotemFx extends Module {
             float span,
             Pal c,
             List<Feather> out) {
-        for (int i = 0; i < PLUMES.size(); ++i) {
+        for (int i = 0; i < PLUMES.size(); i++) {
             int index = i + (side > 0 ? PLUMES.size() : 0);
             if (!p.burnt[index]) {
                 out.add(feather(t, root, right, back, side, flap, rate, sweep, span, c, (Plume) PLUMES.get(i), index));
@@ -591,7 +586,7 @@ public final class TotemFx extends Module {
         Vector3f[] mid = new Vector3f[6];
         Vector3f[] across = new Vector3f[6];
 
-        for (int i = 0; i <= 5; ++i) {
+        for (int i = 0; i <= 5; i++) {
             float f = (float) i / 5.0F;
             float ax = ca * length * f - sa * curve * length * f * f;
             float ay = sa * length * f + ca * curve * length * f * f;
@@ -649,7 +644,7 @@ public final class TotemFx extends Module {
                 for (Feather f : feathers) {
                     int n = Math.max(1, (int) Math.ceil((double) (f.cut * 5.0F - 0.001F)));
 
-                    for (int i = 0; i < n; ++i) {
+                    for (int i = 0; i < n; i++) {
                         float f0 = (float) i / 5.0F;
                         float f1 = Math.min(f.cut, (float) (i + 1) / 5.0F);
                         int c0 = colour(f, f0);
@@ -700,7 +695,7 @@ public final class TotemFx extends Module {
                             int k = 6;
                             Vector3f[] pts = new Vector3f[k + 1];
 
-                            for (int j = 0; j <= k; ++j) {
+                            for (int j = 0; j <= k; j++) {
                                 float g = (float) j / (float) k;
                                 float sway = Mth.sin((double) (g * 4.5F - t * 13.0F + phase)) * 0.2F * len * g;
                                 pts[j] = (new Vector3f(dir))
@@ -711,7 +706,7 @@ public final class TotemFx extends Module {
 
                             float width = len * 0.36F;
 
-                            for (int j = 0; j < k; ++j) {
+                            for (int j = 0; j < k; j++) {
                                 float g0 = (float) j / (float) k;
                                 float g1 = (float) (j + 1) / (float) k;
                                 Vector3f a0 = across(v, pts, j, width);
@@ -771,7 +766,7 @@ public final class TotemFx extends Module {
                     float[] ys = new float[n];
                     float[] zs = new float[n];
 
-                    for (int i = 0; i < n; ++i) {
+                    for (int i = 0; i < n; i++) {
                         xs[i] = v.x((Vec3) trail.get(i));
                         ys[i] = v.y((Vec3) trail.get(i));
                         zs[i] = v.z((Vec3) trail.get(i));
@@ -838,14 +833,14 @@ public final class TotemFx extends Module {
                 this.play(p, SoundEvents.GENERIC_EXPLODE.value(), 0.45F, 0.55F);
                 this.jolt(p, 4.2F);
 
-                for (int i = 0; i < 6 + p.rnd.nextInt(3); ++i) {
+                for (int i = 0; i < 6 + p.rnd.nextInt(3); i++) {
                     Vec3 d = dir(p);
                     p.bolts.add((new Vector3f((float) d.x, (float) d.y * 0.7F, (float) d.z))
                             .normalize()
                             .mul((2.2F + p.rnd.nextFloat() * 1.5F) * s));
                 }
 
-                for (int i = 0; i < 95; ++i) {
+                for (int i = 0; i < 95; i++) {
                     Vec3 d = dir(p);
                     double sp = (7.0 + p.rnd.nextDouble() * 7.0) * (double) s;
                     Fx.spawn()
@@ -859,7 +854,7 @@ public final class TotemFx extends Module {
                             .colour(c.light, c.deep & 0xFFFFFF);
                 }
 
-                for (int i = 0; i < 40; ++i) {
+                for (int i = 0; i < 40; i++) {
                     Vec3 d = dir(p);
                     double sp = (1.4 + p.rnd.nextDouble() * 2.6) * (double) s;
                     Fx.spawn()
@@ -904,7 +899,7 @@ public final class TotemFx extends Module {
                         1.0F - te);
             }
 
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < 3; i++) {
                 float u = (te - 0.2F - (float) i * 0.22F) / 1.1F;
                 if (u > 0.0F && u < 1.0F) {
                     flat(
@@ -950,7 +945,7 @@ public final class TotemFx extends Module {
                     Vector3f side2 = (new Vector3f(end)).cross(side).normalize();
                     float seg = end.length() / (float) n;
 
-                    for (int i = 0; i <= n; ++i) {
+                    for (int i = 0; i <= n; i++) {
                         float f = (float) i / (float) n;
                         float j = i == 0 ? 0.0F : seg * 0.9F;
                         float o1 = (jag.nextFloat() - 0.5F) * j;
@@ -984,7 +979,7 @@ public final class TotemFx extends Module {
         float s = p.scale;
         int n = 13;
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             float angle =
                     (float) ((double) i * Math.PI * 2.0 / (double) n + (double) ((p.rnd.nextFloat() - 0.5F) * 0.35F));
             float base = body + 0.22F + p.rnd.nextFloat() * 0.22F;
@@ -1156,7 +1151,7 @@ public final class TotemFx extends Module {
             for (float[] g : glints) {
                 int col = alpha(c.light, g[9]);
 
-                for (int i = 0; i < 3; ++i) {
+                for (int i = 0; i < 3; i++) {
                     glint.addVertex(v.pose, g[i * 3], g[i * 3 + 1], g[i * 3 + 2])
                             .setColor(col);
                 }
@@ -1231,7 +1226,7 @@ public final class TotemFx extends Module {
         Vector3f[] lo = new Vector3f[6];
         Vector3f[] hi = new Vector3f[6];
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 6; i++) {
             float a = k.spin + (float) i * (float) Math.PI / 3.0F;
             Vector3f o = (new Vector3f(s1))
                     .mul(Mth.cos((double) a) * k.radius)
@@ -1243,7 +1238,7 @@ public final class TotemFx extends Module {
         int deep = Fx.lerp(c.deep, c.main, inner);
         int main = Fx.lerp(c.main, c.light, inner);
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 6; i++) {
             int j = (i + 1) % 6;
             float shade =
                     0.55F + 0.45F * Math.max(0.0F, normal(lo[i], lo[j], hi[i]).dot(LIGHT));
@@ -1282,7 +1277,7 @@ public final class TotemFx extends Module {
         for (Crystal k : p.crystals) {
             int n = 9 + p.rnd.nextInt(4);
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 Vector3f at = crystalPoint(k, p.rnd.nextFloat() * k.length);
                 float sz = (0.05F + p.rnd.nextFloat() * 0.08F) * s;
                 Piece piece =
@@ -1303,7 +1298,7 @@ public final class TotemFx extends Module {
 
         Vec3 chest = feet.add(0.0, (double) p.height * 0.55, 0.0);
 
-        for (int i = 0; i < 46; ++i) {
+        for (int i = 0; i < 46; i++) {
             Vec3 d = dir(p);
             double sp = (3.0 + p.rnd.nextDouble() * 5.0) * (double) s;
             Fx.spawn()
@@ -1318,7 +1313,7 @@ public final class TotemFx extends Module {
                     .colour(c.light, c.main & 0xFFFFFF);
         }
 
-        for (int i = 0; i < 32; ++i) {
+        for (int i = 0; i < 32; i++) {
             Vec3 d = dir(p);
             Fx.spawn()
                     .at(chest.add(d.scale(0.6 * (double) s)))
@@ -1422,10 +1417,10 @@ public final class TotemFx extends Module {
         Vector3f u = v.up;
         float[][] k =
                 new float[][] {{cr - sr, sr + cr}, {cr + sr, sr - cr}, {-cr + sr, -sr - cr}, {-cr - sr, -sr + cr}};
-        float[] tu = new float[] {0.0F, 0.0F, 1.0F, 1.0F};
-        float[] tv = new float[] {0.0F, 1.0F, 1.0F, 0.0F};
+        float[] tu = {0.0F, 0.0F, 1.0F, 1.0F};
+        float[] tv = {0.0F, 1.0F, 1.0F, 0.0F};
         twice(v.pose, tex, shape, glow, (e) -> {
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < 4; i++) {
                 e.v(
                         x + l.x * k[i][0] + u.x * k[i][1],
                         y + l.y * k[i][0] + u.y * k[i][1],
@@ -1485,7 +1480,7 @@ public final class TotemFx extends Module {
         float[] oy = new float[n];
         float[] oz = new float[n];
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             int p = Math.max(0, i - 1);
             int q = Math.min(n - 1, i + 1);
             float tx = xs[q] - xs[p];
@@ -1503,7 +1498,7 @@ public final class TotemFx extends Module {
         }
 
         twice(v.pose, tex, 0.0F, a, (e) -> {
-            for (int i = 0; i + 1 < n; ++i) {
+            for (int i = 0; i + 1 < n; i++) {
                 int c0 = alpha(c, taper(i, n));
                 int c1 = alpha(c, taper(i + 1, n));
                 e.v(xs[i] - ox[i], ys[i] - oy[i], zs[i] - oz[i], 0.0F, 0.0F, c0);

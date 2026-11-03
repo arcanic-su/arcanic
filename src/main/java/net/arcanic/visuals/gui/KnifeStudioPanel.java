@@ -52,10 +52,8 @@ final class KnifeStudioPanel {
     private static float widthUnits = 340.0F;
     private final ArcanicMenu menu;
     private MeleeDesign shown;
-    private final Setting.Mode hand =
-            new Setting.Mode("studio_hand", "Нож в руке", "Правая", new String[] {"Правая", "Левая"});
-    private final Setting.Mode gunHand =
-            new Setting.Mode("studio_hand", "Оружие в руке", "Правая", new String[] {"Правая", "Левая"});
+    private final Setting.Mode hand = new Setting.Mode("studio_hand", "Нож в руке", "Правая", "Правая", "Левая");
+    private final Setting.Mode gunHand = new Setting.Mode("studio_hand", "Оружие в руке", "Правая", "Правая", "Левая");
     private final Map<String, Setting.Num> nums = new HashMap<>();
     private int x;
     private int y;
@@ -284,15 +282,15 @@ final class KnifeStudioPanel {
         int R = this.menu.S(10.0);
         int in = this.menu.S(3.0);
         boolean lightTheme = ArcanicMenu.light();
-        Px.round(g, px, py, pw, ph, R, lightTheme ? -2302748 : -15921904);
+        Px.round(g, px, py, pw, ph, R, lightTheme ? 0xFFDCDCE4 : 0xFF0D0D10);
         Px.vgrad(
                 g,
                 px + in,
                 py + in,
                 pw - in * 2,
                 ph - in * 2,
-                lightTheme ? -3549464 : Px.mix(-15395556, ArcanicMenu.acc(), 0.22F),
-                lightTheme ? -1184271 : -15921904);
+                lightTheme ? 0xFFC9D6E8 : Px.mix(0xFF15151C, ArcanicMenu.acc(), 0.22F),
+                lightTheme ? 0xFFEDEDF1 : 0xFF0D0D10);
         Px.outline(g, px, py, pw, ph, R, ArcanicMenu.edgeMedium());
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
@@ -336,7 +334,7 @@ final class KnifeStudioPanel {
         }
 
         float hk = this.menu.an("ks:b:" + label, hv ? 1.0F : 0.0F, 18.0F);
-        Px.round(g, bx, by, bw, bh, bh / 2, Px.a(Px.mix(-14935006, ArcanicMenu.acc(), hk), 225));
+        Px.round(g, bx, by, bw, bh, bh / 2, Px.a(Px.mix(0xFF1C1C22, ArcanicMenu.acc(), hk), 225));
         Px.textCenter(g, s, bx + bw / 2, by + (bh - fs) / 2, Px.Weight.MEDIUM, fs, -1);
         if (live) {
             this.click(bx, by, bw, bh, () -> {
@@ -366,7 +364,7 @@ final class KnifeStudioPanel {
         List<ItemStack> own = hotbar();
         if (!own.isEmpty()) {
             cy += this.menu.S(6.0);
-            cy = this.caption(g, "Из твоего хотбара", (String) null, cx, cy, cw);
+            cy = this.caption(g, "Из твоего хотбара", null, cx, cy, cw);
             cy = this.grid(g, own, cx, cy, cw, sc, t, b, live);
         }
 
@@ -489,7 +487,7 @@ final class KnifeStudioPanel {
                         Config.dirty();
                         UiSound.play("reset");
                     },
-                    (Runnable) null);
+                    null);
         }
 
         return cy + rh + this.menu.S(10.0);
@@ -527,10 +525,10 @@ final class KnifeStudioPanel {
         cy = this.menu.settings(g, knives, rows, cx, cy, cw, sc, t, b, live);
         this.menu.compact = false;
         boolean changed = false;
-        float[] axes = new float[] {at.x(), at.y(), at.z()};
-        Setting.Num[] axisNums = new Setting.Num[] {nx, ny, nz};
+        float[] axes = {at.x(), at.y(), at.z()};
+        Setting.Num[] axisNums = {nx, ny, nz};
 
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 3; i++) {
             double v = (Double) axisNums[i].get() / 16.0;
             if (Math.abs(v - (double) axes[i]) > 1.0E-4) {
                 knives.sizes.put(MeleeSkins.axisKey(key, MeleeSkins.AXES[i]), v, 0.0);
@@ -538,8 +536,8 @@ final class KnifeStudioPanel {
             }
         }
 
-        if (sized && Math.abs((Double) ns.get() / 100.0 - (double) at.size()) > 1.0E-4) {
-            knives.sizes.put(key, (Double) ns.get() / 100.0);
+        if (sized && Math.abs(ns.get() / 100.0 - (double) at.size()) > 1.0E-4) {
+            knives.sizes.put(key, ns.get() / 100.0);
             changed = true;
         }
 
@@ -591,13 +589,12 @@ final class KnifeStudioPanel {
         int ts = (cw - gap * (cols - 1)) / cols;
         int is = Math.round((float) ts * 0.62F);
 
-        for (int i = 0; i < items.size(); ++i) {
+        for (int i = 0; i < items.size(); i++) {
             ItemStack s = (ItemStack) items.get(i);
             int tx = cx + i % cols * (ts + gap);
             int ty = cy + i / cols * (ts + gap);
             boolean chosen = same(s, KnifeStudio.other);
-            String var10000 = s.isEmpty() ? "-" : MeleeSkins.itemKey(s);
-            String id = "ks:i:" + var10000;
+            String id = "ks:i:" + (s.isEmpty() ? "-" : MeleeSkins.itemKey(s));
             boolean hv = live && this.my(t, b) && this.menu.hover(tx, Math.round((float) ty - sc), ts, ts);
             if (hv && !chosen) {
                 this.menu.hot(id);
@@ -642,7 +639,7 @@ final class KnifeStudioPanel {
                             KnifeStudio.other = s.copy();
                             UiSound.play("click");
                         },
-                        (Runnable) null);
+                        null);
             }
         }
 
@@ -668,7 +665,7 @@ final class KnifeStudioPanel {
                 }
             }
 
-            for (int i = 0; i < 9; ++i) {
+            for (int i = 0; i < 9; i++) {
                 ItemStack s = p.getInventory().getItem(i);
                 if (!s.isEmpty() && !s.is(ItemTags.SWORDS) && seen.add(MeleeSkins.itemKey(s))) {
                     out.add(s.copyWithCount(1));

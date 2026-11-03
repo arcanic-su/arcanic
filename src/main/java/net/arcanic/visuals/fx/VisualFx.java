@@ -35,24 +35,33 @@ public final class VisualFx {
     }
 
     public static int colourFor(String mode, Setting.Colour c, float offset) {
-        int var10000;
+        int n;
         switch (mode) {
-            case "Радуга" -> var10000 = Draw.rainbow(offset, 1.0F);
+            case "Радуга" -> n = Draw.rainbow(offset, 1.0F);
             case "Градиент" ->
-                var10000 = Draw.mix(Theme.accent(), Theme.accent2(), (float)
+                n = Draw.mix(Theme.accent(), Theme.accent2(), (float)
                         (Math.sin((double) System.currentTimeMillis() / 300.0 + (double) (offset * 6.0F)) * 0.5 + 0.5));
-            default -> var10000 = c.argb();
+            default -> n = c.argb();
         }
 
-        return var10000;
+        return n;
     }
 
     public static final class JumpCircles extends Module {
-        final Setting.Mode style = this.add(new Setting.Mode("style", "Стиль", "Неон", new String[] {
-            "Неон", "Волна", "Точки", "Солнце", "Arc Storm", "Arc Pool", "Arc Rings", "Arc Explosion"
-        }));
-        final Setting.Mode colourMode = this.add(
-                new Setting.Mode("color_mode", "Окраска", "Градиент", new String[] {"Градиент", "Радуга", "Цвет"}));
+        final Setting.Mode style = this.add(new Setting.Mode(
+                "style",
+                "Стиль",
+                "Неон",
+                "Неон",
+                "Волна",
+                "Точки",
+                "Солнце",
+                "Arc Storm",
+                "Arc Pool",
+                "Arc Rings",
+                "Arc Explosion"));
+        final Setting.Mode colourMode =
+                this.add(new Setting.Mode("color_mode", "Окраска", "Градиент", "Градиент", "Радуга", "Цвет"));
         final Setting.Colour colour =
                 (this.add(new Setting.Colour("color", "Цвет", true))).showIf(() -> this.colourMode.is("Цвет"));
         final Setting.Num radius = this.add(new Setting.Num("radius", "Радиус", 1.2, 0.4, 3.0, 0.05, " бл"));
@@ -77,9 +86,9 @@ public final class VisualFx {
                     this.airTop = p.getY();
                     if (this.jumped) {
                         Effects.jumpRing(
-                                (String) this.style.get(),
+                                this.style.get(),
                                 feet,
-                                VisualFx.colourFor((String) this.colourMode.get(), this.colour, 0.0F),
+                                VisualFx.colourFor(this.colourMode.get(), this.colour, 0.0F),
                                 this.radius.f(),
                                 this.life.f(),
                                 this.spin.on(),
@@ -96,9 +105,9 @@ public final class VisualFx {
                         && this.landing.on()
                         && (this.jumped || this.airTop - p.getY() > 0.5)) {
                     Effects.jumpRing(
-                            (String) this.style.get(),
+                            this.style.get(),
                             feet,
-                            VisualFx.colourFor((String) this.colourMode.get(), this.colour, 0.5F),
+                            VisualFx.colourFor(this.colourMode.get(), this.colour, 0.5F),
                             this.radius.f() * 0.7F,
                             this.life.f() * 0.7F,
                             this.spin.on(),
@@ -115,8 +124,8 @@ public final class VisualFx {
     }
 
     public static final class Footprints extends Module {
-        final Setting.Mode colourMode = this.add(
-                new Setting.Mode("color_mode", "Окраска", "Градиент", new String[] {"Градиент", "Радуга", "Цвет"}));
+        final Setting.Mode colourMode =
+                this.add(new Setting.Mode("color_mode", "Окраска", "Градиент", "Градиент", "Радуга", "Цвет"));
         final Setting.Colour colour =
                 (this.add(new Setting.Colour("color", "Цвет", true))).showIf(() -> this.colourMode.is("Цвет"));
         final Setting.Num life = this.add(new Setting.Num("life", "Время", 3.0, 1.0, 8.0, 0.5, " с"));
@@ -153,7 +162,7 @@ public final class VisualFx {
                     double yaw = Math.toRadians((double) p.getYRot());
                     double sx = Math.cos(yaw) * (this.left ? 0.14 : -0.14);
                     double sz = Math.sin(yaw) * (this.left ? 0.14 : -0.14);
-                    int c = VisualFx.colourFor((String) this.colourMode.get(), this.colour, this.left ? 0.0F : 0.5F);
+                    int c = VisualFx.colourFor(this.colourMode.get(), this.colour, this.left ? 0.0F : 0.5F);
                     Vec3 at = new Vec3(now.x + sx, now.y + 0.045, now.z + sz);
                     Fx.spawn()
                             .at(at.add(0.0, -0.005, 0.0))
@@ -181,11 +190,11 @@ public final class VisualFx {
     }
 
     public static final class HandView extends Module {
-        public final Setting.Mode preset = this.add(new Setting.Mode(
-                "preset", "Пресет", "Свой", new String[] {"Свой", "Компактный", "Низкий", "По центру", "PvP"}));
-        public final Setting.Num x = (Setting.Num) this.add(new Setting.Num("x", "Сдвиг X", 0.0, -1.0, 1.0, 0.01, ""));
-        public final Setting.Num y = (Setting.Num) this.add(new Setting.Num("y", "Сдвиг Y", 0.0, -1.0, 1.0, 0.01, ""));
-        public final Setting.Num z = (Setting.Num) this.add(new Setting.Num("z", "Сдвиг Z", 0.0, -1.0, 1.0, 0.01, ""));
+        public final Setting.Mode preset = this.add(
+                new Setting.Mode("preset", "Пресет", "Свой", "Свой", "Компактный", "Низкий", "По центру", "PvP"));
+        public final Setting.Num x = this.add(new Setting.Num("x", "Сдвиг X", 0.0, -1.0, 1.0, 0.01, ""));
+        public final Setting.Num y = this.add(new Setting.Num("y", "Сдвиг Y", 0.0, -1.0, 1.0, 0.01, ""));
+        public final Setting.Num z = this.add(new Setting.Num("z", "Сдвиг Z", 0.0, -1.0, 1.0, 0.01, ""));
         public final Setting.Num rx = this.add(new Setting.Num("rx", "Поворот X", 0.0, -180.0, 180.0, 1.0, "°"));
         public final Setting.Num ry = this.add(new Setting.Num("ry", "Поворот Y", 0.0, -180.0, 180.0, 1.0, "°"));
         public final Setting.Num rz = this.add(new Setting.Num("rz", "Поворот Z", 0.0, -180.0, 180.0, 1.0, "°"));
@@ -197,16 +206,14 @@ public final class VisualFx {
         }
 
         public void applyPreset() {
-            double[] var10000;
-            switch ((String) this.preset.get()) {
-                case "Компактный" -> var10000 = new double[] {0.06, 0.02, -0.1, 0.0, 0.0, 0.0, 0.78};
-                case "Низкий" -> var10000 = new double[] {0.0, -0.18, 0.0, 0.0, 0.0, 0.0, 1.0};
-                case "По центру" -> var10000 = new double[] {-0.22, -0.04, -0.1, 0.0, -8.0, 0.0, 0.9};
-                case "PvP" -> var10000 = new double[] {0.08, -0.06, -0.12, 0.0, 6.0, 0.0, 0.72};
-                default -> var10000 = null;
-            }
-
-            double[] v = var10000;
+            double[] v =
+                    switch (this.preset.get()) {
+                        case "Компактный" -> new double[] {0.06, 0.02, -0.1, 0.0, 0.0, 0.0, 0.78};
+                        case "Низкий" -> new double[] {0.0, -0.18, 0.0, 0.0, 0.0, 0.0, 1.0};
+                        case "По центру" -> new double[] {-0.22, -0.04, -0.1, 0.0, -8.0, 0.0, 0.9};
+                        case "PvP" -> new double[] {0.08, -0.06, -0.12, 0.0, 6.0, 0.0, 0.72};
+                        default -> null;
+                    };
             if (v != null) {
                 this.x.set(v[0]);
                 this.y.set(v[1]);

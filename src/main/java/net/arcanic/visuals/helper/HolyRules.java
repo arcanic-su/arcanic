@@ -24,7 +24,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Locale;
@@ -34,7 +33,6 @@ import net.arcanic.visuals.render.Px;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -61,7 +59,7 @@ public final class HolyRules {
             loaded = true;
 
             try {
-                if (!Files.exists(FILE, new LinkOption[0])) {
+                if (!Files.exists(FILE)) {
                     return;
                 }
 
@@ -113,8 +111,7 @@ public final class HolyRules {
 
     public static void scan() {
         Minecraft mc = Minecraft.getInstance();
-        Screen var2 = mc.screen;
-        if (var2 instanceof AbstractContainerScreen<?> s) {
+        if (mc.screen instanceof AbstractContainerScreen<?> s) {
             if (mc.player != null) {
                 load();
                 boolean changed = false;

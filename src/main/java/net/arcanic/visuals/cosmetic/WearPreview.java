@@ -107,7 +107,7 @@ public final class WearPreview {
                     int mode = geo.quadMode[k];
                     boolean lit = mode != 1 && mode != 3;
 
-                    for (int c = 0; c < 4; ++c) {
+                    for (int c = 0; c < 4; c++) {
                         int o = i + c * 8;
                         float px = -q[o] - mx;
                         float py = q[o + 1] - my;
@@ -190,7 +190,7 @@ public final class WearPreview {
                 int k = (int) (key & 1048575L);
                 int o = k * 16;
 
-                for (int c = 0; c < 4; ++c) {
+                for (int c = 0; c < 4; c++) {
                     vc.addVertexWith2DPose(this.pose, this.verts[o + c * 4], this.verts[o + c * 4 + 1])
                             .setUv(this.verts[o + c * 4 + 2], this.verts[o + c * 4 + 3])
                             .setColor(this.colours[k * 4 + c]);

@@ -27,7 +27,7 @@ public final class Tag {
     private static final Identifier HEART = Identifier.withDefaultNamespace("hud/heart/hardcore_full");
     private static final Identifier FRAME = Identifier.withDefaultNamespace("hud/heart/container_hardcore");
     private static final Identifier WITHERED = Identifier.withDefaultNamespace("hud/heart/withered_hardcore_full");
-    public static final int RED = -1752497;
+    public static final int RED = 0xFFE5424F;
 
     private Tag() {}
 
@@ -69,7 +69,7 @@ public final class Tag {
             Px.fade = keep * a;
             Px.shadow(g, x, top + Math.max(1, fs / 6), w, h, Math.max(4, fs / 2), 1426063360);
             Px.round(g, x, top, w, h, r, lethal ? 0xF2341016 : 0xEB0E0E11);
-            Px.outline(g, x, top, w, h, r, lethal ? Px.a(-1752497, 150) : 452984831);
+            Px.outline(g, x, top, w, h, r, lethal ? Px.a(0xFFE5424F, 150) : 452984831);
             heart(g, x + pad, top + (h - hs) / 2, hs, lethal);
             g.nextStratum();
             Px.text(
@@ -79,7 +79,7 @@ public final class Tag {
                     top + (h - fs) / 2,
                     Px.Weight.SEMIBOLD,
                     fs,
-                    lethal ? -7195 : -855308);
+                    lethal ? -7195 : 0xFFF2F2F4);
             Px.fade = keep;
         }
     }

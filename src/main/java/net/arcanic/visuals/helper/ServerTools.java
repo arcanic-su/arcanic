@@ -144,7 +144,7 @@ public final class ServerTools {
         public LockSlot() {
             super("lock_slot", "Lock Slot", "Не даёт выбросить предметы из выбранных слотов", Category.UTILITY, false);
             for (int i = 0; i < 9; i++) {
-                this.slots[i] = (Setting.Bool) this.add(new Setting.Bool("slot" + (i + 1), "Слот " + (i + 1), false))
+                this.slots[i] = this.add(new Setting.Bool("slot" + (i + 1), "Слот " + (i + 1), false))
                         .showIf(() -> !this.wholeBar.on());
             }
         }

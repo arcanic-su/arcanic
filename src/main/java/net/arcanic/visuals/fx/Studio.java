@@ -76,7 +76,7 @@ import org.joml.Quaternionfc;
 import org.joml.Vector3f;
 
 public final class Studio {
-    public static final String[] STAGES = new String[] {"Остров", "Арена", "Пустота"};
+    public static final String[] STAGES = {"Остров", "Арена", "Пустота"};
     public static int stage;
     public static Module selected;
     public static boolean paused;
@@ -207,17 +207,17 @@ public final class Studio {
     }
 
     private static int ticks(Story s) {
-        byte var10000;
-        switch (s.ordinal()) {
-            case 0 -> var10000 = 54;
-            case 1 -> var10000 = 68;
-            case 2 -> var10000 = 52;
-            case 3 -> var10000 = 100;
-            case 4 -> var10000 = 80;
-            default -> throw new MatchException((String) null, (Throwable) null);
+        byte b2;
+        switch (s) {
+            case HIT -> b2 = 54;
+            case KILL -> b2 = 68;
+            case JUMP -> b2 = 52;
+            case TOTEM -> b2 = 100;
+            case MACE -> b2 = 80;
+            default -> throw new MatchException(null, null);
         }
 
-        return var10000;
+        return b2;
     }
 
     private static float clamp(float v) {
@@ -268,7 +268,7 @@ public final class Studio {
         List<Event> events = new ArrayList<>();
         int lastHit = -99;
 
-        for (int i = 0; i <= 2 * n; ++i) {
+        for (int i = 0; i <= 2 * n; i++) {
             int k;
             boolean keep;
             float yawA;
@@ -293,8 +293,8 @@ public final class Studio {
                 v.goX = 1.05;
                 boolean totem;
                 int b;
-                switch (s.ordinal()) {
-                    case 2:
+                switch (s) {
+                    case JUMP:
                         a.goX = a.x;
                         v.goZ = k >= 40 ? 0.0 : (k >= 17 ? 0.7 : 0.0);
                         if ((k == 3 || k == 27) && v.ground) {
@@ -305,7 +305,7 @@ public final class Studio {
                             v.jump(0.42);
                         }
                         break label309;
-                    case 4:
+                    case MACE:
                         a.push = k < 6 ? 0.13 : 0.1;
                         a.goX = k < 6 ? -1.35 : (k >= 58 ? -1.75 : a.x);
                         if (k == 6) {
@@ -343,7 +343,7 @@ public final class Studio {
                         b = 0;
                 }
 
-                for (; b < BLOWS.length; ++b) {
+                for (; b < BLOWS.length; b++) {
                     if (k == BLOWS[b] - 1) {
                         a.swing();
                     }
@@ -461,7 +461,7 @@ public final class Studio {
         ew -= (float) Math.round(ew / step) * step;
         ed -= (float) Math.round(ed / flap) * flap;
 
-        for (int i = 1; i <= n; ++i) {
+        for (int i = 1; i <= n; i++) {
             float f = (float) i / (float) n;
             Tick c = t[i];
             c.x -= ex * (double) f;
@@ -625,7 +625,7 @@ public final class Studio {
         Fx.studio = true;
 
         try {
-            for (int i = 0; i < 14; ++i) {
+            for (int i = 0; i < 14; i++) {
                 Vec3 d = Fx.dir();
                 Fx.spawn()
                         .at(at.add(d.scale(0.3)))
@@ -765,25 +765,25 @@ public final class Studio {
     }
 
     private static BlockState ground() {
-        BlockState var10000;
+        BlockState blockState;
         switch (stage) {
-            case 0 -> var10000 = Blocks.GRASS_BLOCK.defaultBlockState();
-            case 1 -> var10000 = Blocks.DEEPSLATE_TILES.defaultBlockState();
-            default -> var10000 = Blocks.STONE.defaultBlockState();
+            case 0 -> blockState = Blocks.GRASS_BLOCK.defaultBlockState();
+            case 1 -> blockState = Blocks.DEEPSLATE_TILES.defaultBlockState();
+            default -> blockState = Blocks.STONE.defaultBlockState();
         }
 
-        return var10000;
+        return blockState;
     }
 
     private static int dust() {
-        int var10000;
+        int n2;
         switch (stage) {
-            case 0 -> var10000 = -8494009;
-            case 1 -> var10000 = -11513768;
-            default -> var10000 = -7568264;
+            case 0 -> n2 = 0xFF7E6447;
+            case 1 -> n2 = 0xFF505058;
+            default -> n2 = 0xFF8C8478;
         }
 
-        return var10000;
+        return n2;
     }
 
     private static List<Placed> blocks() {
@@ -793,7 +793,7 @@ public final class Studio {
     private static List<Placed> island() {
         List<Placed> out = new ArrayList<>();
         Random r = new Random(7L);
-        BlockState[] flowers = new BlockState[] {
+        BlockState[] flowers = {
             Blocks.POPPY.defaultBlockState(),
             Blocks.DANDELION.defaultBlockState(),
             Blocks.CORNFLOWER.defaultBlockState(),
@@ -803,8 +803,8 @@ public final class Studio {
             Blocks.LILY_OF_THE_VALLEY.defaultBlockState()
         };
 
-        for (int i = -4; i <= 4; ++i) {
-            for (int k = -3; k <= 2; ++k) {
+        for (int i = -4; i <= 4; i++) {
+            for (int k = -3; k <= 2; k++) {
                 double dx = ((double) i + 0.5 - 0.25) / 3.4;
                 double dz = ((double) k + 0.5) / 2.35;
                 double d = dx * dx + dz * dz;
@@ -812,7 +812,7 @@ public final class Studio {
                     int depth = 1 + (int) Math.round((1.0 - d) * 2.6 + r.nextDouble() * 0.7);
                     int earth = 1 + r.nextInt(2);
 
-                    for (int j = 0; j < depth; ++j) {
+                    for (int j = 0; j < depth; j++) {
                         BlockState st = j == 0
                                 ? Blocks.GRASS_BLOCK.defaultBlockState()
                                 : (j <= earth
@@ -842,8 +842,8 @@ public final class Studio {
     private static List<Placed> arena() {
         List<Placed> out = new ArrayList<>();
 
-        for (int i = -4; i <= 4; ++i) {
-            for (int k = -4; k <= 3; ++k) {
+        for (int i = -4; i <= 4; i++) {
+            for (int k = -4; k <= 3; k++) {
                 double d = Math.hypot((double) i + 0.5 - 0.25, (double) k + 0.5);
                 if (!(d > 3.25)) {
                     BlockState top = d < 0.9
@@ -1353,7 +1353,7 @@ public final class Studio {
                         Fx.pm(accent2 & 0xFFFFFF | 0x90000000));
                 VertexConsumer light = this.bufferSource.getBuffer(Fx.type(Fx.Tex.GLOW, true));
 
-                for (int i = 0; i < Studio.LANTERNS.length; ++i) {
+                for (int i = 0; i < Studio.LANTERNS.length; i++) {
                     int[] at = Studio.LANTERNS[i];
                     float flicker = 0.85F
                             + 0.15F
@@ -1404,7 +1404,7 @@ public final class Studio {
                 VertexConsumer flat = this.bufferSource.getBuffer(Fx.type(Fx.Tex.WHITE, false));
                 float w = 0.012F;
 
-                for (int i = -5; i <= 5; ++i) {
+                for (int i = -5; i <= 5; i++) {
                     float k = 1.0F - (float) Math.abs(i) / 6.0F;
                     int col = (int) (34.0F * k) << 24 | 0xFFFFFF;
                     Fx.quad(flat, pose, (float) i + 0.25F, 0.001F, 0.0F, w, 0.0F, 0.0F, 0.0F, 0.0F, 4.2F, col);
@@ -1528,7 +1528,7 @@ public final class Studio {
             int accent = Fx.lerp(Theme.accent() | 0xFF000000, -1, 0.35F);
             Random r = new Random(11L);
 
-            for (int i = 0; i < 36; ++i) {
+            for (int i = 0; i < 36; i++) {
                 float bx = -3.1F + r.nextFloat() * 6.7F;
                 float bz = -2.3F + r.nextFloat() * 4.6F;
                 float rise = 0.07F + r.nextFloat() * 0.12F;
@@ -1583,7 +1583,7 @@ public final class Studio {
                 float lo = 1.55F * m.size.f();
                 float li = 0.6F * m.size.f();
 
-                for (int i = 1; i <= steps; ++i) {
+                for (int i = 1; i <= steps; i++) {
                     float ph = from + (phi - from) * (float) i / (float) steps;
                     Vec3 dir = e1.scale(Math.cos((double) ph)).add(e2.scale(Math.sin((double) ph)));
                     Studio.swing.addLast(new SwingPt(

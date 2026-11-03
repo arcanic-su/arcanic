@@ -77,13 +77,13 @@ public final class Capes extends Module {
     }
 
     public static String id(String design) {
-        return (String) FILES.get(known(design));
+        return FILES.get(known(design));
     }
 
     private static String byId(String id) {
         for (Map.Entry<String, String> e : FILES.entrySet()) {
-            if (((String) e.getValue()).equals(id)) {
-                return (String) e.getKey();
+            if (e.getValue().equals(id)) {
+                return e.getKey();
             }
         }
 
@@ -95,15 +95,15 @@ public final class Capes extends Module {
     }
 
     private static int frame(String design) {
-        int[] timing = (int[]) TIMING.get(design);
+        int[] timing = TIMING.get(design);
         return Theme.animations ? (int) (System.currentTimeMillis() / (long) timing[1] % (long) timing[0]) : 0;
     }
 
     public static Strip strip(String design) {
         design = known(design);
-        Identifier id = Identifier.fromNamespaceAndPath(
-                "arcanicvisuals", "textures/cape/" + (String) FILES.get(design) + ".png");
-        return !TexWarm.ready(id) ? null : new Strip(id, frame(design), ((int[]) TIMING.get(design))[0]);
+        Identifier id =
+                Identifier.fromNamespaceAndPath("arcanicvisuals", "textures/cape/" + FILES.get(design) + ".png");
+        return !TexWarm.ready(id) ? null : new Strip(id, frame(design), TIMING.get(design)[0]);
     }
 
     private static Identifier worldFrame(String design) {
@@ -112,7 +112,7 @@ public final class Capes extends Module {
         int n = ids.length;
         int i = frame(design);
 
-        for (int k = 0; k < n; ++k) {
+        for (int k = 0; k < n; k++) {
             Identifier id = ids[(i - k + n) % n];
             if (TexWarm.registered(id)) {
                 return id;
@@ -123,36 +123,20 @@ public final class Capes extends Module {
     }
 
     private static Identifier[] requestWorld(String design) {
-        String file = (String) FILES.get(design);
-        int count = ((int[]) TIMING.get(design))[0];
+        String file = FILES.get(design);
+        int count = TIMING.get(design)[0];
         Identifier[] out = new Identifier[count];
-        NativeImage[] strip = new NativeImage[] {null};
-        int[] left = new int[] {count};
+        NativeImage[] strip = {null};
+        int[] left = {count};
 
-        for (int f = 0; f < count; ++f) {
+        for (int f = 0; f < count; f++) {
             out[f] = Identifier.fromNamespaceAndPath("arcanicvisuals", "cape/" + file + "_" + f);
             final int frame = f;
             TexWarm.request(out[f], () -> {
                 if (strip[0] == null) {
-                    InputStream in =
-                            Capes.class.getResourceAsStream("/assets/arcanicvisuals/textures/cape/" + file + ".png");
-
-                    try {
+                    try (InputStream in =
+                            Capes.class.getResourceAsStream("/assets/arcanicvisuals/textures/cape/" + file + ".png")) {
                         strip[0] = NativeImage.read(in);
-                    } catch (Throwable var8) {
-                        if (in != null) {
-                            try {
-                                in.close();
-                            } catch (Throwable x2) {
-                                var8.addSuppressed(x2);
-                            }
-                        }
-
-                        throw var8;
-                    }
-
-                    if (in != null) {
-                        in.close();
                     }
                 }
 
@@ -175,23 +159,23 @@ public final class Capes extends Module {
         int edge = strip.getPixel(2, oy + 128) | 0xFF000000;
         image.fillRect(0, 0, 1024, 512, edge);
 
-        for (int y = 0; y < 256; ++y) {
-            for (int x = 0; x < 160; ++x) {
+        for (int y = 0; y < 256; y++) {
+            for (int x = 0; x < 160; x++) {
                 int c = strip.getPixel(x, oy + y) | 0xFF000000;
                 image.setPixel(16 + x, 16 + y, c);
                 image.setPixel(192 + (159 - x), 16 + y, c);
             }
         }
 
-        for (int y = 0; y < 256; ++y) {
-            for (int x = 0; x < 16; ++x) {
+        for (int y = 0; y < 256; y++) {
+            for (int x = 0; x < 16; x++) {
                 image.setPixel(x, 16 + y, strip.getPixel(0, oy + y) | 0xFF000000);
                 image.setPixel(176 + x, 16 + y, strip.getPixel(159, oy + y) | 0xFF000000);
             }
         }
 
-        for (int x = 0; x < 160; ++x) {
-            for (int y = 0; y < 16; ++y) {
+        for (int x = 0; x < 160; x++) {
+            for (int y = 0; y < 16; y++) {
                 image.setPixel(16 + x, y, strip.getPixel(x, oy) | 0xFF000000);
                 image.setPixel(176 + x, y, strip.getPixel(x, oy + 255) | 0xFF000000);
             }

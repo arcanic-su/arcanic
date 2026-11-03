@@ -133,8 +133,7 @@ public final class HudEditorScreen extends Screen {
             }
 
             if (hover || h == dragging) {
-                String var10000 = h.title();
-                String label = var10000 + (h.enabled() ? "" : " · выкл");
+                String label = h.title() + (h.enabled() ? "" : " · выкл");
                 int fs = Math.round((float) (12 * H) / 1080.0F);
                 int lw = Px.textWidth(Lang.tr(label), Px.Weight.SEMIBOLD, fs) + 20;
                 int lh = fs + 12;

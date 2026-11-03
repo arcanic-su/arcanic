@@ -26,7 +26,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -74,7 +73,7 @@ public final class ItemCatalog {
         load();
         Inventory inv = mc.player.getInventory();
 
-        for (int i = 0; i < inv.getContainerSize(); ++i) {
+        for (int i = 0; i < inv.getContainerSize(); i++) {
             see(inv.getItem(i), "инвентарь");
         }
 
@@ -148,7 +147,7 @@ public final class ItemCatalog {
             return null;
         } else {
             load();
-            return (String) tntIds.get(own);
+            return tntIds.get(own);
         }
     }
 
@@ -157,7 +156,7 @@ public final class ItemCatalog {
             loaded = true;
 
             try {
-                if (!Files.exists(FILE, new LinkOption[0])) {
+                if (!Files.exists(FILE)) {
                     return;
                 }
 
@@ -175,7 +174,7 @@ public final class ItemCatalog {
                 if (root.has("dynamite")) {
                     for (Map.Entry<String, JsonElement> e :
                             root.getAsJsonObject("dynamite").entrySet()) {
-                        tntIds.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsString());
+                        tntIds.put(e.getKey(), ((JsonElement) e.getValue()).getAsString());
                     }
                 }
             } catch (Exception ignored) {
@@ -197,7 +196,7 @@ public final class ItemCatalog {
         try {
             Files.createDirectories(FILE.getParent());
             Files.writeString(FILE, GSON.toJson(root), StandardCharsets.UTF_8);
-        } catch (Exception var4) {
+        } catch (Exception e) {
             dirty = true;
         }
     }

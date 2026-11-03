@@ -73,35 +73,15 @@ public final class HolyEventsHud extends HudModule {
     }
 
     public static int colour(String rarity) {
-        int var10000;
-        switch (rarity) {
-            case "Легендарный":
-            case "Мифический":
-            case "Роскошный":
-                var10000 = -19641;
-                break;
-            case "Эпический":
-            case "Зажиточный":
-                var10000 = -5141249;
-                break;
-            case "Редкий":
-                var10000 = -9518593;
-                break;
-            case "Босс":
-                var10000 = -50373;
-                break;
-            case "Взрывной":
-            case "Смертельный":
-                var10000 = -38037;
-                break;
-            case "Мирный":
-                var10000 = -8658784;
-                break;
-            default:
-                var10000 = -7696222;
-        }
-
-        return var10000;
+        return switch (rarity) {
+            case "Легендарный", "Мифический", "Роскошный" -> -19641;
+            case "Эпический", "Зажиточный" -> 0xFFB18CFF;
+            case "Редкий" -> 0xFF6EC1FF;
+            case "Босс" -> -50373;
+            case "Взрывной", "Смертельный" -> -38037;
+            case "Мирный" -> 0xFF7BE0A0;
+            default -> 0xFF8A90A2;
+        };
     }
 
     private static String number(String server) {
@@ -143,8 +123,7 @@ public final class HolyEventsHud extends HudModule {
     }
 
     private static String key(HolyEvents.Event e) {
-        String var10000 = e.server();
-        return var10000 + "|" + e.id();
+        return e.server() + "|" + e.id();
     }
 
     public boolean shown() {
@@ -172,7 +151,7 @@ public final class HolyEventsHud extends HudModule {
 
         Theme.Palette p = Theme.p();
         int text = p.text();
-        int muted = -7695968;
+        int muted = 0xFF8A91A0;
         int nfs = Math.max(9, this.U(6.5));
         int sfs = Math.max(8, this.U(5.6));
         int tfs = Math.max(9, this.U(8.0));
@@ -187,11 +166,9 @@ public final class HolyEventsHud extends HudModule {
         List<String> gone = new ArrayList<>();
 
         for (Map.Entry<String, HolyEvents.Event> en : this.seen.entrySet()) {
-            Anim var10000 = this.anim;
-            String var10001 = (String) en.getKey();
-            float vis = var10000.to("in:" + var10001, want.contains(en.getKey()) ? 1.0F : 0.0F, 14.0F);
+            float vis = this.anim.to("in:" + en.getKey(), want.contains(en.getKey()) ? 1.0F : 0.0F, 14.0F);
             if (!want.contains(en.getKey()) && vis < 0.01F) {
-                gone.add((String) en.getKey());
+                gone.add(en.getKey());
             } else {
                 HolyEvents.Event te = (HolyEvents.Event) en.getValue();
                 int fs = mcScale(sfs);
@@ -206,8 +183,7 @@ public final class HolyEventsHud extends HudModule {
             }
         }
 
-        Map var80 = this.seen;
-        gone.forEach(var80::remove);
+        gone.forEach(this.seen::remove);
         boolean anyFresh = false;
 
         for (HolyEvents.Event e : list) {
@@ -260,9 +236,7 @@ public final class HolyEventsHud extends HudModule {
 
             for (Map.Entry<String, HolyEvents.Event> en : this.seen.entrySet()) {
                 HolyEvents.Event e = (HolyEvents.Event) en.getValue();
-                Anim var78 = this.anim;
-                String var81 = (String) en.getKey();
-                float vis = var78.to("in:" + var81, want.contains(en.getKey()) ? 1.0F : 0.0F, 14.0F);
+                float vis = this.anim.to("in:" + en.getKey(), want.contains(en.getKey()) ? 1.0F : 0.0F, 14.0F);
                 if (!(vis < 0.01F)) {
                     int ry = Math.round(y);
                     int slide = Math.round((1.0F - vis) * (float) this.U(4.0));
@@ -278,9 +252,7 @@ public final class HolyEventsHud extends HudModule {
                             && mx < (double) (ox + rx0 + rw0)
                             && my >= (double) (oy + ry0)
                             && my < (double) (oy + ry0 + rh0);
-                    var78 = this.anim;
-                    var81 = (String) en.getKey();
-                    float hk = var78.to("hv:" + var81, over ? 1.0F : 0.0F, 18.0F);
+                    float hk = this.anim.to("hv:" + en.getKey(), over ? 1.0F : 0.0F, 18.0F);
                     if (chat && vis > 0.5F) {
                         this.hits.add(new Object[] {ox + rx0, oy + ry0, rw0, rh0, e});
                     }

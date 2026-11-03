@@ -60,7 +60,7 @@ public final class Wearables extends Module {
     private static final int FULL_BRIGHT = 15728880;
     public final Setting.Mode design;
     private final List<Item> items = new ArrayList<>();
-    private static final String[] SLOTS = new String[] {"wings", "backpack", "companion", "headwear"};
+    private static final String[] SLOTS = {"wings", "backpack", "companion", "headwear"};
     private static final Map<Integer, Motion> MOTION = new HashMap<>();
     private static long sweptAt;
 
@@ -116,12 +116,12 @@ public final class Wearables extends Module {
         try {
             InputStream in = Wearables.class.getResourceAsStream("/assets/arcanicvisuals/wear/index.json");
 
-            Object var8;
+            Object value2;
             label71:
             {
                 try {
                     if (in == null) {
-                        var8 = out;
+                        value2 = out;
                         break label71;
                     }
 
@@ -142,16 +142,16 @@ public final class Wearables extends Module {
                                 num(o, "pitch", 0.0F),
                                 num(o, "roll", 0.0F)));
                     }
-                } catch (Throwable var6) {
+                } catch (Throwable e) {
                     if (in != null) {
                         try {
                             in.close();
-                        } catch (Throwable var5) {
-                            var6.addSuppressed(var5);
+                        } catch (Throwable e2) {
+                            e.addSuppressed(e2);
                         }
                     }
 
-                    throw var6;
+                    throw e;
                 }
 
                 if (in != null) {
@@ -165,9 +165,9 @@ public final class Wearables extends Module {
                 in.close();
             }
 
-            return (List<Item>) var8;
+            return (List<Item>) value2;
         } catch (Exception e) {
-            System.err.println("[ArcanicVisuals] wearables: " + String.valueOf(e));
+            System.err.println("[ArcanicVisuals] wearables: " + e);
             return out;
         }
     }
@@ -191,9 +191,9 @@ public final class Wearables extends Module {
                     Entity entity;
                     if (a.id == mc.player.getId()) {
                         entity = mc.player;
-                        Wearables[] mods = new Wearables[] {Modules.WINGS, Modules.BACKPACKS, null, Modules.HEADWEAR};
+                        Wearables[] mods = {Modules.WINGS, Modules.BACKPACKS, null, Modules.HEADWEAR};
 
-                        for (int i = 0; i < mods.length; ++i) {
+                        for (int i = 0; i < mods.length; i++) {
                             if (mods[i] != null && mods[i].enabled()) {
                                 any |= (worn[i] = mods[i].current()) != null;
                             }
@@ -205,7 +205,7 @@ public final class Wearables extends Module {
                             return;
                         }
 
-                        for (int i = 0; i < SLOTS.length; ++i) {
+                        for (int i = 0; i < SLOTS.length; i++) {
                             if (!SLOTS[i].equals("companion")) {
                                 any |= (worn[i] = byNumber(remote.worn(SLOTS[i]))) != null;
                             }
@@ -249,7 +249,7 @@ public final class Wearables extends Module {
 
         Motion mo;
         float dt;
-        boolean var10000;
+        boolean flag;
         label54:
         {
             mo = (Motion) MOTION.computeIfAbsent(a.id, Motion::new);
@@ -269,15 +269,15 @@ public final class Wearables extends Module {
                         }
                     }
 
-                    var10000 = false;
+                    flag = false;
                     break label54;
                 }
             }
 
-            var10000 = true;
+            flag = true;
         }
 
-        boolean airborne = var10000;
+        boolean airborne = flag;
         mo.walk += (Mth.clamp(a.walkAnimationSpeed * 1.6F, 0.0F, 1.0F) - mo.walk)
                 * (1.0F - (float) Math.exp((double) (-dt * 6.0F)));
         mo.air += ((float) (airborne ? 1 : 0) - mo.air) * (1.0F - (float) Math.exp((double) (-dt * 5.0F)));
@@ -353,7 +353,7 @@ public final class Wearables extends Module {
             geo.pose(d, quads);
             long ms = d.millis();
 
-            for (int mode = 0; mode < 4; ++mode) {
+            for (int mode = 0; mode < 4; mode++) {
                 if (geo.hasMode[mode]) {
                     int l = mode != 1 && mode != 3 ? light : 15728880;
                     int m = mode;
@@ -434,7 +434,7 @@ public final class Wearables extends Module {
         private final float[] r = new float[3];
         private final float[] p = new float[3];
         private final float[] s = new float[3];
-        private static final String[] FACES = new String[] {"west", "east", "down", "up", "north", "south"};
+        private static final String[] FACES = {"west", "east", "down", "up", "north", "south"};
         private static final float[][] NORMALS = new float[][] {
             {-1.0F, 0.0F, 0.0F},
             {1.0F, 0.0F, 0.0F},
@@ -467,14 +467,14 @@ public final class Wearables extends Module {
         }
 
         RenderType renderType(int mode) {
-            RenderType var10000;
+            RenderType renderType2;
             switch (mode) {
-                case 2 -> var10000 = RenderTypes.entityTranslucent(this.texture);
-                case 3 -> var10000 = RenderTypes.entityTranslucentEmissive(this.texture);
-                default -> var10000 = RenderTypes.entityCutoutNoCull(this.texture);
+                case 2 -> renderType2 = RenderTypes.entityTranslucent(this.texture);
+                case 3 -> renderType2 = RenderTypes.entityTranslucentEmissive(this.texture);
+                default -> renderType2 = RenderTypes.entityCutoutNoCull(this.texture);
             }
 
-            return var10000;
+            return renderType2;
         }
 
         void emit(float[] q, int mode, long ms, int light, PoseStack.Pose pp, VertexConsumer vc) {
@@ -485,7 +485,7 @@ public final class Wearables extends Module {
                 if (this.quadMode[k] == mode) {
                     float dv = all + this.shift(k, ms);
 
-                    for (int c = 0; c < 4; ++c) {
+                    for (int c = 0; c < 4; c++) {
                         int o = i + c * 8;
                         vc.addVertex(pp, q[o], q[o + 1], q[o + 2])
                                 .setColor(-1)
@@ -506,7 +506,7 @@ public final class Wearables extends Module {
             } else {
                 float[] q = new float[this.quadCount * 32];
                 this.pose(new Drive(0.0, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0L), q);
-                float[] b = new float[] {
+                float[] b = {
                     Float.MAX_VALUE,
                     Float.MAX_VALUE,
                     Float.MAX_VALUE,
@@ -516,7 +516,7 @@ public final class Wearables extends Module {
                 };
 
                 for (int i = 0; i < q.length; i += 32) {
-                    for (int c = 0; c < 4; ++c) {
+                    for (int c = 0; c < 4; c++) {
                         int o = i + c * 8;
                         float x = -q[o];
                         float y = q[o + 1];
@@ -540,7 +540,7 @@ public final class Wearables extends Module {
             this.weights[2] = d.air();
             this.weights[3] = d.sneak();
 
-            for (int l = 0; l < 4; ++l) {
+            for (int l = 0; l < 4; l++) {
                 if (this.has[l]) {
                     double t = this.stride[l] ? (double) (d.walkPos() / 9.43138F * this.length[l]) : d.seconds();
                     this.times[l] =
@@ -548,7 +548,7 @@ public final class Wearables extends Module {
                 }
             }
 
-            int[] at = new int[] {0};
+            int[] at = {0};
             Matrix4f root = this.matrix(0).identity();
 
             for (Bone b : this.roots) {
@@ -568,7 +568,7 @@ public final class Wearables extends Module {
             if (t != null) {
                 t.at(time, this.key);
                 if (this.key[0] == this.key[0]) {
-                    for (int c = 0; c < 3; ++c) {
+                    for (int c = 0; c < 3; c++) {
                         v[c] += (this.key[c] - v[c]) * w;
                     }
                 }
@@ -581,7 +581,7 @@ public final class Wearables extends Module {
                 this.r[0] = this.r[1] = this.r[2] = this.p[0] = this.p[1] = this.p[2] = 0.0F;
                 this.s[0] = this.s[1] = this.s[2] = 1.0F;
 
-                for (int l = 0; l < 4; ++l) {
+                for (int l = 0; l < 4; l++) {
                     Track[] tr = b.tracks[l];
                     float w = this.weights[l];
                     if (tr != null && !(w <= 0.001F)) {
@@ -591,10 +591,10 @@ public final class Wearables extends Module {
                     }
                 }
 
-                float[] var10000 = this.r;
-                var10000[0] += b.swingX * d.lean();
-                var10000 = this.r;
-                var10000[2] += b.swingZ * d.side();
+                float[] fs = this.r;
+                fs[0] += b.swingX * d.lean();
+                fs = this.r;
+                fs[2] += b.swingZ * d.side();
                 if (this.p[0] != 0.0F || this.p[1] != 0.0F || this.p[2] != 0.0F) {
                     m.translate(-this.p[0] / 16.0F, this.p[1] / 16.0F, this.p[2] / 16.0F);
                 }
@@ -643,7 +643,7 @@ public final class Wearables extends Module {
                         cm.translate(-c.px, -c.py, -c.pz);
                     }
 
-                    for (int f = 0; f < 6; ++f) {
+                    for (int f = 0; f < 6; f++) {
                         if (c.has[f]) {
                             int o = at[0];
                             at[0] += 32;
@@ -656,7 +656,7 @@ public final class Wearables extends Module {
                             float ny = this.tmp.y;
                             float nz = this.tmp.z;
 
-                            for (int k = 0; k < 4; ++k) {
+                            for (int k = 0; k < 4; k++) {
                                 int s0 = (f * 4 + k) * 5;
                                 int w = o + k * 8;
                                 cm.transformPosition(c.v[s0], c.v[s0 + 1], c.v[s0 + 2], this.tmp);
@@ -674,11 +674,11 @@ public final class Wearables extends Module {
                 }
 
                 for (Mesh me : b.meshes) {
-                    for (int q = 0; q < me.quads; ++q) {
+                    for (int q = 0; q < me.quads; q++) {
                         int o = at[0];
                         at[0] += 32;
 
-                        for (int k = 0; k < 4; ++k) {
+                        for (int k = 0; k < 4; k++) {
                             int s0 = (q * 4 + k) * 8;
                             int w = o + k * 8;
                             m.transformPosition(me.v[s0], me.v[s0 + 1], me.v[s0 + 2], this.tmp);
@@ -710,13 +710,13 @@ public final class Wearables extends Module {
                 InputStream in =
                         Wearables.class.getResourceAsStream("/assets/arcanicvisuals/wear/cosmetic_" + n + ".json");
 
-                Object var27;
+                Object value3;
                 label139:
                 {
-                    Geo var33;
+                    Geo geo2;
                     try {
                         if (in == null) {
-                            var27 = null;
+                            value3 = null;
                             break label139;
                         }
 
@@ -792,7 +792,7 @@ public final class Wearables extends Module {
                         geo.quadFrames = new int[geo.quadCount];
                         geo.quadTicks = new float[geo.quadCount];
                         geo.quadBand = new float[geo.quadCount];
-                        int[] k = new int[] {0};
+                        int[] k = {0};
 
                         for (Bone b : geo.roots) {
                             geo.index(b, k);
@@ -808,55 +808,55 @@ public final class Wearables extends Module {
                             animation(geo, root.getAsJsonObject("animation"), byName);
                         }
 
-                        var33 = geo;
-                    } catch (Throwable var25) {
+                        geo2 = geo;
+                    } catch (Throwable e) {
                         if (in != null) {
                             try {
                                 in.close();
-                            } catch (Throwable var24) {
-                                var25.addSuppressed(var24);
+                            } catch (Throwable e3) {
+                                e.addSuppressed(e3);
                             }
                         }
 
-                        throw var25;
+                        throw e;
                     }
 
                     if (in != null) {
                         in.close();
                     }
 
-                    return var33;
+                    return geo2;
                 }
 
                 if (in != null) {
                     in.close();
                 }
 
-                return (Geo) var27;
+                return (Geo) value3;
             } catch (Exception e) {
-                System.err.println("[ArcanicVisuals] wearable " + n + ": " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] wearable " + n + ": " + e);
                 return null;
             }
         }
 
         private void index(Bone b, int[] k) {
             for (Cube c : b.cubes) {
-                for (int f = 0; f < 6; ++f) {
+                for (int f = 0; f < 6; f++) {
                     if (c.has[f]) {
-                        int var10004 = k[0];
-                        int var10001 = k[0];
-                        k[0] = var10004 + 1;
-                        this.part(var10001, c.mode, c.frames, c.ticks, c.band);
+                        int n2 = k[0];
+                        int n3 = k[0];
+                        k[0] = n2 + 1;
+                        this.part(n3, c.mode, c.frames, c.ticks, c.band);
                     }
                 }
             }
 
             for (Mesh me : b.meshes) {
-                for (int f = 0; f < me.quads; ++f) {
-                    int var12 = k[0];
-                    int var11 = k[0];
-                    k[0] = var12 + 1;
-                    this.part(var11, me.mode, me.frames, me.ticks, me.band);
+                for (int f = 0; f < me.quads; f++) {
+                    int n4 = k[0];
+                    int n5 = k[0];
+                    k[0] = n4 + 1;
+                    this.part(n5, me.mode, me.frames, me.ticks, me.band);
                 }
             }
 
@@ -875,15 +875,15 @@ public final class Wearables extends Module {
 
         private static int mode(JsonObject o) {
             if (o.has("mode") && o.get("mode").isJsonPrimitive()) {
-                byte var10000;
+                byte b2;
                 switch (o.get("mode").getAsString()) {
-                    case "glow" -> var10000 = 1;
-                    case "clear" -> var10000 = 2;
-                    case "shine" -> var10000 = 3;
-                    default -> var10000 = 0;
+                    case "glow" -> b2 = 1;
+                    case "clear" -> b2 = 2;
+                    case "shine" -> b2 = 3;
+                    default -> b2 = 0;
                 }
 
-                return var10000;
+                return b2;
             } else {
                 return 0;
             }
@@ -900,7 +900,7 @@ public final class Wearables extends Module {
             me.quads = a.size() / 32;
             me.v = new float[me.quads * 32];
 
-            for (int i = 0; i < me.quads * 4; ++i) {
+            for (int i = 0; i < me.quads * 4; i++) {
                 int s = i * 8;
                 me.v[s] = -a.get(s).getAsFloat() / 16.0F;
                 me.v[s + 1] = a.get(s + 1).getAsFloat() / 16.0F;
@@ -947,7 +947,7 @@ public final class Wearables extends Module {
             float z1 = (z + dp) / 16.0F;
             JsonElement uv = o.get("uv");
 
-            for (int f = 0; f < 6; ++f) {
+            for (int f = 0; f < 6; f++) {
                 float u;
                 float v;
                 float du;
@@ -1023,37 +1023,37 @@ public final class Wearables extends Module {
 
                 float u1 = u + du;
                 float v1 = v + dv;
-                float[][] var10000;
+                float[][] fs2;
                 switch (f) {
                     case 0 ->
-                        var10000 = new float[][] {
+                        fs2 = new float[][] {
                             {x0, y1, z0, u, v}, {x0, y1, z1, u1, v}, {x0, y0, z1, u1, v1}, {x0, y0, z0, u, v1}
                         };
                     case 1 ->
-                        var10000 = new float[][] {
+                        fs2 = new float[][] {
                             {x1, y1, z1, u, v}, {x1, y1, z0, u1, v}, {x1, y0, z0, u1, v1}, {x1, y0, z1, u, v1}
                         };
                     case 2 ->
-                        var10000 = new float[][] {
+                        fs2 = new float[][] {
                             {x1, y0, z0, u, v}, {x1, y0, z1, u, v1}, {x0, y0, z1, u1, v1}, {x0, y0, z0, u1, v}
                         };
                     case 3 ->
-                        var10000 = new float[][] {
+                        fs2 = new float[][] {
                             {x0, y1, z0, u, v}, {x0, y1, z1, u, v1}, {x1, y1, z1, u1, v1}, {x1, y1, z0, u1, v}
                         };
                     case 4 ->
-                        var10000 = new float[][] {
+                        fs2 = new float[][] {
                             {x1, y1, z0, u, v}, {x0, y1, z0, u1, v}, {x0, y0, z0, u1, v1}, {x1, y0, z0, u, v1}
                         };
                     default ->
-                        var10000 = new float[][] {
+                        fs2 = new float[][] {
                             {x0, y1, z1, u, v}, {x1, y1, z1, u1, v}, {x1, y0, z1, u1, v1}, {x0, y0, z1, u, v1}
                         };
                 }
 
-                float[][] p = var10000;
+                float[][] p = fs2;
 
-                for (int k = 0; k < 4; ++k) {
+                for (int k = 0; k < 4; k++) {
                     System.arraycopy(p[k], 0, c.v, (f * 4 + k) * 5, 5);
                 }
 
@@ -1064,15 +1064,15 @@ public final class Wearables extends Module {
         }
 
         private static int layer(String name) {
-            int var10000;
+            int n6;
             switch (name) {
-                case "walk" -> var10000 = 1;
-                case "air" -> var10000 = 2;
-                case "sneak" -> var10000 = 3;
-                default -> var10000 = name.contains("idle") ? 0 : -1;
+                case "walk" -> n6 = 1;
+                case "air" -> n6 = 2;
+                case "sneak" -> n6 = 3;
+                default -> n6 = name.contains("idle") ? 0 : -1;
             }
 
-            return var10000;
+            return n6;
         }
 
         private static void animation(Geo geo, JsonObject anim, Map<String, Bone> byName) {
@@ -1083,7 +1083,7 @@ public final class Wearables extends Module {
                 for (Map.Entry<String, JsonElement> e :
                         anim.getAsJsonObject("animations").entrySet()) {
                     if (((JsonElement) e.getValue()).isJsonObject()) {
-                        String name = ((String) e.getKey()).toLowerCase(Locale.ROOT);
+                        String name = e.getKey().toLowerCase(Locale.ROOT);
                         if (!name.contains("gui")) {
                             if (first == null) {
                                 first = ((JsonElement) e.getValue()).getAsJsonObject();
@@ -1101,7 +1101,7 @@ public final class Wearables extends Module {
                     picked[0] = first;
                 }
 
-                for (int l = 0; l < 4; ++l) {
+                for (int l = 0; l < 4; l++) {
                     JsonObject a = picked[l];
                     if (a != null && a.has("bones") && a.get("bones").isJsonObject()) {
                         float longest = 0.0F;
@@ -1112,7 +1112,7 @@ public final class Wearables extends Module {
                             Bone b = (Bone) byName.get(e.getKey());
                             if (b != null && ((JsonElement) e.getValue()).isJsonObject()) {
                                 JsonObject ch = ((JsonElement) e.getValue()).getAsJsonObject();
-                                Track[] tr = new Track[] {
+                                Track[] tr = {
                                     track(ch.get("rotation")), track(ch.get("position")), track(ch.get("scale"))
                                 };
 
@@ -1160,7 +1160,7 @@ public final class Wearables extends Module {
                         float[] v = value((JsonElement) k.getValue());
                         if (v != null) {
                             try {
-                                keys.add(new float[] {Float.parseFloat((String) k.getKey()), v[0], v[1], v[2]});
+                                keys.add(new float[] {Float.parseFloat(k.getKey()), v[0], v[1], v[2]});
                             } catch (NumberFormatException ignored) {
                             }
                         }
@@ -1179,11 +1179,9 @@ public final class Wearables extends Module {
                     float[] t = new float[keys.size()];
                     float[][] v = new float[keys.size()][];
 
-                    for (int i = 0; i < t.length; ++i) {
-                        t[i] = ((float[]) keys.get(i))[0];
-                        v[i] = new float[] {
-                            ((float[]) keys.get(i))[1], ((float[]) keys.get(i))[2], ((float[]) keys.get(i))[3]
-                        };
+                    for (int i = 0; i < t.length; i++) {
+                        t[i] = keys.get(i)[0];
+                        v[i] = new float[] {keys.get(i)[1], keys.get(i)[2], keys.get(i)[3]};
                     }
 
                     return new Track(t, v);
@@ -1229,7 +1227,7 @@ public final class Wearables extends Module {
                 JsonArray a = o.getAsJsonArray(k);
                 float[] v = def.clone();
 
-                for (int i = 0; i < v.length && i < a.size(); ++i) {
+                for (int i = 0; i < v.length && i < a.size(); i++) {
                     try {
                         v[i] = a.get(i).getAsFloat();
                     } catch (RuntimeException ignored) {
@@ -1294,11 +1292,11 @@ public final class Wearables extends Module {
                     System.arraycopy(this.v[n - 1], 0, out, 0, 3);
                 } else {
                     int i;
-                    for (i = 1; this.t[i] < time; ++i) {}
+                    for (i = 1; this.t[i] < time; i++) {}
 
                     float k = (time - this.t[i - 1]) / Math.max(1.0E-6F, this.t[i] - this.t[i - 1]);
 
-                    for (int c = 0; c < 3; ++c) {
+                    for (int c = 0; c < 3; c++) {
                         out[c] = this.v[i - 1][c] + (this.v[i][c] - this.v[i - 1][c]) * k;
                     }
                 }

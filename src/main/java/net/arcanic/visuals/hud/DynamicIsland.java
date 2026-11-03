@@ -68,10 +68,10 @@ public final class DynamicIsland extends HudModule {
     private final Setting.Bool glow = this.add(new Setting.Bool("glow", "Свечение и блики", true));
     private static DynamicIsland instance;
     private static final int WHITE = -1;
-    private static final int SOFT = -3552815;
-    private static final int GREY = -7434600;
+    private static final int SOFT = 0xFFC9C9D1;
+    private static final int GREY = 0xFF8E8E98;
     private static final int FAINT = 1509949439;
-    private static final int GREEN = -13577896;
+    private static final int GREEN = 0xFF30D158;
     private static final int RED = -47814;
     private static final int YELLOW = -10742;
     private static final int GOLD = -15043;
@@ -191,15 +191,14 @@ public final class DynamicIsland extends HudModule {
         DynamicIsland d = instance;
         if (d != null && d.enabled() && d.binds.on() && m != null) {
             boolean on = m.enabled();
-            String var10001 = m.id;
             d.push(
-                    "module:" + var10001,
+                    "module:" + m.id,
                     0,
                     m.title(),
                     Lang.tr(on ? "Включено" : "Выключено"),
                     m.bind < 0 ? "" : Keys.label(m.bind),
                     on,
-                    on ? Theme.accent() | 0xFF000000 : -7434600,
+                    on ? Theme.accent() | 0xFF000000 : 0xFF8E8E98,
                     (UUID) null,
                     1800L);
         }
@@ -275,7 +274,7 @@ public final class DynamicIsland extends HudModule {
             } else if (e instanceof Player) {
                 Player p = (Player) e;
                 d.push(
-                        "totem:" + String.valueOf(p.getUUID()),
+                        "totem:" + p.getUUID(),
                         3,
                         p.getName().getString(),
                         Lang.tr("потерял тотем"),
@@ -642,7 +641,7 @@ public final class DynamicIsland extends HudModule {
         float speed = !dropLethal && !dropBeat ? 1.1F : 1.6F;
         RenderPipeline pipe = RenderPipelines.GUI_TEXTURED;
 
-        for (int i = 0; i < slots; ++i) {
+        for (int i = 0; i < slots; i++) {
             boolean half = dropHearts - (float) i < 0.95F;
             float wave = (float) Math.max(0.0, Math.sin(time * Math.PI * 2.0 * (double) speed - (double) i * 0.45));
             float k = 1.0F + 0.14F * wave * wave;
@@ -683,8 +682,7 @@ public final class DynamicIsland extends HudModule {
         if (e == null) {
             return null;
         } else {
-            String var10000 = e.server();
-            String key = var10000 + "|" + e.id() + "|" + e.type();
+            String key = e.server() + "|" + e.id() + "|" + e.type();
             if (this.holySeen.add(key)) {
                 this.holyKey = key;
                 this.holyUntil = now + 5000L;
@@ -731,43 +729,43 @@ public final class DynamicIsland extends HudModule {
 
     private float[] size(View v, Minecraft mc, String name, float idleW) {
         float h0 = (float) this.S(28.0);
-        float[] var10000;
-        switch (v.ordinal()) {
-            case 0:
-                var10000 = new float[] {(float) this.S(16.0), (float) this.S(16.0), (float) this.S(8.0)};
+        float[] fs2;
+        switch (v) {
+            case DROP:
+                fs2 = new float[] {(float) this.S(16.0), (float) this.S(16.0), (float) this.S(8.0)};
                 break;
-            case 1:
-                var10000 = new float[] {this.welcomeWidth(mc, name), (float) this.S(66.0), (float) this.S(30.0)};
+            case WELCOME:
+                fs2 = new float[] {this.welcomeWidth(mc, name), (float) this.S(66.0), (float) this.S(30.0)};
                 break;
-            case 2:
+            case IDLE:
             default:
-                var10000 = new float[] {idleW, h0, h0 / 2.0F};
+                fs2 = new float[] {idleW, h0, h0 / 2.0F};
                 break;
-            case 3:
-                var10000 = new float[] {
+            case EVENT:
+                fs2 = new float[] {
                     this.event == null ? idleW : this.eventWidth(this.event), (float) this.S(40.0), (float) this.S(20.0)
                 };
                 break;
-            case 4:
-                var10000 = new float[] {(float) this.S(384.0), (float) this.S(80.0), (float) this.S(34.0)};
+            case NOW_PLAYING:
+                fs2 = new float[] {(float) this.S(384.0), (float) this.S(80.0), (float) this.S(34.0)};
                 break;
-            case 5:
-                var10000 = new float[] {this.musicWidth(), h0, h0 / 2.0F};
+            case MUSIC:
+                fs2 = new float[] {this.musicWidth(), h0, h0 / 2.0F};
                 break;
-            case 6:
-                var10000 = new float[] {(float) this.S(388.0), (float) this.S(172.0), (float) this.S(40.0)};
+            case PLAYER:
+                fs2 = new float[] {(float) this.S(388.0), (float) this.S(172.0), (float) this.S(40.0)};
                 break;
-            case 7:
-                var10000 = new float[] {(float) this.S(348.0), (float) this.S(130.0), (float) this.S(38.0)};
+            case INFO:
+                fs2 = new float[] {(float) this.S(348.0), (float) this.S(130.0), (float) this.S(38.0)};
                 break;
-            case 8:
-                var10000 = new float[] {this.heartsWidth(), h0, h0 / 2.0F};
+            case HEARTS:
+                fs2 = new float[] {this.heartsWidth(), h0, h0 / 2.0F};
                 break;
-            case 9:
-                var10000 = new float[] {this.holyWidth(), h0, h0 / 2.0F};
+            case HOLY:
+                fs2 = new float[] {this.holyWidth(), h0, h0 / 2.0F};
         }
 
-        return var10000;
+        return fs2;
     }
 
     private void content(GuiGraphics g, Minecraft mc, View v, Event e, float a, float scale, String name) {
@@ -784,34 +782,34 @@ public final class DynamicIsland extends HudModule {
                 g.pose().translate(this.cx, this.mH / 2.0F);
                 g.pose().scale(scale, scale);
                 g.pose().translate(-this.cx, -this.mH / 2.0F);
-                switch (v.ordinal()) {
-                    case 1:
+                switch (v) {
+                    case WELCOME:
                         this.welcome(g, mc, name);
                         break;
-                    case 2:
+                    case IDLE:
                         this.idle(g, mc, name);
                         break;
-                    case 3:
+                    case EVENT:
                         if (e != null) {
                             this.event(g, mc, e);
                         }
                         break;
-                    case 4:
+                    case NOW_PLAYING:
                         this.nowPlaying(g);
                         break;
-                    case 5:
+                    case MUSIC:
                         this.compactMusic(g);
                         break;
-                    case 6:
+                    case PLAYER:
                         this.player(g, mc);
                         break;
-                    case 7:
+                    case INFO:
                         this.info(g, mc, name);
                         break;
-                    case 8:
+                    case HEARTS:
                         this.heartsView(g);
                         break;
-                    case 9:
+                    case HOLY:
                         this.holyView(g);
                 }
             } finally {
@@ -987,11 +985,11 @@ public final class DynamicIsland extends HudModule {
     private int bars(GuiGraphics g, int x, int cy, int latency) {
         int bw = Math.max(2, this.S(2.5));
         int gap = Math.max(1, this.S(1.5));
-        int col = latency < 100 ? -13577896 : (latency < 200 ? -10742 : -47814);
+        int col = latency < 100 ? 0xFF30D158 : (latency < 200 ? -10742 : -47814);
         int level = latency <= 0 ? 0 : (latency < 70 ? 4 : (latency < 140 ? 3 : (latency < 240 ? 2 : 1)));
         int bottom = cy + this.S(5.0);
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; i++) {
             int bh = this.S(4.0 + (double) i * 2.5);
             Px.round(g, x + i * (bw + gap), bottom - bh, bw, bh, bw / 2, i < level ? col : 956301311);
         }
@@ -1063,7 +1061,7 @@ public final class DynamicIsland extends HudModule {
         int ss = this.S(11.0);
         int fs = this.S(17.0);
         int top = cy - (ss + this.S(3.0) + fs) / 2;
-        Px.text(g, Lang.tr("Добро пожаловать"), x, top, Px.Weight.MEDIUM, ss, -7434600);
+        Px.text(g, Lang.tr("Добро пожаловать"), x, top, Px.Weight.MEDIUM, ss, 0xFF8E8E98);
         Px.text(g, name, x, top + ss + this.S(3.0), Px.Weight.BOLD, fs, -1);
         int rx = right - this.S(16.0);
         int ws = this.S(13.0);
@@ -1073,7 +1071,7 @@ public final class DynamicIsland extends HudModule {
         String pl = this.pingLine(mc);
         int pw = Px.textWidth(pl, Px.Weight.MEDIUM, ps);
         int py = rtop + ws + this.S(4.0);
-        Px.text(g, pl, rx - pw, py, Px.Weight.MEDIUM, ps, -7434600);
+        Px.text(g, pl, rx - pw, py, Px.Weight.MEDIUM, ps, 0xFF8E8E98);
         if (mc.getCurrentServer() != null) {
             this.bars(g, rx - pw - this.S(5.0) - this.barsWidth(), py + ps / 2, HudElements.ping());
         }
@@ -1111,7 +1109,7 @@ public final class DynamicIsland extends HudModule {
                 this.tile(g, x, cy, lead, e.colour, e.on ? "sparkles" : "x");
                 break;
             case 2:
-                this.tile(g, x, cy, lead, -15043, (String) null);
+                this.tile(g, x, cy, lead, -15043, null);
                 if (this.totemStack == null) {
                     this.totemStack = new ItemStack(Items.TOTEM_OF_UNDYING);
                 }
@@ -1124,7 +1122,7 @@ public final class DynamicIsland extends HudModule {
                 this.face(g, mc, e.who, x + (lead - f) / 2, cy - f / 2, f);
                 break;
             case 4:
-                this.tile(g, x, cy, lead, e.colour, (String) null);
+                this.tile(g, x, cy, lead, e.colour, null);
                 if (e.stack != null) {
                     is = this.S(18.0);
                     HudElements.item(g, e.stack, x + (lead - is) / 2, cy - is / 2, is);
@@ -1143,7 +1141,9 @@ public final class DynamicIsland extends HudModule {
         } else {
             int top = cy - (fs + this.S(3.0) + ss) / 2;
             Px.text(g, title, x, top, Px.Weight.SEMIBOLD, fs, -1);
-            int sc = e.kind != 0 && e.kind != 4 ? (e.kind == 2 ? -15043 : (e.kind == 3 ? -24822 : -7434600)) : e.colour;
+            int sc = e.kind != 0 && e.kind != 4
+                    ? (e.kind == 2 ? -15043 : (e.kind == 3 ? -24822 : 0xFF8E8E98))
+                    : e.colour;
             Px.text(
                     g,
                     Px.ellipsize(sub, Px.Weight.MEDIUM, ss, room),
@@ -1219,7 +1219,7 @@ public final class DynamicIsland extends HudModule {
             int n = 0;
             Inventory inv = mc.player.getInventory();
 
-            for (int i = 0; i < inv.getContainerSize(); ++i) {
+            for (int i = 0; i < inv.getContainerSize(); i++) {
                 ItemStack st = inv.getItem(i);
                 if (st.is(Items.TOTEM_OF_UNDYING)) {
                     n += st.getCount();
@@ -1258,7 +1258,7 @@ public final class DynamicIsland extends HudModule {
         double t = this.beatClock;
         float beat = playing ? (float) Math.pow(1.0 - (t * 2.0 - Math.floor(t * 2.0)), 3.0) : 0.0F;
 
-        for (int i = 0; i < this.levels.length; ++i) {
+        for (int i = 0; i < this.levels.length; i++) {
             double lag = t * 2.0 - (double) i * 0.07;
             float target = playing
                     ? (float) Math.min(
@@ -1271,8 +1271,7 @@ public final class DynamicIsland extends HudModule {
                                     + 0.42 * Math.pow(1.0 - (lag - Math.floor(lag)), 4.0))
                     : 0.14F;
             float rate = target > this.levels[i] ? 26.0F : 8.0F;
-            float[] var10000 = this.levels;
-            var10000[i] += (target - this.levels[i]) * (1.0F - (float) Math.exp((double) (-dt * rate)));
+            this.levels[i] += (target - this.levels[i]) * (1.0F - (float) Math.exp((double) (-dt * rate)));
         }
 
         return beat;
@@ -1283,7 +1282,7 @@ public final class DynamicIsland extends HudModule {
     }
 
     private void wave(GuiGraphics g, int x, int cy, int n, int maxH, int bw, int gap, int col) {
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             float lv = this.levels[(i + (n < this.levels.length ? 1 : 0)) % this.levels.length];
             int bh = Math.max(bw, Math.round((float) maxH * lv));
             Px.round(g, x + i * (bw + gap), cy - bh / 2, bw, bh, bw / 2, col);
@@ -1308,9 +1307,9 @@ public final class DynamicIsland extends HudModule {
                     128,
                     Px.a(0xFFFFFF, Math.round(255.0F * Math.max(0.0F, Math.min(1.0F, Px.fade)))));
         } else {
-            Px.round(g, x, y, size, size, Math.max(2, size / 5), -14015693);
+            Px.round(g, x, y, size, size, Math.max(2, size / 5), 0xFF2A2333);
             int is = size / 2;
-            Px.icon(g, "music", x + (size - is) / 2, y + (size - is) / 2, is, -3164685);
+            Px.icon(g, "music", x + (size - is) / 2, y + (size - is) / 2, is, 0xFFCFB5F3);
         }
     }
 
@@ -1365,7 +1364,7 @@ public final class DynamicIsland extends HudModule {
                 tw,
                 ss,
                 Px.Weight.MEDIUM,
-                -7434600);
+                0xFF8E8E98);
         this.progress(g, tx, ay + art - this.S(3.0), tw, Math.max(2, this.S(3.0)), col);
         this.wave(g, wx, cy, 6, this.S(26.0), bw, gap, col);
     }
@@ -1390,7 +1389,7 @@ public final class DynamicIsland extends HudModule {
                 title = title.substring(0, title.length() - 1);
             title = title + "…";
         }
-        this.label(g, title, x, cy, fs, true, this.media.playing() ? -1 : -7434600);
+        this.label(g, title, x, cy, fs, true, this.media.playing() ? -1 : 0xFF8E8E98);
         this.wave(g, wx, cy, 4, this.S(14.0), bw, gap, musicColour());
     }
 
@@ -1410,7 +1409,7 @@ public final class DynamicIsland extends HudModule {
         int tx = ax + art + this.S(14.0);
         int tw = Math.max(this.S(20.0), wx - this.S(12.0) - tx);
         this.scrolling(g, this.media.title(), tx, pad + this.S(10.0), tw, this.S(16.0), Px.Weight.SEMIBOLD, -1);
-        this.scrolling(g, this.media.artist(), tx, pad + this.S(34.0), tw, this.S(12.0), Px.Weight.MEDIUM, -7434600);
+        this.scrolling(g, this.media.artist(), tx, pad + this.S(34.0), tw, this.S(12.0), Px.Weight.MEDIUM, 0xFF8E8E98);
         this.wave(g, wx, pad + art / 2, 5, this.S(22.0), bw, gp, col);
         int py = pad + art + this.S(16.0);
         int pw = right - left - pad * 2;
@@ -1418,7 +1417,7 @@ public final class DynamicIsland extends HudModule {
         long pos = Music.position();
         long dur = this.media.duration();
         int ts = this.S(10.0);
-        Px.text(g, Music.time(pos), left + pad, py + this.S(9.0), Px.Weight.MEDIUM, ts, -7434600);
+        Px.text(g, Music.time(pos), left + pad, py + this.S(9.0), Px.Weight.MEDIUM, ts, 0xFF8E8E98);
         Px.textRight(
                 g,
                 dur > 0L ? "−" + Music.time(dur - pos) : "0:00",
@@ -1426,12 +1425,12 @@ public final class DynamicIsland extends HudModule {
                 py + this.S(9.0),
                 Px.Weight.MEDIUM,
                 ts,
-                -7434600);
+                0xFF8E8E98);
         int by = Math.round(this.mH) - this.S(32.0);
         double mx = mouseX(mc) - (double) this.placedX;
         double my = mouseY(mc) - (double) this.placedY;
 
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 3; i++) {
             int size = this.S(i == 1 ? 34.0 : 28.0);
             int bx = Math.round(this.cx) + (i - 1) * this.S(54.0) - size / 2;
             int top = by - size / 2;
@@ -1441,8 +1440,7 @@ public final class DynamicIsland extends HudModule {
             this.buttons[i][3] = size;
             boolean hov =
                     mx >= (double) bx && mx < (double) (bx + size) && my >= (double) top && my < (double) (top + size);
-            float[] var10000 = this.buttonHover;
-            var10000[i] += ((float) (hov ? 1 : 0) - this.buttonHover[i]) * 0.25F;
+            this.buttonHover[i] += ((float) (hov ? 1 : 0) - this.buttonHover[i]) * 0.25F;
             int fill = i == 1
                     ? Px.mix(704643071, 1207959551, this.buttonHover[i])
                     : Px.a(0xFFFFFF, Math.round(48.0F * this.buttonHover[i]));
@@ -1482,7 +1480,7 @@ public final class DynamicIsland extends HudModule {
                 Px.Weight.BOLD,
                 this.S(16.0),
                 -1);
-        Px.text(g, this.whereText(mc), tx, pad + this.S(22.0), Px.Weight.MEDIUM, this.S(12.0), -7434600);
+        Px.text(g, this.whereText(mc), tx, pad + this.S(22.0), Px.Weight.MEDIUM, this.S(12.0), 0xFF8E8E98);
         int ty = pad + f + this.S(14.0);
         int th = this.S(48.0);
         int gap = this.S(8.0);
@@ -1509,7 +1507,7 @@ public final class DynamicIsland extends HudModule {
         }
 
         Px.text(g, value, vx, y + this.S(9.0), Px.Weight.SEMIBOLD, this.S(16.0), -1);
-        Px.text(g, label, x + this.S(12.0), y + this.S(29.0), Px.Weight.MEDIUM, this.S(10.0), -7434600);
+        Px.text(g, label, x + this.S(12.0), y + this.S(29.0), Px.Weight.MEDIUM, this.S(10.0), 0xFF8E8E98);
     }
 
     private String session() {
@@ -1543,9 +1541,9 @@ public final class DynamicIsland extends HudModule {
         }
 
         if (skin == null) {
-            Px.round(g, x, y, size, size, Math.max(2, size / 4), -13882320);
+            Px.round(g, x, y, size, size, Math.max(2, size / 4), 0xFF2C2C30);
             int is = size * 3 / 5;
-            Px.icon(g, "user", x + (size - is) / 2, y + (size - is) / 2, is, -7434600);
+            Px.icon(g, "user", x + (size - is) / 2, y + (size - is) / 2, is, 0xFF8E8E98);
         } else {
             PlayerFaceRenderer.draw(
                     g, skin, x, y, size, Math.round(255.0F * Math.max(0.0F, Math.min(1.0F, Px.fade))) << 24 | 0xFFFFFF);
@@ -1622,7 +1620,7 @@ public final class DynamicIsland extends HudModule {
                 return false;
             } else {
                 if (this.expanded && this.view == DynamicIsland.View.PLAYER && this.mH > (float) this.S(150.0)) {
-                    for (int i = 0; i < 3; ++i) {
+                    for (int i = 0; i < 3; i++) {
                         if (inside(this.buttons[i], x, y)) {
                             Music.control(i == 0 ? "prev" : (i == 1 ? "toggle" : "next"));
                             UiSound.play("click");

@@ -49,7 +49,7 @@ final class HitFx {
     static final int STARDUST = 2;
     static final int BUTTERFLIES = 3;
     static final int BUBBLES = 4;
-    private static final float[] LIFE = new float[] {1.05F, 2.6F, 1.4F, 2.0F, 2.1F};
+    private static final float[] LIFE = {1.05F, 2.6F, 1.4F, 2.0F, 2.1F};
     private static final Identifier PETAL = Identifier.fromNamespaceAndPath("arcanic", "textures/targetesp/sakura.png");
     private static final Identifier WING = Identifier.fromNamespaceAndPath("arcanic", "textures/hit/wing.png");
     private static final Identifier BUBBLE = Identifier.fromNamespaceAndPath("arcanic", "textures/hit/bubble.png");
@@ -61,16 +61,13 @@ final class HitFx {
     private HitFx() {}
 
     static Show.Pal own(int style) {
-        Show.Pal var10000;
-        switch (style) {
-            case 1 -> var10000 = new Show.Pal(-6416, -23609, -2071937);
-            case 2 -> var10000 = new Show.Pal(-2346, -11410, -4616961);
-            case 3 -> var10000 = new Show.Pal(-1903105, -9452545, -7443457);
-            case 4 -> var10000 = new Show.Pal(-3334, -6428417, -3626753);
-            default -> var10000 = new Show.Pal(-721409, -5640961, -9783041);
-        }
-
-        return var10000;
+        return switch (style) {
+            case 1 -> new Show.Pal(-6416, -23609, 0xFFE0627F);
+            case 2 -> new Show.Pal(-2346, -11410, 0xFFB98CFF);
+            case 3 -> new Show.Pal(0xFFE2F5FF, 0xFF6FC3FF, 0xFF8E6BFF);
+            case 4 -> new Show.Pal(-3334, 0xFF9DE8FF, 0xFFC8A8FF);
+            default -> new Show.Pal(0xFFF4FDFF, 0xFFA9ECFF, 0xFF6AB8FF);
+        };
     }
 
     private static long now(boolean studio) {
@@ -81,7 +78,7 @@ final class HitFx {
         ClientLevel lvl = Minecraft.getInstance().level;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         if (lvl != null) {
-            for (int i = 0; i < 8; ++i) {
+            for (int i = 0; i < 8; i++) {
                 pos.set(l.getBlockX(), Mth.floor(l.getY() + 0.05) - i, l.getBlockZ());
                 BlockState st = lvl.getBlockState(pos);
                 VoxelShape shape = st.getCollisionShape(lvl, pos);
@@ -95,13 +92,13 @@ final class HitFx {
                                 (float) top,
                                 model ? st : Blocks.STONE.defaultBlockState(),
                                 LevelRenderer.getLightColor(lvl, pos.above()),
-                                col != 0 ? 0xFF000000 | col : -7568264);
+                                col != 0 ? 0xFF000000 | col : 0xFF8C8478);
                     }
                 }
             }
         }
 
-        return new Ground((float) l.getY() - 8.0F, Blocks.STONE.defaultBlockState(), 15728880, -7568264);
+        return new Ground((float) l.getY() - 8.0F, Blocks.STONE.defaultBlockState(), 15728880, 0xFF8C8478);
     }
 
     static void spawn(
@@ -230,7 +227,7 @@ final class HitFx {
     private static void sakuraBurst(Hit h) {
         float s = h.scale;
 
-        for (int i = 0; i < (h.crit ? 18 : 11); ++i) {
+        for (int i = 0; i < (h.crit ? 18 : 11); i++) {
             Vec3 d = back(h, 0.6);
             petal(
                     h,
@@ -243,7 +240,7 @@ final class HitFx {
             Vec3 c = h.body.getCenter();
             double r = Math.max(h.body.getXsize(), h.body.getZsize()) * 0.6;
 
-            for (int i = 0; i < 12; ++i) {
+            for (int i = 0; i < 12; i++) {
                 double a = (double) i * Math.PI * 2.0 / 12.0;
                 Vec3 at = new Vec3(c.x + Math.cos(a) * r, h.at.y, c.z + Math.sin(a) * r);
                 Vec3 vel = (new Vec3(
@@ -336,9 +333,9 @@ final class HitFx {
     private static void stardustBurst(Hit h) {
         Show.Pal c = h.pal;
         float s = h.scale;
-        int[] cols = new int[] {c.light(), c.main(), c.deep()};
+        int[] cols = {c.light(), c.main(), c.deep()};
 
-        for (int i = 0; i < (h.crit ? 30 : 20); ++i) {
+        for (int i = 0; i < (h.crit ? 30 : 20); i++) {
             Vec3 d = back(h, 0.3).scale((1.0 + h.rnd.nextDouble() * 1.6) * (double) s);
             int col = cols[i % 3];
             Fx.spawn()
@@ -354,7 +351,7 @@ final class HitFx {
                     .colour(col, col & 0xFFFFFF);
         }
 
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 8; i++) {
             Vec3 d = back(h, 0.4).scale((0.5 + h.rnd.nextDouble()) * (double) s);
             Fx.spawn()
                     .at(h.at)
@@ -410,7 +407,7 @@ final class HitFx {
         Show.Pal c = h.pal;
         float s = h.scale;
 
-        for (int i = 0; i < (h.crit ? 9 : 5); ++i) {
+        for (int i = 0; i < (h.crit ? 9 : 5); i++) {
             Vec3 d = back(h, 0.8).scale((1.5 + h.rnd.nextDouble() * 1.1) * (double) s);
             Fly f = new Fly();
             f.x = h.at.x;
@@ -428,7 +425,7 @@ final class HitFx {
             h.flies.add(f);
         }
 
-        for (int i = 0; i < 7; ++i) {
+        for (int i = 0; i < 7; i++) {
             Vec3 d = back(h, 0.5).scale((0.4 + h.rnd.nextDouble() * 0.6) * (double) s);
             Fx.spawn()
                     .at(h.at)
@@ -446,14 +443,11 @@ final class HitFx {
     }
 
     private static int tint(Show.Pal c, int k, boolean outer) {
-        int var10000;
-        switch (k) {
-            case 1 -> var10000 = outer ? c.light() : c.main();
-            case 2 -> var10000 = outer ? c.main() : c.deep();
-            default -> var10000 = outer ? c.light() : c.deep();
-        }
-
-        return var10000;
+        return switch (k) {
+            case 1 -> outer ? c.light() : c.main();
+            case 2 -> outer ? c.main() : c.deep();
+            default -> outer ? c.light() : c.deep();
+        };
     }
 
     private static float shown(Fly f, float t) {
@@ -566,7 +560,7 @@ final class HitFx {
     private static void bubbleBurst(Hit h) {
         float s = h.scale;
 
-        for (int i = 0; i < (h.crit ? 12 : 7); ++i) {
+        for (int i = 0; i < (h.crit ? 12 : 7); i++) {
             Vec3 d = back(h, 0.45).scale((0.9 + h.rnd.nextDouble() * 1.3) * (double) s);
             Bubble b = new Bubble();
             b.x = h.at.x;
@@ -588,7 +582,7 @@ final class HitFx {
     private static int film(Show.Pal c, float k) {
         float f = (k / 6.2832F % 1.0F + 1.0F) % 1.0F * 3.0F;
         int i = (int) f;
-        int[] cols = new int[] {c.light(), c.main(), c.deep()};
+        int[] cols = {c.light(), c.main(), c.deep()};
         return Fx.lerp(cols[i % 3], cols[(i + 1) % 3], f - (float) i);
     }
 
@@ -699,7 +693,7 @@ final class HitFx {
             hear(h, SoundEvents.BUBBLE_COLUMN_BUBBLE_POP, 0.22F, 1.5F + h.rnd.nextFloat() * 0.5F);
         }
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 6; i++) {
             Vec3 d = randomDir(h.rnd);
             double sp = 0.6 + h.rnd.nextDouble() * 0.6;
             Fx.spawn()
@@ -719,12 +713,12 @@ final class HitFx {
         float s = h.scale;
         float[][][] pts = new float[spokes][5][];
 
-        for (int k = 0; k < spokes; ++k) {
+        for (int k = 0; k < spokes; k++) {
             float a = (float)
                     ((double) k * Math.PI * 2.0 / (double) spokes + (double) ((h.rnd.nextFloat() - 0.5F) * 0.4F));
             float reach = (0.42F + 0.3F * h.rnd.nextFloat()) * s;
 
-            for (int j = 0; j < 5; ++j) {
+            for (int j = 0; j < 5; j++) {
                 float f = (float) j / 4.0F;
                 float side = j == 0 ? 0.0F : (h.rnd.nextFloat() - 0.5F) * 0.08F * s;
                 float r = reach * f;
@@ -735,11 +729,11 @@ final class HitFx {
             }
         }
 
-        for (int k = 0; k < spokes; ++k) {
+        for (int k = 0; k < spokes; k++) {
             float[] us = new float[5];
             float[] ws = new float[5];
 
-            for (int j = 0; j < 5; ++j) {
+            for (int j = 0; j < 5; j++) {
                 us[j] = pts[k][j][0];
                 ws[j] = pts[k][j][1];
             }
@@ -748,7 +742,7 @@ final class HitFx {
         }
 
         for (int ringAt : new int[] {1, 3}) {
-            for (int k = 0; k < spokes; ++k) {
+            for (int k = 0; k < spokes; k++) {
                 float[] a = pts[k][ringAt];
                 float[] b = pts[(k + 1) % spokes][ringAt];
                 float mu = (a[0] + b[0]) / 2.0F * (0.92F + h.rnd.nextFloat() * 0.08F);
@@ -763,8 +757,8 @@ final class HitFx {
     private static float[] flatten(float[][][] pts, int c) {
         float[] out = new float[pts.length * 5];
 
-        for (int k = 0; k < pts.length; ++k) {
-            for (int j = 0; j < 5; ++j) {
+        for (int k = 0; k < pts.length; k++) {
+            for (int j = 0; j < 5; j++) {
                 out[k * 5 + j] = pts[k][j][c];
             }
         }
@@ -801,7 +795,7 @@ final class HitFx {
         } else {
             float grow = Show.easeOut(t / 0.06F);
 
-            for (int i = 0; i < h.web.size() - 1; ++i) {
+            for (int i = 0; i < h.web.size() - 1; i++) {
                 float[][] l = (float[][]) h.web.get(i);
                 boolean spoke = l[0].length == 5;
                 if (spoke || !(t < 0.03F)) {
@@ -810,7 +804,7 @@ final class HitFx {
                     float[] ys = new float[n];
                     float[] zs = new float[n];
 
-                    for (int j = 0; j < n; ++j) {
+                    for (int j = 0; j < n; j++) {
                         Vector3f q = plane(v, p, l[0][j], l[1][j]);
                         xs[j] = q.x;
                         ys[j] = q.y;
@@ -868,7 +862,7 @@ final class HitFx {
         Vector3f toward = new Vector3f((float) (-h.dir.x), (float) (-h.dir.y), (float) (-h.dir.z));
         int[][] bands = new int[][] {{0, 1}, {1, 3}, {3, 4}};
 
-        for (int k = 0; k < spokes; ++k) {
+        for (int k = 0; k < spokes; k++) {
             for (int[] band : bands) {
                 int k2 = (k + 1) % spokes;
                 Vector3f a = plane(v, p, keep[0][k * 5 + band[0]], keep[1][k * 5 + band[0]]);
@@ -880,7 +874,7 @@ final class HitFx {
             }
         }
 
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 8; i++) {
             Vec3 d = randomDir(h.rnd).scale(2.0 + h.rnd.nextDouble() * 2.0);
             Fx.spawn()
                     .at(h.at)
@@ -925,7 +919,7 @@ final class HitFx {
         static final Ground STUDIO;
 
         static {
-            STUDIO = new Ground(0.0F, Blocks.STONE.defaultBlockState(), 15728880, -7568264);
+            STUDIO = new Ground(0.0F, Blocks.STONE.defaultBlockState(), 15728880, 0xFF8C8478);
         }
     }
 

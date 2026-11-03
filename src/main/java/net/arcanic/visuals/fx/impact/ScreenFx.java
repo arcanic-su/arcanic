@@ -211,7 +211,7 @@ public final class ScreenFx {
                                     .build();
                             Std140SizeCalculator size = new Std140SizeCalculator();
 
-                            for (int i = 0; i < 5; ++i) {
+                            for (int i = 0; i < 5; i++) {
                                 size.putVec4();
                             }
 

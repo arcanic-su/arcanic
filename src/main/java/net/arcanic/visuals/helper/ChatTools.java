@@ -85,7 +85,7 @@ public final class ChatTools {
     }
 
     private static boolean cyrillic(String w) {
-        for (int i = 0; i < w.length(); ++i) {
+        for (int i = 0; i < w.length(); i++) {
             if ("йцукенгшщзхъфывапролджэячсмитьбюё".indexOf(Character.toLowerCase(w.charAt(i))) < 0) {
                 return false;
             }
@@ -97,7 +97,7 @@ public final class ChatTools {
     private static String latin(String w) {
         StringBuilder b = new StringBuilder();
 
-        for (int i = 0; i < w.length(); ++i) {
+        for (int i = 0; i < w.length(); i++) {
             b.append("qwertyuiop[]asdfghjkl;'zxcvbnm,.`"
                     .charAt("йцукенгшщзхъфывапролджэячсмитьбюё".indexOf(Character.toLowerCase(w.charAt(i)))));
         }
@@ -238,12 +238,10 @@ public final class ChatTools {
                     "Раскладка команд (/рги → /hub), повторы ×N, сохранение чата и подсветка ника",
                     Category.UTILITY,
                     true);
-            Setting.Bool var10001 = this.add(new Setting.Bool("sound", "Звук упоминания", true));
-            Setting.Bool var10002 = this.mentions;
-            this.sound = (Setting.Bool) var10001.showIf(var10002::on);
-            Setting.Text var1 = this.add(new Setting.Text("words", "Ещё слова", "", "Через запятую", 120));
-            var10002 = this.mentions;
-            this.words = (Setting.Text) var1.showIf(var10002::on);
+            this.sound =
+                    this.add(new Setting.Bool("sound", "Звук упоминания", true)).showIf(this.mentions::on);
+            this.words = this.add(new Setting.Text("words", "Ещё слова", "", "Через запятую", 120))
+                    .showIf(this.mentions::on);
         }
 
         Component mention(Component msg, String text) {
@@ -254,7 +252,7 @@ public final class ChatTools {
                 List<String> names = new ArrayList<>();
                 names.add(p.getName().getString());
 
-                for (String w : ((String) this.words.get()).split(",")) {
+                for (String w : this.words.get().split(",")) {
                     if (!w.isBlank()) {
                         names.add(w.trim());
                     }
@@ -329,7 +327,7 @@ public final class ChatTools {
                     word = word.substring(10);
                 }
 
-                for (String w : ((String) this.list.get()).split(",")) {
+                for (String w : this.list.get().split(",")) {
                     if (word.equals(w.trim().toLowerCase(Locale.ROOT).replaceFirst("^/", ""))) {
                         this.pending = t;
                         return true;
@@ -366,8 +364,8 @@ public final class ChatTools {
 
     public static final class Auction extends Module {
         final Setting.Bool amounts = this.add(new Setting.Bool("amounts", "Сокращения сумм (1к, 2.5м)", true));
-        final Setting.Mode key = this.add(
-                new Setting.Mode("key", "Искать предмет в руке", "Нет", new String[] {"Нет", "H", "J", "K", "U"}));
+        final Setting.Mode key =
+                this.add(new Setting.Mode("key", "Искать предмет в руке", "Нет", "Нет", "H", "J", "K", "U"));
         final Setting.Text command = (this.add(
                         new Setting.Text("command", "Команда поиска", "/ah search {item}", "{item} — название", 80)))
                 .showIf(() -> !this.key.is("Нет"));
@@ -398,8 +396,7 @@ public final class ChatTools {
                     double v = Double.parseDouble(a.group(1).replace(',', '.'));
                     String u = a.group(2).toLowerCase(Locale.ROOT);
                     v *= !u.equals("k") && !u.equals("к") ? 1000000.0 : 1000.0;
-                    String var10000 = m.group(1);
-                    return var10000 + Math.round(v) + m.group(3);
+                    return m.group(1) + Math.round(v) + m.group(3);
                 }
             }
 
@@ -407,16 +404,14 @@ public final class ChatTools {
         }
 
         public void tick() {
-            byte var10000;
-            switch ((String) this.key.get()) {
-                case "H" -> var10000 = 72;
-                case "J" -> var10000 = 74;
-                case "K" -> var10000 = 75;
-                case "U" -> var10000 = 85;
-                default -> var10000 = -1;
-            }
-
-            int code = var10000;
+            int code =
+                    switch (this.key.get()) {
+                        case "H" -> 72;
+                        case "J" -> 74;
+                        case "K" -> 75;
+                        case "U" -> 85;
+                        default -> -1;
+                    };
             boolean down = code >= 0
                     && ChatTools.mc().screen == null
                     && GLFW.glfwGetKey(ChatTools.mc().getWindow().handle(), code) == 1;
@@ -438,9 +433,7 @@ public final class ChatTools {
                     String name = ChatFormatting.stripFormatting(
                                     st.getHoverName().getString())
                             .trim();
-                    String cmd = ((String) this.command.get())
-                            .replace("{item}", name)
-                            .trim();
+                    String cmd = this.command.get().replace("{item}", name).trim();
                     if (cmd.startsWith("/")) {
                         conn.sendCommand(cmd.substring(1));
                     } else {

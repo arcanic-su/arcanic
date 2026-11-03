@@ -47,9 +47,9 @@ public abstract class TotemEventMixin {
         if (packet.getEventId() == 35) {
             ClientLevel level = Minecraft.getInstance().level;
             if (level != null) {
-                Entity var5 = packet.getEntity(level);
-                if (var5 instanceof LivingEntity) {
-                    LivingEntity l = (LivingEntity) var5;
+                Entity entity2 = packet.getEntity(level);
+                if (entity2 instanceof LivingEntity) {
+                    LivingEntity l = (LivingEntity) entity2;
                     if (Modules.TOTEM.enabled()) {
                         Modules.TOTEM.popped(l);
                     }

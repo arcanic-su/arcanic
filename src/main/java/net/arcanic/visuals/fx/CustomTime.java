@@ -38,7 +38,7 @@ public final class CustomTime extends Module {
     }
 
     public long getLong() {
-        return Math.round((Double) this.timeSutok.get());
+        return Math.round(this.timeSutok.get());
     }
 
     public void tick() {

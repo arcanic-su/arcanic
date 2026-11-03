@@ -27,7 +27,6 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -249,7 +248,7 @@ public final class Config {
 
     public static void load() {
         try {
-            if (Files.exists(FILE, new LinkOption[0])) {
+            if (Files.exists(FILE)) {
                 JsonObject root = JsonParser.parseString(Files.readString(FILE, StandardCharsets.UTF_8))
                         .getAsJsonObject();
                 apply(root);
@@ -271,7 +270,7 @@ public final class Config {
                         active = menu.get("preset").getAsString();
                     }
 
-                    if (!Files.exists(file(active), new LinkOption[0])) {
+                    if (!Files.exists(file(active))) {
                         active = "";
                     }
                 }
@@ -279,7 +278,7 @@ public final class Config {
                 firstStart();
             }
         } catch (RuntimeException | IOException e) {
-            System.err.println("[ArcanicVisuals] config: " + String.valueOf(e));
+            System.err.println("[ArcanicVisuals] config: " + e);
         }
     }
 
@@ -298,7 +297,7 @@ public final class Config {
             root.getAsJsonObject("menu").addProperty("preset", active);
             Files.writeString(FILE, GSON.toJson(root), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            System.err.println("[ArcanicVisuals] save: " + String.valueOf(e));
+            System.err.println("[ArcanicVisuals] save: " + e);
         }
 
         dirtyAt = 0L;
@@ -382,9 +381,7 @@ public final class Config {
         List<Preset> out = new ArrayList<>();
 
         try {
-            Stream<Path> s = Files.list(PRESETS);
-
-            try {
+            try (Stream<Path> s = Files.list(PRESETS)) {
 
                 for (Path p : (Iterable<Path>) s::iterator) {
                     String file = p.getFileName().toString();
@@ -400,20 +397,6 @@ public final class Config {
                         out.add(seen.preset());
                     }
                 }
-            } catch (Throwable var10) {
-                if (s != null) {
-                    try {
-                        s.close();
-                    } catch (Throwable var9) {
-                        var10.addSuppressed(var9);
-                    }
-                }
-
-                throw var10;
-            }
-
-            if (s != null) {
-                s.close();
             }
         } catch (IOException ignored) {
         }
@@ -436,7 +419,7 @@ public final class Config {
         try {
             return JsonParser.parseString(Files.readString(file(name), StandardCharsets.UTF_8))
                     .getAsJsonObject();
-        } catch (RuntimeException | IOException var2) {
+        } catch (RuntimeException | IOException e) {
             return null;
         }
     }
@@ -479,7 +462,7 @@ public final class Config {
 
             try {
                 Files.writeString(file(name), GSON.toJson(data), StandardCharsets.UTF_8);
-            } catch (IOException var5) {
+            } catch (IOException e) {
                 return false;
             }
 
@@ -531,13 +514,13 @@ public final class Config {
             Files.createDirectories(PRESETS);
             String name = base;
 
-            for (int n = 2; Files.exists(file(name), new LinkOption[0]); ++n) {
+            for (int n = 2; Files.exists(file(name)); n++) {
                 name = base + " (" + n + ")";
             }
 
             Files.writeString(file(name), GSON.toJson(data), StandardCharsets.UTF_8);
             return name;
-        } catch (IOException var5) {
+        } catch (IOException e) {
             return null;
         }
     }
@@ -553,7 +536,7 @@ public final class Config {
                 }
 
                 apply(preset);
-            } catch (RuntimeException var3) {
+            } catch (RuntimeException e) {
                 return false;
             }
 
@@ -568,7 +551,7 @@ public final class Config {
             if (!Files.deleteIfExists(file(name))) {
                 return false;
             }
-        } catch (IOException var2) {
+        } catch (IOException e) {
             return false;
         }
 

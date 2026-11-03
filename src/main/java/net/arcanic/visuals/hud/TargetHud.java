@@ -46,15 +46,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.scores.PlayerTeam;
 
 public final class TargetHud extends HudModule {
-    final Setting.Mode style = this.add(new Setting.Mode(
-            "style3", "Стиль", "Панель", new String[] {"Панель", "Карточка", "Классический", "Компактный"}));
-    final Setting.Mode cardArmor = (Setting.Mode) ((Setting.Mode)
-                    this.add(new Setting.Mode("card_armor", "Броня", "Число", new String[] {"Нет", "Число", "Иконки"})))
-            .showIf(() -> this.style.is("Карточка"));
+    final Setting.Mode style =
+            this.add(new Setting.Mode("style3", "Стиль", "Панель", "Панель", "Карточка", "Классический", "Компактный"));
+    final Setting.Mode cardArmor =
+            (Setting.Mode) (this.add(new Setting.Mode("card_armor", "Броня", "Число", "Нет", "Число", "Иконки")))
+                    .showIf(() -> this.style.is("Карточка"));
     final Setting.Bool hurtTint = (this.add(new Setting.Bool("hurt_tint", "Краснеет от урона", true)))
             .showIf(() -> this.style.is("Компактный"));
-    final Setting.Mode barStyle = (Setting.Mode)
-            this.add(new Setting.Mode("bar2", "Цвет полоски", "Тема", new String[] {"Тема", "Здоровье"}));
+    final Setting.Mode barStyle = this.add(new Setting.Mode("bar2", "Цвет полоски", "Тема", "Тема", "Здоровье"));
     final Setting.Bool gear =
             (this.add(new Setting.Bool("gear2", "Снаряжение", true))).showIf(() -> this.style.is("Классический"));
     final Setting.Bool popups =
@@ -134,8 +133,7 @@ public final class TargetHud extends HudModule {
 
     private LivingEntity target() {
         Minecraft mc = Minecraft.getInstance();
-        Entity var3 = mc.crosshairPickEntity;
-        if (var3 instanceof LivingEntity l) {
+        if (mc.crosshairPickEntity instanceof LivingEntity l) {
             if (l.isAlive()) {
                 return l;
             }
@@ -185,7 +183,9 @@ public final class TargetHud extends HudModule {
     }
 
     private static int hpColour(float frac) {
-        return frac > 0.5F ? Px.mix(-340971, -11870592, (frac - 0.5F) * 2.0F) : Px.mix(-770210, -340971, frac * 2.0F);
+        return frac > 0.5F
+                ? Px.mix(0xFFFACC15, 0xFF4ADE80, (frac - 0.5F) * 2.0F)
+                : Px.mix(0xFFF43F5E, 0xFFFACC15, frac * 2.0F);
     }
 
     private static String one(float v) {
@@ -281,10 +281,9 @@ public final class TargetHud extends HudModule {
                 int is = this.c(12.0);
                 HudElements.item(g, using, fx + (face - is) / 2, fy + this.c(3.0), is);
                 float left = Math.max(0.0F, (float) (using.getUseDuration(t) - t.getTicksUsingItem()) / 20.0F);
-                Locale var10001 = Locale.ROOT;
                 Px.textCenter(
                         g,
-                        String.format(var10001, "%.1f", left) + Lang.tr("с"),
+                        String.format(Locale.ROOT, "%.1f", left) + Lang.tr("с"),
                         fx + face / 2,
                         fy + this.c(16.0),
                         Px.Weight.SEMIBOLD,
@@ -310,7 +309,7 @@ public final class TargetHud extends HudModule {
                     Px.Weight.SEMIBOLD,
                     this.c(7.5),
                     p.text());
-            ItemStack[] gearRow = new ItemStack[] {
+            ItemStack[] gearRow = {
                 t.getItemBySlot(EquipmentSlot.HEAD),
                 t.getItemBySlot(EquipmentSlot.CHEST),
                 t.getItemBySlot(EquipmentSlot.LEGS),
@@ -322,7 +321,7 @@ public final class TargetHud extends HudModule {
             int gy = this.c(23.25);
             int gs = this.c(6.0);
 
-            for (int i = 0; i < gearRow.length; ++i) {
+            for (int i = 0; i < gearRow.length; i++) {
                 if (!gearRow[i].isEmpty()) {
                     HudElements.item(g, gearRow[i], gx, gy, gs);
                 } else if (i < 4) {
@@ -743,7 +742,7 @@ public final class TargetHud extends HudModule {
     }
 
     private static int softHp(float k) {
-        return k < 0.5F ? Px.mix(-1026721, -870325, k * 2.0F) : Px.mix(-870325, -10495605, (k - 0.5F) * 2.0F);
+        return k < 0.5F ? Px.mix(0xFFF0555F, 0xFFF2B84B, k * 2.0F) : Px.mix(0xFFF2B84B, 0xFF5FD98B, (k - 0.5F) * 2.0F);
     }
 
     private void armour(GuiGraphics g, LivingEntity t, float in, int bg) {
@@ -779,7 +778,7 @@ public final class TargetHud extends HudModule {
                 Px.outline(g, x, y, pw, ph, this.U(5.0), Theme.p().light() ? Px.a(0, 22) : 352321535);
             }
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 ItemStack it = (ItemStack) items.get(i);
                 int ix = x + pad + i * (is + gap);
                 int iy = y + pad;
@@ -854,11 +853,11 @@ public final class TargetHud extends HudModule {
                 this.flash = 1.0F;
                 this.ghostHold = now + 380L;
                 if (this.popups.on()) {
-                    List var10000 = this.pops;
-                    String var10003 = this.lastHp - hp >= 10.0F
+                    List list = this.pops;
+                    String text2 = this.lastHp - hp >= 10.0F
                             ? String.valueOf(Math.round(this.lastHp - hp))
                             : one(this.lastHp - hp);
-                    var10000.add(new Pop("-" + var10003, now));
+                    list.add(new Pop("-" + text2, now));
                 }
             }
 
@@ -971,7 +970,7 @@ public final class TargetHud extends HudModule {
                 Px.icon(g, "heart", tx, hy, heart, fillC);
                 int hx = tx + heart + this.S(6.0);
                 String hpText = this.hpKnown ? num(Math.max(0.0F, this.hpNumber - abs)) : "?";
-                int hpCol = Px.mix(p.text(), -495247, this.flash * 0.8F);
+                int hpCol = Px.mix(p.text(), 0xFFF87171, this.flash * 0.8F);
                 Px.text(g, hpText, hx, hy, Px.Weight.SEMIBOLD, hfs, hpCol);
                 hx += Px.textWidth(hpText, Px.Weight.SEMIBOLD, hfs);
                 if (this.hpKnown) {
@@ -983,7 +982,7 @@ public final class TargetHud extends HudModule {
                 int hpEnd = hx;
                 if (abs > 0.0F) {
                     String gold = "+" + num(abs);
-                    Px.text(g, gold, hx + this.S(6.0), hy, Px.Weight.SEMIBOLD, hfs, -208051);
+                    Px.text(g, gold, hx + this.S(6.0), hy, Px.Weight.SEMIBOLD, hfs, 0xFFFCD34D);
                     hpEnd = hx + this.S(6.0) + Px.textWidth(gold, Px.Weight.SEMIBOLD, hfs);
                 }
 
@@ -1049,7 +1048,7 @@ public final class TargetHud extends HudModule {
                             hy - Math.round((float) this.S(12.0) * Anim.easeOutCubic(k)),
                             Px.Weight.BOLD,
                             this.S(11.0),
-                            -495247);
+                            0xFFF87171);
                     Px.fade = oldF;
                 }
 
@@ -1062,7 +1061,7 @@ public final class TargetHud extends HudModule {
                     int sy = cardH + stripGap - Math.round((float) this.S(8.0) * (1.0F - this.stripK));
                     this.card(g, p, sx, sy, sw, stripH, this.S(12.0));
 
-                    for (int i = 0; i < items.size(); ++i) {
+                    for (int i = 0; i < items.size(); i++) {
                         ItemStack it = (ItemStack) items.get(i);
                         int cx = sx + this.S(4.0) + i * cell;
                         Px.round(

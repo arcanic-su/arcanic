@@ -257,16 +257,15 @@ public final class TrapZone extends Module {
             BlockPos block = BlockPos.containing(feet);
             AABB box = this.heldTrap != null ? this.heldTrap.box(block) : null;
             if (box != null) {
-                double[] want = new double[] {box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ};
+                double[] want = {box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ};
                 float k = 1.0F - (float) Math.exp((double) (-dt * 20.0F));
                 if (this.at != null
                         && !(Math.abs(this.at[0] - want[0])
                                         + Math.abs(this.at[1] - want[1])
                                         + Math.abs(this.at[2] - want[2])
                                 > 6.0)) {
-                    for (int i = 0; i < 6; ++i) {
-                        double[] var10000 = this.at;
-                        var10000[i] += (want[i] - this.at[i]) * (double) k;
+                    for (int i = 0; i < 6; i++) {
+                        this.at[i] += (want[i] - this.at[i]) * (double) k;
                     }
                 } else {
                     this.at = want.clone();
@@ -281,9 +280,8 @@ public final class TrapZone extends Module {
                                         + Math.abs(this.blastAt[1] - want[1])
                                         + Math.abs(this.blastAt[2] - want[2])
                                 > 6.0)) {
-                    for (int i = 0; i < 6; ++i) {
-                        double[] var37 = this.blastAt;
-                        var37[i] += (want[i] - this.blastAt[i]) * (double) k;
+                    for (int i = 0; i < 6; i++) {
+                        this.blastAt[i] += (want[i] - this.blastAt[i]) * (double) k;
                     }
                 } else {
                     this.blastAt = want.clone();
@@ -381,7 +379,7 @@ public final class TrapZone extends Module {
                     }
                 }
 
-                float[] old = (float[]) this.marks.get(p.getId());
+                float[] old = this.marks.get(p.getId());
                 float c = old == null ? 0.0F : old[0];
                 float target = !in && !(hp > 0.25F) ? 0.0F : 1.0F;
                 c += (target - c) * k;
@@ -409,7 +407,7 @@ public final class TrapZone extends Module {
         } catch (RuntimeException e) {
             if (!this.warned) {
                 this.warned = true;
-                System.err.println("[ArcanicVisuals] trap damage estimate failed: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] trap damage estimate failed: " + e);
             }
 
             return 0.0F;
@@ -492,7 +490,7 @@ public final class TrapZone extends Module {
             float band = scanOn ? f.time % 2.6F / 2.6F : -1.0F;
             float k = a * walls * breathe;
 
-            for (int r = 0; r < rows; ++r) {
+            for (int r = 0; r < rows; r++) {
                 float t0 = (float) r / (float) rows;
                 float t1 = (float) (r + 1) / (float) rows;
                 int c0 = alpha(c, k * wall(t0, band));
@@ -515,7 +513,7 @@ public final class TrapZone extends Module {
             int bright = alpha(light, a * g);
             int dim = alpha(c, a * 0.55F * g);
 
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < 4; i++) {
                 double[] p = corners[i];
                 double[] q = corners[(i + 1) % 4];
                 grow(vc, f, new Vec3(p[0], y0, p[1]), new Vec3(q[0], y0, q[1]), edges, px, bright);
@@ -571,7 +569,7 @@ public final class TrapZone extends Module {
 
     public int tint(Entity e, int colour) {
         if (this.enabled() && this.players.on() && e != null) {
-            float[] m = (float[]) this.marks.get(e.getId());
+            float[] m = this.marks.get(e.getId());
             if (m != null && !(m[0] < 0.01F)) {
                 float time = (float) (System.nanoTime() % 1000000000000L) / 1.0E9F;
                 float pulse = 0.5F + 0.5F * (float) Math.sin((double) time * Math.PI * 2.0 * 1.3);
@@ -627,7 +625,7 @@ public final class TrapZone extends Module {
                     float hp = ((float[]) e.getValue())[1];
                     float health = ((float[]) e.getValue())[2];
                     if (!(hp < 0.25F) && !(k < 0.05F)) {
-                        Entity ent = mc.level.getEntity((Integer) e.getKey());
+                        Entity ent = mc.level.getEntity(e.getKey());
                         if (ent != null) {
                             Vec3 over = ent.getPosition(pt).add(0.0, (double) ent.getBbHeight() + 0.55, 0.0);
                             double[] s = Projection.toScreen(over, Px.width(), Px.height());
@@ -734,7 +732,7 @@ public final class TrapZone extends Module {
         if (!(r < 0.05)) {
             int n = Math.max(24, (int) (r * 14.0));
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 double a0 = (double) i * Math.PI * 2.0 / (double) n;
                 double a1 = (double) (i + 1) * Math.PI * 2.0 / (double) n;
                 Vec3 p = o.add(Math.cos(a0) * r, 0.0, Math.sin(a0) * r);
@@ -796,7 +794,7 @@ public final class TrapZone extends Module {
             int n = Math.max(1, (int) Math.ceil(len / 0.5));
             Vec3 dir = b.subtract(a);
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 float t0 = (float) i / (float) n;
                 float t1 = (float) (i + 1) / (float) n;
                 Vec3 p0 = a.add(dir.scale((double) t0)).subtract(f.cam);

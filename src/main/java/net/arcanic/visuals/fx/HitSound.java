@@ -60,9 +60,8 @@ public final class HitSound extends Module {
                 "Короткий приятный звук при каждом твоём ударе по мобу или игроку. Слышишь только ты.",
                 Category.COMBAT,
                 false);
-        this.sound = (Setting.Mode)
-                this.add(new Setting.Mode("sound", "Звук", ((KillSound.Sound) ALL.get(0)).name(), (String[])
-                        ALL.stream().map(KillSound.Sound::name).toArray((x$0) -> new String[x$0])));
+        this.sound = this.add(new Setting.Mode("sound", "Звук", ((KillSound.Sound) ALL.get(0)).name(), (String[])
+                ALL.stream().map(KillSound.Sound::name).toArray((x$0) -> new String[x$0])));
         this.volume = this.add(new Setting.Num("volume", "Громкость", 100.0, 0.0, 100.0, 5.0, "%"));
         this.vary = this.add(new Setting.Bool("vary", "Слегка менять тон", true));
         this.mute = this.add(new Setting.Bool("mute", "Заменять звук удара", true));
@@ -105,7 +104,7 @@ public final class HitSound extends Module {
 
     public void play(KillSound.Sound s) {
         long now = System.currentTimeMillis();
-        if (now - this.playedAt >= 40L && !((Double) this.volume.get() <= 0.0)) {
+        if (now - this.playedAt >= 40L && !(this.volume.get() <= 0.0)) {
             this.playedAt = now;
             SoundEvent ev = (SoundEvent) this.events.computeIfAbsent(
                     s.id(),

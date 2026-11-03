@@ -33,10 +33,9 @@ public final class CustomFog extends Module {
 
     public CustomFog() {
         super("custom_fog", "CustomFog", "Свой цвет и дальность тумана", Category.WORLD, false);
-        Setting.Num var10001 = this.add(new Setting.Num("end", "Конец тумана", 128.0, 1.0, 1024.0, 1.0, ""));
-        Setting.Bool var10002 = this.customRange;
-        this.fogEnd = (Setting.Num) var10001.showIf(var10002::on);
-        this.colorTumana = this.add(new Setting.Colour("color", "Цвет тумана", false, -7358209));
+        this.fogEnd = this.add(new Setting.Num("end", "Конец тумана", 128.0, 1.0, 1024.0, 1.0, ""))
+                .showIf(this.customRange::on);
+        this.colorTumana = this.add(new Setting.Colour("color", "Цвет тумана", false, 0xFF8FB8FF));
         this.neTrogatPodVodoy = this.add(new Setting.Bool("submerged", "Не трогать под водой", true));
     }
 

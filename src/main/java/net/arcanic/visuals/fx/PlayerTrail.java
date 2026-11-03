@@ -43,13 +43,11 @@ public final class PlayerTrail extends ArcVisuals.Colored {
 
     public PlayerTrail() {
         super("player_trail", "След", "Светящаяся лента в твой рост тянется за тобой, как в Arcanic", Category.EFFECTS);
-        Setting.Num var10001 = this.add(new Setting.Num("fill_alpha", "Плотность заливки", 0.5, 0.1, 1.0, 0.05, ""));
-        Setting.Bool var10002 = this.fill;
-        this.fillAlpha = (Setting.Num) var10001.showIf(var10002::on);
+        this.fillAlpha = this.add(new Setting.Num("fill_alpha", "Плотность заливки", 0.5, 0.1, 1.0, 0.05, ""))
+                .showIf(this.fill::on);
         this.lines = this.add(new Setting.Bool("lines", "Кромки", true));
-        var10001 = this.add(new Setting.Num("line_width", "Толщина кромок", 2.0, 1.0, 5.0, 0.5, " px"));
-        var10002 = this.lines;
-        this.lineWidth = (Setting.Num) var10001.showIf(var10002::on);
+        this.lineWidth = this.add(new Setting.Num("line_width", "Толщина кромок", 2.0, 1.0, 5.0, 0.5, " px"))
+                .showIf(this.lines::on);
         this.firstPerson = this.add(new Setting.Bool("first_person", "Видно от 1-го лица", false));
         this.points = new ArrayDeque<>();
     }
@@ -74,7 +72,7 @@ public final class PlayerTrail extends ArcVisuals.Colored {
             this.points.clear();
         } else {
             long now = System.currentTimeMillis();
-            long life = Math.round((Double) this.duration.get());
+            long life = Math.round(this.duration.get());
             Vec3 at = p.getPosition(pt);
 
             while (!this.points.isEmpty() && now - ((Pt) this.points.peekFirst()).t > life) {
@@ -97,7 +95,7 @@ public final class PlayerTrail extends ArcVisuals.Colored {
                 float[] a = new float[n];
                 int[] col = new int[n];
 
-                for (int i = 0; i < n; ++i) {
+                for (int i = 0; i < n; i++) {
                     float age = 1.0F - (float) (now - ((Pt) pts.get(i)).t) / (float) life;
                     float idx = (float) (i + 1) / (float) n;
                     a[i] = smooth(Math.min(age * 1.4F, 1.0F)) * smooth(Math.min(idx * 1.25F, 1.0F));
@@ -108,7 +106,7 @@ public final class PlayerTrail extends ArcVisuals.Colored {
                 if (this.fill.on()) {
                     float k = this.fillAlpha.f();
 
-                    for (int i = 0; i < n - 1; ++i) {
+                    for (int i = 0; i < n - 1; i++) {
                         Vec3 r0 = ((Pt) pts.get(i)).pos.subtract(cam);
                         Vec3 r1 = ((Pt) pts.get(i + 1)).pos.subtract(cam);
                         int c0 = alpha(col[i], a[i] * k);
@@ -149,13 +147,13 @@ public final class PlayerTrail extends ArcVisuals.Colored {
         Vec3[] rel = new Vec3[n];
         Vec3[] off = new Vec3[n];
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             rel[i] = ((Pt) pts.get(i)).pos.add(0.0, y, 0.0).subtract(cam);
         }
 
         float px = this.lineWidth.f() + 0.5F;
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             Vec3 dir = rel[Math.min(n - 1, i + 1)].subtract(rel[Math.max(0, i - 1)]);
             Vec3 side = dir.cross(rel[i]);
             if (side.lengthSqr() < 1.0E-12) {
@@ -165,7 +163,7 @@ public final class PlayerTrail extends ArcVisuals.Colored {
             off[i] = side.normalize().scale(Math.max(0.002, rel[i].length() * (double) perPx * (double) px / 2.0));
         }
 
-        for (int i = 0; i < n - 1; ++i) {
+        for (int i = 0; i < n - 1; i++) {
             Vec3 p0 = rel[i];
             Vec3 p1 = rel[i + 1];
             Vec3 s0 = off[i];

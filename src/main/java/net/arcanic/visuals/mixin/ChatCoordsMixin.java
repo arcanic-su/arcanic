@@ -37,7 +37,7 @@ public abstract class ChatCoordsMixin {
     private Component arcanicvisuals$coords(Component message) {
         try {
             return ChatCoords.link(message);
-        } catch (RuntimeException var3) {
+        } catch (RuntimeException e) {
             return message;
         }
     }

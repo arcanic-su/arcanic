@@ -55,8 +55,7 @@ public abstract class EntityRendererMixin {
             },
             at = {@At("RETURN")})
     private void arcanicvisuals$link(Entity entity, float partialTick, CallbackInfoReturnable<EntityRenderState> cir) {
-        Object var5 = cir.getReturnValue();
-        if (var5 instanceof Ducks.EntityLink l) {
+        if (cir.getReturnValue() instanceof Ducks.EntityLink l) {
             l.arcanicvisuals$setEntity(entity);
         }
     }

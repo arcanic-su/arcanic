@@ -40,7 +40,7 @@ public abstract class ChatToolsMixin {
     private Component arcanicvisuals$incoming(Component message) {
         try {
             return ChatTools.incoming((ChatComponent) (Object) this, message);
-        } catch (RuntimeException var3) {
+        } catch (RuntimeException e) {
             return message;
         }
     }

@@ -68,8 +68,7 @@ public final class ImpactDraw {
             VertexFormat.Mode mode, boolean depthTest, boolean depthWrite, boolean additive, boolean bias) {
         String key = "pc|" + mode.name() + "|" + depthTest + "|" + depthWrite + "|" + additive + "|" + bias;
         return (RenderType) TYPES.computeIfAbsent(key, (k) -> {
-            int var10000 = k.hashCode();
-            String name = "impact_position_color_" + Integer.toHexString(var10000 & 0xFFFFFF);
+            String name = "impact_position_color_" + Integer.toHexString(k.hashCode() & 0xFFFFFF);
             RenderPipeline pipe = (RenderPipeline) PIPES.computeIfAbsent(
                     k, (kk) -> pipeline(name, mode, false, depthTest, depthWrite, additive, bias));
             return RenderTypeAccess.arcanicvisuals$create(
@@ -79,10 +78,9 @@ public final class ImpactDraw {
     }
 
     public static RenderType type(Identifier tex, VertexFormat.Mode mode, boolean depthTest, boolean additive) {
-        String key = String.valueOf(tex) + "|pt|" + mode.name() + "|" + depthTest + "|" + additive;
+        String key = tex + "|pt|" + mode.name() + "|" + depthTest + "|" + additive;
         return (RenderType) TYPES.computeIfAbsent(key, (k) -> {
-            int var10000 = k.hashCode();
-            String name = "impact_position_tex_color_" + Integer.toHexString(var10000 & 0xFFFFFF);
+            String name = "impact_position_tex_color_" + Integer.toHexString(k.hashCode() & 0xFFFFFF);
             RenderPipeline pipe = (RenderPipeline)
                     PIPES.computeIfAbsent(k, (kk) -> pipeline(name, mode, true, depthTest, false, additive, false));
             return RenderTypeAccess.arcanicvisuals$create(

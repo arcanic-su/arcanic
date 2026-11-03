@@ -69,7 +69,7 @@ public abstract class ImpactEffect extends Module {
             this.one = null;
             this.many = new Setting.Bool[options.length];
 
-            for (int i = 0; i < options.length; ++i) {
+            for (int i = 0; i < options.length; i++) {
                 boolean on = false;
 
                 for (int d : defs) {
@@ -96,7 +96,7 @@ public abstract class ImpactEffect extends Module {
         }
 
         public boolean has(String option) {
-            for (int i = 0; i < this.options.length; ++i) {
+            for (int i = 0; i < this.options.length; i++) {
                 if (this.options[i].equals(option)) {
                     return this.is(i);
                 }

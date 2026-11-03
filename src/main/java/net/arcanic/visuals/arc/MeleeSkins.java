@@ -72,7 +72,7 @@ public final class MeleeSkins extends Module {
                 MeleeCatalog.of(slot).stream().map(MeleeDesign::getDisplayName).toArray(String[]::new)));
         this.firstPerson = this.add(new Setting.Bool("first_person", "От первого лица", true));
         this.thirdPerson = this.add(new Setting.Bool("third_person", "От третьего лица", true));
-        Setting.Num var10001 = (Setting.Num) this.add(new Setting.Num(
+        Setting.Num num = this.add(new Setting.Num(
                 "third_scale",
                 "Размер от 3-го лица",
                 thirdScaleRange[0],
@@ -80,10 +80,8 @@ public final class MeleeSkins extends Module {
                 thirdScaleRange[2],
                 0.05,
                 "×"));
-        Setting.Bool var10002 = this.thirdPerson;
-        this.thirdScale = (Setting.Num) var10001.showIf(var10002::on);
-        this.sizes =
-                (Setting.Sizes) (this.add(new Setting.Sizes("fp_sizes", "Размеры от 1-го лица"))).showIf(() -> false);
+        this.thirdScale = (Setting.Num) num.showIf(this.thirdPerson::on);
+        this.sizes = (this.add(new Setting.Sizes("fp_sizes", "Размеры от 1-го лица"))).showIf(() -> false);
     }
 
     /** The AWP and any other gun drawn in place of a bow; the bow itself still shoots as it always does. */

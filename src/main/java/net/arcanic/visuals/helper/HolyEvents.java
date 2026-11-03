@@ -144,20 +144,20 @@ public final class HolyEvents extends Module {
     private static final Pattern SERVER =
             Pattern.compile("(соло|дуо|трио|клан)?\\s*лайт\\s*(?:\\(1\\.20\\)\\s*)?#\\s*(\\d+)", 2);
     private static final Map<String, Integer> HEAD_COLOUR = Map.ofEntries(
-            Map.entry("boss", -5721540),
-            Map.entry("cargo", -1213924),
-            Map.entry("golden_fortress", -5196612),
-            Map.entry("ship", -13730596),
-            Map.entry("snowquarry", -1733935),
-            Map.entry("container", -1554881),
-            Map.entry("parcels", -12604983),
-            Map.entry("jaycob", -9326248),
-            Map.entry("mine", -7447594),
-            Map.entry("end", -15355404),
+            Map.entry("boss", 0xFFA8B23C),
+            Map.entry("cargo", 0xFFED7A1C),
+            Map.entry("golden_fortress", 0xFFB0B4BC),
+            Map.entry("ship", 0xFF2E7CDC),
+            Map.entry("snowquarry", 0xFFE58AD1),
+            Map.entry("container", 0xFFE8463F),
+            Map.entry("parcels", 0xFF3FA9C9),
+            Map.entry("jaycob", 0xFF71B158),
+            Map.entry("mine", 0xFF8E5BD6),
+            Map.entry("end", 0xFF15B1F4),
             Map.entry("cube", -11750));
 
     public static int stageColour(int stage) {
-        return stage == 2 ? -10758518 : (stage == 1 ? -868018 : (stage == 0 ? -41620 : -7696222));
+        return stage == 2 ? 0xFF5BD68A : (stage == 1 ? 0xFFF2C14E : (stage == 0 ? -41620 : 0xFF8A90A2));
     }
 
     public static Identifier head(String type) {
@@ -291,7 +291,7 @@ public final class HolyEvents extends Module {
         if (root.isJsonObject()) {
             for (Map.Entry<String, JsonElement> e : root.getAsJsonObject().entrySet()) {
                 if (((JsonElement) e.getValue()).isJsonPrimitive()) {
-                    out.put((String) e.getKey(), plain(((JsonElement) e.getValue()).getAsString()));
+                    out.put(e.getKey(), plain(((JsonElement) e.getValue()).getAsString()));
                 }
             }
         }
@@ -308,10 +308,10 @@ public final class HolyEvents extends Module {
                 JsonElement list = (JsonElement) e.getValue();
                 if (list.isJsonArray()) {
                     for (JsonElement ev : list.getAsJsonArray()) {
-                        all.add(event((String) e.getKey(), ev));
+                        all.add(event(e.getKey(), ev));
                     }
                 } else {
-                    all.add(event((String) e.getKey(), list));
+                    all.add(event(e.getKey(), list));
                 }
             }
 
@@ -356,7 +356,7 @@ public final class HolyEvents extends Module {
                 long last = (Long) this.lastSeen.getOrDefault(en.getKey(), 0L);
                 if (last != time) {
                     if (time - last > 90000L) {
-                        this.over((String) en.getKey(), (Event) en.getValue(), last);
+                        this.over(en.getKey(), (Event) en.getValue(), last);
                         it.remove();
                     } else {
                         ask.add(((Event) en.getValue()).server());
@@ -395,10 +395,9 @@ public final class HolyEvents extends Module {
             Map.Entry<String, Event> en = (Map.Entry) it.next();
             if (((Event) en.getValue()).server().equals(server)) {
                 if (there.contains(en.getKey())) {
-                    this.lastSeen.put((String) en.getKey(), time);
+                    this.lastSeen.put(en.getKey(), time);
                 } else {
-                    this.over((String) en.getKey(), (Event) en.getValue(), (Long)
-                            this.lastSeen.getOrDefault(en.getKey(), time));
+                    this.over(en.getKey(), (Event) en.getValue(), (Long) this.lastSeen.getOrDefault(en.getKey(), time));
                     it.remove();
                     changed = true;
                 }
@@ -433,8 +432,7 @@ public final class HolyEvents extends Module {
     }
 
     private static String key(Event e) {
-        String var10000 = e.server();
-        return var10000 + "|" + e.id();
+        return e.server() + "|" + e.id();
     }
 
     private static Event event(String server, JsonElement e) {
@@ -539,63 +537,60 @@ public final class HolyEvents extends Module {
     }
 
     private static String ownRarity(String type) {
-        String var10000;
+        String text2;
         switch (type == null ? "" : type) {
             case "GOLDEN_FORTRESS":
-                var10000 = "Легендарный";
+                text2 = "Легендарный";
                 break;
             case "MINE":
-                var10000 = "Эпический";
+                text2 = "Эпический";
                 break;
             default:
                 String t = type == null ? "" : type.toLowerCase(Locale.ROOT);
-                var10000 = !t.equals("end") && !t.contains("dragon") ? "Обычный" : "Легендарный";
+                text2 = !t.equals("end") && !t.contains("dragon") ? "Обычный" : "Легендарный";
         }
 
-        return var10000;
+        return text2;
     }
 
     static int rank(String rarity) {
-        byte var10000;
+        byte b2;
         switch (rarity) {
             case "Босс":
-                var10000 = 5;
+                b2 = 5;
                 break;
             case "Мифический":
-                var10000 = 4;
+                b2 = 4;
                 break;
             case "Легендарный":
             case "Роскошный":
             case "Смертельный":
-                var10000 = 3;
+                b2 = 3;
                 break;
             case "Эпический":
             case "Зажиточный":
             case "Взрывной":
-                var10000 = 2;
+                b2 = 2;
                 break;
             case "Редкий":
-                var10000 = 1;
+                b2 = 1;
                 break;
             default:
-                var10000 = 0;
+                b2 = 0;
         }
 
-        return var10000;
+        return b2;
     }
 
     public boolean wanted(Event e) {
-        boolean var10000;
-        switch (rank(e.rarity())) {
-            case 1 -> var10000 = this.showRare.on();
-            case 2 -> var10000 = this.showEpic.on();
-            case 3 -> var10000 = this.showLegendary.on();
-            case 4 -> var10000 = this.showMythic.on();
-            case 5 -> var10000 = this.showBoss.on();
-            default -> var10000 = this.showCommon.on();
-        }
-
-        return var10000;
+        return switch (rank(e.rarity())) {
+            case 1 -> this.showRare.on();
+            case 2 -> this.showEpic.on();
+            case 3 -> this.showLegendary.on();
+            case 4 -> this.showMythic.on();
+            case 5 -> this.showBoss.on();
+            default -> this.showCommon.on();
+        };
     }
 
     static int number(String server) {
@@ -643,7 +638,7 @@ public final class HolyEvents extends Module {
                 for (Map.Entry<String, JsonElement> en : o.entrySet()) {
                     JsonArray a = ((JsonElement) en.getValue()).getAsJsonArray();
                     this.learned.put(
-                            (String) en.getKey(),
+                            en.getKey(),
                             new long[] {a.get(0).getAsLong(), a.get(1).getAsLong()});
                 }
             } catch (Exception ignored) {
@@ -667,7 +662,7 @@ public final class HolyEvents extends Module {
                     JsonArray a = new JsonArray();
                     a.add(((long[]) en.getValue())[0]);
                     a.add(((long[]) en.getValue())[1]);
-                    o.add((String) en.getKey(), a);
+                    o.add(en.getKey(), a);
                 }
 
                 Files.createDirectories(LEARNED.getParent());
@@ -815,7 +810,7 @@ public final class HolyEvents extends Module {
                 long n = Long.parseLong(s.replaceAll("\\D+", ""));
                 return !s.contains("мин") && !s.trim().endsWith("м") ? n * 1000L : n * 60000L;
             }
-        } catch (RuntimeException var7) {
+        } catch (RuntimeException e) {
             return -1L;
         }
     }
@@ -834,7 +829,7 @@ public final class HolyEvents extends Module {
         Identifier head = head(type);
         if (head != null) {
             String p = head.getPath();
-            Integer c = (Integer) HEAD_COLOUR.get(p.substring(p.lastIndexOf(47) + 1, p.length() - 4));
+            Integer c = HEAD_COLOUR.get(p.substring(p.lastIndexOf(47) + 1, p.length() - 4));
             if (c != null) {
                 return c;
             }
@@ -847,7 +842,7 @@ public final class HolyEvents extends Module {
         Identifier head = head(e.type());
         if (head != null) {
             String p = head.getPath();
-            Integer c = (Integer) HEAD_COLOUR.get(p.substring(p.lastIndexOf(47) + 1, p.length() - 4));
+            Integer c = HEAD_COLOUR.get(p.substring(p.lastIndexOf(47) + 1, p.length() - 4));
             if (c != null) {
                 return c;
             }
@@ -905,7 +900,7 @@ public final class HolyEvents extends Module {
 
     private static record Flag(Event event, long born, boolean ongoing, String top) {
         Flag(Event event, long born, boolean ongoing) {
-            this(event, born, ongoing, (String) null);
+            this(event, born, ongoing, null);
         }
     }
 }

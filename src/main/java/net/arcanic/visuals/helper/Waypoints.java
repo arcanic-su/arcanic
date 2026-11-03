@@ -25,7 +25,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,7 +69,7 @@ import org.joml.Vector3fc;
 public final class Waypoints extends Module {
     private final Setting.Bool events = this.add(new Setting.Bool("events", "Метки ивентов", true));
     private final Setting.Bool arrows = this.add(new Setting.Bool("arrows", "Стрелки за краем экрана", true));
-    private final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет своих меток", false, -9459457));
+    private final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет своих меток", false, 0xFF6FA8FF));
     private final List<Mark> marks = new ArrayList<>();
     private boolean loaded;
     private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("arcanicvisuals/waypoints.json");
@@ -141,7 +140,7 @@ public final class Waypoints extends Module {
     private boolean inMainWorld() {
         String d = dim();
         if (!netherOrEnd(d) && !d.contains("spawn") && !d.contains("lobby") && !d.contains("hub")) {
-            String spawn = (String) this.spawnDims.get(server());
+            String spawn = this.spawnDims.get(server());
             return spawn == null || !spawn.equals(d);
         } else {
             return false;
@@ -173,7 +172,7 @@ public final class Waypoints extends Module {
 
     private void loadWorlds() {
         try {
-            if (!Files.exists(WORLDS, new LinkOption[0])) {
+            if (!Files.exists(WORLDS)) {
                 return;
             }
 
@@ -181,7 +180,7 @@ public final class Waypoints extends Module {
                     .getAsJsonObject();
 
             for (Map.Entry<String, JsonElement> e : o.entrySet()) {
-                this.spawnDims.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsString());
+                this.spawnDims.put(e.getKey(), ((JsonElement) e.getValue()).getAsString());
             }
         } catch (Exception ignored) {
         }
@@ -218,7 +217,7 @@ public final class Waypoints extends Module {
             this.loadWorlds();
 
             try {
-                if (!Files.exists(FILE, new LinkOption[0])) {
+                if (!Files.exists(FILE)) {
                     return;
                 }
 
@@ -300,22 +299,22 @@ public final class Waypoints extends Module {
             if (aimed != null) {
                 this.edit(aimed);
             } else {
-                Vec3 var10000;
+                Vec3 vec3;
                 label18:
                 {
                     HitResult hit = mc.player.pick(256.0, 1.0F, false);
                     if (hit instanceof BlockHitResult) {
                         BlockHitResult bh = (BlockHitResult) hit;
                         if (hit.getType() == Type.BLOCK) {
-                            var10000 = Vec3.atBottomCenterOf(bh.getBlockPos().above());
+                            vec3 = Vec3.atBottomCenterOf(bh.getBlockPos().above());
                             break label18;
                         }
                     }
 
-                    var10000 = mc.player.position();
+                    vec3 = mc.player.position();
                 }
 
-                Vec3 at = var10000;
+                Vec3 at = vec3;
                 this.add(this.nextName(), at);
             }
         }
@@ -404,9 +403,7 @@ public final class Waypoints extends Module {
     private void edit(Mark m) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            Vec3 var10000 = mc.player.position();
-            Vec3 var10001 = new Vec3(m.x, m.y, m.z);
-            String far = (int) var10000.distanceTo(var10001) + " м";
+            String far = (int) mc.player.position().distanceTo(new Vec3(m.x, m.y, m.z)) + " м";
             if (m.event && !"CHAT".equals(m.type)) {
                 mc.setScreen(PromptScreen.ask(
                         (Screen) null,
@@ -416,11 +413,10 @@ public final class Waypoints extends Module {
                         "Убрать",
                         () -> this.drop(m)));
             } else {
-                PromptScreen var4 = PromptScreen.field(
+                PromptScreen promptScreen = PromptScreen.field(
                                 (Screen) null, "Метка", "Название метки", "Сохранить", (name) -> this.rename(m, name))
                         .value("CHAT".equals(m.type) ? "" : m.name);
-                String var10002 = where(m);
-                mc.setScreen(var4.note(var10002 + "  ·  " + far).danger("Удалить", () -> this.drop(m)));
+                mc.setScreen(promptScreen.note(where(m) + "  ·  " + far).danger("Удалить", () -> this.drop(m)));
             }
         }
     }
@@ -435,8 +431,7 @@ public final class Waypoints extends Module {
             }
 
             this.save();
-            String var10000 = m.name;
-            say("метка «" + var10000 + "» · " + where(m));
+            say("метка «" + m.name + "» · " + where(m));
         }
     }
 
@@ -449,7 +444,7 @@ public final class Waypoints extends Module {
 
     private Mark under(double x, double y) {
         for (int i = this.plateRects.size() - 1; i >= 0; --i) {
-            int[] r = (int[]) this.plateRects.get(i);
+            int[] r = this.plateRects.get(i);
             if (x >= (double) r[0] && x < (double) (r[0] + r[2]) && y >= (double) r[1] && y < (double) (r[1] + r[3])) {
                 return (Mark) this.plateMarks.get(i);
             }
@@ -529,8 +524,7 @@ public final class Waypoints extends Module {
                                 name = "Ивент";
                             }
 
-                            String var10000 = name.substring(0, 1).toUpperCase(Locale.ROOT);
-                            name = var10000 + name.substring(1);
+                            name = name.substring(0, 1).toUpperCase(Locale.ROOT) + name.substring(1);
                             long now = System.currentTimeMillis();
                             long starts = 0L;
                             Matcher t = IN.matcher(s);
@@ -763,7 +757,7 @@ public final class Waypoints extends Module {
                             + (long) n * (t.group(2).toLowerCase(Locale.ROOT).startsWith("с") ? 1000L : 60000L);
                 }
 
-                HolyEvents.Event e = named != null ? named : eventHere((String) null, (String) null);
+                HolyEvents.Event e = named != null ? named : eventHere(null, null);
                 String name = e != null ? e.name() : "Ивент";
                 String type = e != null ? e.type() : null;
                 if (this.going != null) {
@@ -897,7 +891,7 @@ public final class Waypoints extends Module {
 
     public void ended(HolyEvents.Event e) {
         boolean any = this.marks.removeIf((m) -> {
-            boolean var10000;
+            boolean flag2;
             label27:
             {
                 if (m.event && m.server.endsWith("/" + e.server())) {
@@ -910,12 +904,10 @@ public final class Waypoints extends Module {
                     }
                 }
 
-                var10000 = false;
-                return var10000;
+                return false;
             }
 
-            var10000 = true;
-            return var10000;
+            return true;
         });
         if (any) {
             this.save();
@@ -1045,9 +1037,9 @@ public final class Waypoints extends Module {
         }
 
         int tx = ix + icon + gap;
-        Px.text(g, m.name, tx, y + (h - fs) / 2, Px.Weight.SEMIBOLD, fs, -723722);
+        Px.text(g, m.name, tx, y + (h - fs) / 2, Px.Weight.SEMIBOLD, fs, 0xFFF4F4F6);
         tx += nameW + gap;
-        Px.text(g, dst, tx, y + (h - fs2) / 2 + Math.round((float) fs * 0.05F), Px.Weight.MEDIUM, fs2, -7434602);
+        Px.text(g, dst, tx, y + (h - fs2) / 2 + Math.round((float) fs * 0.05F), Px.Weight.MEDIUM, fs2, 0xFF8E8E96);
         if (chipW > 0) {
             int cx = tx + dstW + gap;
             int ch = Math.round((float) fs * 1.35F);
@@ -1057,7 +1049,7 @@ public final class Waypoints extends Module {
         }
 
         if (aimed) {
-            Px.textCenter(g, where(m), px, y + h + Math.round((float) fs * 0.3F), Px.Weight.MEDIUM, fs2, -4934468);
+            Px.textCenter(g, where(m), px, y + h + Math.round((float) fs * 0.3F), Px.Weight.MEDIUM, fs2, 0xFFB4B4BC);
         }
 
         return new int[] {x, y, bw, h + stem};

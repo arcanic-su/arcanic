@@ -112,37 +112,31 @@ public final class Overlays {
         }
 
         private static int colour(BossEvent.BossBarColor c) {
-            int var10000;
-            switch (c) {
-                case PINK -> var10000 = -36939;
-                case BLUE -> var10000 = -10835457;
-                case RED -> var10000 = -42396;
-                case GREEN -> var10000 = -11870592;
-                case YELLOW -> var10000 = -11686;
-                case PURPLE -> var10000 = -5210881;
-                default -> var10000 = -1513234;
-            }
-
-            return var10000;
+            return switch (c) {
+                case PINK -> -36939;
+                case BLUE -> 0xFF5AA9FF;
+                case RED -> -42396;
+                case GREEN -> 0xFF4ADE80;
+                case YELLOW -> -11686;
+                case PURPLE -> 0xFFB07CFF;
+                default -> 0xFFE8E8EE;
+            };
         }
 
         private static int notches(BossEvent.BossBarOverlay o) {
-            byte var10000;
-            switch (o) {
-                case NOTCHED_6 -> var10000 = 6;
-                case NOTCHED_10 -> var10000 = 10;
-                case NOTCHED_12 -> var10000 = 12;
-                case NOTCHED_20 -> var10000 = 20;
-                default -> var10000 = 0;
-            }
-
-            return var10000;
+            return switch (o) {
+                case NOTCHED_6 -> 6;
+                case NOTCHED_10 -> 10;
+                case NOTCHED_12 -> 12;
+                case NOTCHED_20 -> 20;
+                default -> 0;
+            };
         }
 
         public void render(GuiGraphics g, boolean editing) {
             this.anim.frame();
             List<LerpingBossEvent> list = events();
-            float fk = Overlays.fontK((Double) this.scale.get());
+            float fk = Overlays.fontK(this.scale.get());
             int fh = Math.round(9.0F * fk);
             int bh = Math.max(3, this.U(3.5));
             int rowH = fh + this.U(3.0) + bh + this.U(6.0);
@@ -155,13 +149,13 @@ public final class Overlays {
                 this.plate(g, this.w, this.h);
                 int y = pad;
 
-                for (int i = 0; i < n; ++i) {
+                for (int i = 0; i < n; i++) {
                     Component name = (Component)
                             (sample
                                     ? Component.literal(Lang.tr("Боссбар"))
                                     : ((LerpingBossEvent) list.get(i)).getName());
                     float prog = sample ? 0.62F : ((LerpingBossEvent) list.get(i)).getProgress();
-                    int col = sample ? -5210881 : colour(((LerpingBossEvent) list.get(i)).getColor());
+                    int col = sample ? 0xFFB07CFF : colour(((LerpingBossEvent) list.get(i)).getColor());
                     int marks = sample ? 0 : notches(((LerpingBossEvent) list.get(i)).getOverlay());
                     int tw = Overlays.width(name, fk);
                     Overlays.line(g, (Component) name, (this.w - tw) / 2, y, fk, -1);
@@ -183,7 +177,7 @@ public final class Overlays {
                             Px.a(col, 70));
                     Px.pill(g, pad, by, fw, bh, Px.mix(col, 0xFF000000, 0.12F), Px.mix(col, -1, 0.3F));
 
-                    for (int k = 1; k < marks; ++k) {
+                    for (int k = 1; k < marks; k++) {
                         int mx = bx + Math.round((float) (bw * k) / (float) marks);
                         Px.rect(g, mx, by, Math.max(1, this.U(0.6)), bh, 1711276032);
                     }
@@ -309,7 +303,7 @@ public final class Overlays {
             int gx = x + (w - gridW) / 2;
             LocalPlayer me = mc.player;
 
-            for (int i = 0; i < players.size(); ++i) {
+            for (int i = 0; i < players.size(); i++) {
                 PlayerInfo p = (PlayerInfo) players.get(i);
                 int col = i / rows;
                 int row = i % rows;
@@ -344,7 +338,7 @@ public final class Overlays {
                         px + face + Math.round(6.0F * u),
                         fy,
                         fk,
-                        p.getGameMode() == GameType.SPECTATOR ? -7697774 : -1);
+                        p.getGameMode() == GameType.SPECTATOR ? 0xFF8A8A92 : -1);
                 this.ping(g, p.getLatency(), px + cellW - pingW, fy, pingW, face, u);
             }
 
@@ -366,7 +360,7 @@ public final class Overlays {
         }
 
         private void ping(GuiGraphics g, int ms, int x, int y, int w, int h, float u) {
-            int col = ms < 0 ? -7697774 : (ms < 80 ? -11870592 : (ms < 160 ? -340971 : -42396));
+            int col = ms < 0 ? 0xFF8A8A92 : (ms < 80 ? 0xFF4ADE80 : (ms < 160 ? 0xFFFACC15 : -42396));
             if (this.pingText.on()) {
                 String t = ms < 0 ? "—" : ms + " мс";
                 int fs = Math.round(11.0F * u);
@@ -377,7 +371,7 @@ public final class Overlays {
                 int gap = Math.max(1, Math.round(1.5F * u));
                 int bx = x + w - 4 * bw - 3 * gap;
 
-                for (int i = 0; i < 4; ++i) {
+                for (int i = 0; i < 4; i++) {
                     int bh = Math.round((float) h * (0.35F + 0.65F * (float) (i + 1) / 4.0F));
                     Px.round(g, bx + i * (bw + gap), y + h - bh, bw, bh, bw / 2, i < bars ? col : 721420287);
                 }
@@ -386,7 +380,7 @@ public final class Overlays {
     }
 
     public static final class Streamer extends Module {
-        final Setting.Text alias = (Setting.Text)
+        final Setting.Text alias =
                 this.add(new Setting.Text("alias", "Ник для показа", "Arcanic", "Как подписывать тебя", 16));
         final Setting.Bool nick = this.add(new Setting.Bool("nick", "Скрывать ник", true));
         final Setting.Bool coords = this.add(new Setting.Bool("coords", "Скрывать координаты", true));

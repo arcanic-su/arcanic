@@ -23,8 +23,8 @@ import net.arcanic.visuals.core.Module;
 import net.arcanic.visuals.core.Setting;
 
 public final class AspectRatio extends Module {
-    public final Setting.Mode ratio = this.add(
-            new Setting.Mode("ratio", "Соотношение", "4:3", new String[] {"4:3", "5:4", "16:10", "1:1", "Своё"}));
+    public final Setting.Mode ratio =
+            this.add(new Setting.Mode("ratio", "Соотношение", "4:3", "4:3", "5:4", "16:10", "1:1", "Своё"));
     public final Setting.Num custom = (this.add(
                     new Setting.Num("custom", "Своё соотношение", 1.33, 0.5, 2.5, 0.01, "")))
             .showIf(() -> this.ratio.is("Своё"));
@@ -43,16 +43,13 @@ public final class AspectRatio extends Module {
     }
 
     private float wanted() {
-        float var10000;
-        switch ((String) this.ratio.get()) {
-            case "4:3" -> var10000 = 1.3333334F;
-            case "5:4" -> var10000 = 1.25F;
-            case "16:10" -> var10000 = 1.6F;
-            case "1:1" -> var10000 = 1.0F;
-            default -> var10000 = this.custom.f();
-        }
-
-        return var10000;
+        return switch (this.ratio.get()) {
+            case "4:3" -> 1.3333334F;
+            case "5:4" -> 1.25F;
+            case "16:10" -> 1.6F;
+            case "1:1" -> 1.0F;
+            default -> this.custom.f();
+        };
     }
 
     public float aspect(float window) {

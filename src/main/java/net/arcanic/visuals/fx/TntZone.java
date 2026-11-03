@@ -25,7 +25,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
@@ -125,7 +124,7 @@ public final class TntZone extends Module {
             this.loaded = true;
 
             try {
-                if (!Files.exists(FILE, new LinkOption[0])) {
+                if (!Files.exists(FILE)) {
                     return;
                 }
 
@@ -134,7 +133,7 @@ public final class TntZone extends Module {
                 if (o.has("blast_power")) {
                     for (Map.Entry<String, JsonElement> e :
                             o.getAsJsonObject("blast_power").entrySet()) {
-                        this.blastPower.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsFloat());
+                        this.blastPower.put(e.getKey(), ((JsonElement) e.getValue()).getAsFloat());
                     }
                 }
 
@@ -147,7 +146,7 @@ public final class TntZone extends Module {
                             l.add(v.getAsFloat());
                         }
 
-                        this.scale.put((String) e.getKey(), l);
+                        this.scale.put(e.getKey(), l);
                     }
                 }
 
@@ -155,7 +154,7 @@ public final class TntZone extends Module {
                     for (Map.Entry<String, JsonElement> e :
                             o.getAsJsonObject("centre_shift").entrySet()) {
                         JsonArray a = ((JsonElement) e.getValue()).getAsJsonArray();
-                        this.shift.put((String) e.getKey(), new double[] {
+                        this.shift.put(e.getKey(), new double[] {
                             a.get(0).getAsDouble(),
                             a.get(1).getAsDouble(),
                             a.get(2).getAsDouble(),
@@ -202,7 +201,7 @@ public final class TntZone extends Module {
 
     private Vec3 shiftOf(HolyItems.Tnt t) {
         this.load();
-        double[] v = (double[]) this.shift.get(t.id());
+        double[] v = this.shift.get(t.id());
         return v == null ? Vec3.ZERO : new Vec3(v[0], v[1], v[2]);
     }
 
@@ -407,14 +406,14 @@ public final class TntZone extends Module {
                     if (!(dist > (double) (m.power(best.tnt) * 2.0F + 2.0F))) {
                         float before = -1.0F;
 
-                        for (int i = Math.max(0, m.histN - 6); i < m.histN; ++i) {
+                        for (int i = Math.max(0, m.histN - 6); i < m.histN; i++) {
                             before = Math.max(before, m.hist[i]);
                         }
 
                         float seen = 0.0F;
 
                         try {
-                            seen = HolyItems.seenFrom(me, centre, (BlockPos) null);
+                            seen = HolyItems.seenFrom(me, centre, null);
                         } catch (RuntimeException ignored) {
                         }
 
@@ -457,7 +456,7 @@ public final class TntZone extends Module {
 
             try {
                 Files.createDirectories(LOG.getParent());
-                if (!Files.exists(LOG, new LinkOption[0])) {
+                if (!Files.exists(LOG)) {
                     Files.writeString(
                             LOG,
                             "time,kind,power,distance,seen,armor,hp_before,hp_after,took,died,shown,shown_seen,seen_without_block,dx,dy,dz,ping,speed,vanilla_here,scale\n",
@@ -505,9 +504,9 @@ public final class TntZone extends Module {
         HolyItems.Tnt t = this.holyOn() ? HolyItems.heldTnt(me) : null;
         BlockPos at = null;
         if (t != null) {
-            HitResult var12 = mc.hitResult;
-            if (var12 instanceof BlockHitResult) {
-                BlockHitResult bh = (BlockHitResult) var12;
+            HitResult hitResult2 = mc.hitResult;
+            if (hitResult2 instanceof BlockHitResult) {
+                BlockHitResult bh = (BlockHitResult) hitResult2;
                 if (bh.getType() == Type.BLOCK) {
                     at = target(bh);
                 }
@@ -551,9 +550,8 @@ public final class TntZone extends Module {
 
                 try {
                     if (me.position().distanceTo(w) <= (double) (this.power(c.tnt) * 2.0F)) {
-                        c.shownSeen = solid != null
-                                ? HolyItems.seenBehind(me, w, solid)
-                                : HolyItems.seenFrom(me, w, (BlockPos) null);
+                        c.shownSeen =
+                                solid != null ? HolyItems.seenBehind(me, w, solid) : HolyItems.seenFrom(me, w, null);
                         c.shownOpen = HolyItems.seenFrom(me, w, c.pos);
                     } else {
                         c.shownSeen = c.shownOpen = 0.0F;
@@ -574,9 +572,9 @@ public final class TntZone extends Module {
     private float burnt(Charge c, float pt) {
         Minecraft mc = Minecraft.getInstance();
         if (c.entity >= 0) {
-            Entity var5 = mc.level.getEntity(c.entity);
-            if (var5 instanceof PrimedTnt) {
-                PrimedTnt p = (PrimedTnt) var5;
+            Entity entity2 = mc.level.getEntity(c.entity);
+            if (entity2 instanceof PrimedTnt) {
+                PrimedTnt p = (PrimedTnt) entity2;
                 return 1.0F - TrapZone.clamp(((float) p.getFuse() - pt) / (float) c.fuseMax);
             }
         }
@@ -591,9 +589,9 @@ public final class TntZone extends Module {
     private Vec3 raw(Charge c, float pt) {
         Minecraft mc = Minecraft.getInstance();
         if (c.entity >= 0) {
-            Entity var5 = mc.level.getEntity(c.entity);
-            if (var5 instanceof PrimedTnt) {
-                PrimedTnt p = (PrimedTnt) var5;
+            Entity entity3 = mc.level.getEntity(c.entity);
+            if (entity3 instanceof PrimedTnt) {
+                PrimedTnt p = (PrimedTnt) entity3;
                 return p.getPosition(pt).add(0.0, 0.06125, 0.0);
             }
         }
@@ -608,7 +606,7 @@ public final class TntZone extends Module {
             List<Float> s = new ArrayList(l);
             s.sort((Comparator) null);
             int n = s.size();
-            return n % 2 == 1 ? (Float) s.get(n / 2) : ((Float) s.get(n / 2 - 1) + (Float) s.get(n / 2)) / 2.0F;
+            return n % 2 == 1 ? s.get(n / 2) : (s.get(n / 2 - 1) + s.get(n / 2)) / 2.0F;
         } else {
             return 1.0F;
         }
@@ -624,7 +622,7 @@ public final class TntZone extends Module {
                 float here = hit(me, at, pw, solid, Vec3.ZERO);
                 float worst = back.lengthSqr() < 0.01 ? here : Math.max(here, hit(me, at, pw, solid, back));
                 return worst * this.scaleOf(t);
-            } catch (RuntimeException var9) {
+            } catch (RuntimeException e) {
                 return 0.0F;
             }
         }
@@ -633,7 +631,7 @@ public final class TntZone extends Module {
     private static float hit(Player me, Vec3 at, float pw, BlockPos solid, Vec3 shift) {
         return solid != null
                 ? HolyItems.explosionDamageBehind(me, at, pw, solid, shift)
-                : HolyItems.explosionDamage(me, at, pw, (BlockPos) null, shift);
+                : HolyItems.explosionDamage(me, at, pw, null, shift);
     }
 
     private static int ping(Player me) {

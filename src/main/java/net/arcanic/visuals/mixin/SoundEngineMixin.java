@@ -53,7 +53,7 @@ public abstract class SoundEngineMixin {
     private float arcanicvisuals$mixer(float volume, @Local(argsOnly = true) SoundInstance sound) {
         try {
             return SoundMixer.scale(sound, volume);
-        } catch (RuntimeException var4) {
+        } catch (RuntimeException e) {
             return volume;
         }
     }

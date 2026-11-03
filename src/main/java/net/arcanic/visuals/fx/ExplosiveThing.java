@@ -26,7 +26,6 @@ import com.google.gson.JsonParser;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
@@ -50,7 +49,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -107,7 +105,7 @@ public final class ExplosiveThing extends Module {
             this.loaded = true;
 
             try {
-                if (!Files.exists(FILE, new LinkOption[0])) {
+                if (!Files.exists(FILE)) {
                     return;
                 }
 
@@ -118,13 +116,13 @@ public final class ExplosiveThing extends Module {
                 }
 
                 if (o.has("offset")) {
-                    for (int i = 0; i < 4; ++i) {
+                    for (int i = 0; i < 4; i++) {
                         this.offset[i] = o.getAsJsonArray("offset").get(i).getAsDouble();
                     }
                 }
 
                 if (o.has("delay")) {
-                    for (int i = 0; i < 2; ++i) {
+                    for (int i = 0; i < 2; i++) {
                         this.delay[i] = o.getAsJsonArray("delay").get(i).getAsDouble();
                     }
                 }
@@ -189,7 +187,7 @@ public final class ExplosiveThing extends Module {
             List<Float> s = new ArrayList(this.scale);
             s.sort((Comparator) null);
             int n = s.size();
-            return n % 2 == 1 ? (Float) s.get(n / 2) : ((Float) s.get(n / 2 - 1) + (Float) s.get(n / 2)) / 2.0F;
+            return n % 2 == 1 ? s.get(n / 2) : (s.get(n / 2 - 1) + s.get(n / 2)) / 2.0F;
         }
     }
 
@@ -315,20 +313,19 @@ public final class ExplosiveThing extends Module {
                 o[1] += (d.y - o[1]) / o[3];
                 o[2] += (d.dot(right) - o[2]) / o[3];
                 m.delay[1] = Math.min(m.delay[1] + 1.0, 10.0);
-                double[] var10000 = m.delay;
-                var10000[0] += ((double) after - m.delay[0]) / m.delay[1];
+                m.delay[0] += (after - m.delay[0]) / m.delay[1];
                 m.save();
                 Player me = mc.player;
                 float vanilla = 0.0F;
 
                 try {
-                    vanilla = HolyItems.explosionDamage(me, centre, radius, (BlockPos) null, Vec3.ZERO);
+                    vanilla = HolyItems.explosionDamage(me, centre, radius, null, Vec3.ZERO);
                 } catch (RuntimeException ignored) {
                 }
 
                 float before = -1.0F;
 
-                for (int i = Math.max(0, m.histN - 6); i < m.histN; ++i) {
+                for (int i = Math.max(0, m.histN - 6); i < m.histN; i++) {
                     before = Math.max(before, m.hist[i]);
                 }
 
@@ -355,7 +352,7 @@ public final class ExplosiveThing extends Module {
 
             try {
                 Files.createDirectories(LOG.getParent());
-                if (!Files.exists(LOG, new LinkOption[0])) {
+                if (!Files.exists(LOG)) {
                     Files.writeString(
                             LOG,
                             "time,power,distance,armor,hp_before,hp_after,took,died,vanilla,scale\n",
@@ -391,8 +388,8 @@ public final class ExplosiveThing extends Module {
     private float damageTo(Entity e, Vec3 c) {
         if (e instanceof Player p) {
             try {
-                return HolyItems.explosionDamage(p, c, this.power(), (BlockPos) null, Vec3.ZERO) * this.scaleOf();
-            } catch (RuntimeException var5) {
+                return HolyItems.explosionDamage(p, c, this.power(), null, Vec3.ZERO) * this.scaleOf();
+            } catch (RuntimeException ignored) {
                 return 0.0F;
             }
         } else {
@@ -440,7 +437,7 @@ public final class ExplosiveThing extends Module {
                     float d = Math.max(
                             this.show > 0.3F ? this.damageTo(p, heldAt) : 0.0F,
                             usedAt != null ? this.damageTo(p, usedAt) : 0.0F);
-                    float[] old = (float[]) this.marks.get(p.getId());
+                    float[] old = this.marks.get(p.getId());
                     float c = old == null ? 0.0F : old[0];
                     c += ((float) (d > 0.5F ? 1 : 0) - c) * k;
                     if (c > 0.01F || d > 0.5F) {
@@ -492,7 +489,7 @@ public final class ExplosiveThing extends Module {
 
     public int tint(Entity e, int colour) {
         if (this.enabled() && this.players.on() && e != null) {
-            float[] m = (float[]) this.marks.get(e.getId());
+            float[] m = this.marks.get(e.getId());
             if (m != null && !(m[0] < 0.01F)) {
                 float time = (float) (System.nanoTime() % 1000000000000L) / 1.0E9F;
                 float pulse = 0.5F + 0.5F * (float) Math.sin((double) time * Math.PI * 2.0 * 1.3);
@@ -536,7 +533,7 @@ public final class ExplosiveThing extends Module {
                     String t = "Взрывная штучка: зона примерная — взорви одну, и мод узнает её силу";
                     float k = Px.fade;
                     Px.fade = k * this.show;
-                    Px.textCenter(g, t, Px.width() / 2, Px.height() / 2 + fs * 3, Px.Weight.MEDIUM, fs, -2565928);
+                    Px.textCenter(g, t, Px.width() / 2, Px.height() / 2 + fs * 3, Px.Weight.MEDIUM, fs, 0xFFD8D8D8);
                     Px.fade = k;
                 }
             }

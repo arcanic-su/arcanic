@@ -108,9 +108,9 @@ public final class DrillHelper extends Module {
             int[] r = reach(mc.player.getMainHandItem());
             double[] want = null;
             if (r != null) {
-                HitResult var11 = mc.hitResult;
-                if (var11 instanceof BlockHitResult) {
-                    BlockHitResult bh = (BlockHitResult) var11;
+                HitResult hitResult2 = mc.hitResult;
+                if (hitResult2 instanceof BlockHitResult) {
+                    BlockHitResult bh = (BlockHitResult) hitResult2;
                     if (bh.getType() == Type.BLOCK) {
                         want = box(bh.getBlockPos(), bh.getDirection(), r[0], r[1]);
                     }
@@ -127,9 +127,8 @@ public final class DrillHelper extends Module {
                                 > 8.0)) {
                     float k = 1.0F - (float) Math.exp((double) (-dt * 22.0F));
 
-                    for (int i = 0; i < 6; ++i) {
-                        double[] var10000 = this.at;
-                        var10000[i] += (want[i] - this.at[i]) * (double) k;
+                    for (int i = 0; i < 6; i++) {
+                        this.at[i] += (want[i] - this.at[i]) * (double) k;
                     }
                 } else {
                     this.at = want.clone();

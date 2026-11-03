@@ -184,7 +184,7 @@ public final class HolyFeatures {
 
         try {
             ClientPlayNetworking.send(new Packet(req.toString().getBytes(StandardCharsets.UTF_8)));
-        } catch (RuntimeException var4) {
+        } catch (RuntimeException e) {
             tries = 3;
         }
     }
@@ -198,7 +198,7 @@ public final class HolyFeatures {
             }
 
             o = root.getAsJsonObject();
-        } catch (RuntimeException var8) {
+        } catch (RuntimeException e) {
             return;
         }
 

@@ -52,14 +52,14 @@ public abstract class GlyphContrastMixin {
         if (cir.getReturnValueZ() && this.format().components() == 1 && this.pixels != 0L) {
             long n = (long) this.width * (long) this.height;
 
-            for (long i = 0L; i < n; ++i) {
+            for (long i = 0L; i < n; i++) {
                 MemoryUtil.memPutByte(this.pixels + i, CURVE[MemoryUtil.memGetByte(this.pixels + i) & 255]);
             }
         }
     }
 
     static {
-        for (int i = 0; i < 256; ++i) {
+        for (int i = 0; i < 256; i++) {
             double a = (double) i / 255.0;
             a = Math.max(0.0, Math.min(1.0, (a - 0.04) / 0.9));
             a = Math.pow(a, 0.78);

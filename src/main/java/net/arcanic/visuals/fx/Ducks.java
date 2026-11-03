@@ -24,19 +24,19 @@ public final class Ducks {
     private Ducks() {}
 
     public static Entity entityOf(Object state) {
-        Entity var10000;
+        Entity entity2;
         if (state instanceof EntityLink l) {
-            var10000 = l.arcanicvisuals$entity();
+            entity2 = l.arcanicvisuals$entity();
         } else {
-            var10000 = null;
+            entity2 = null;
         }
 
-        return var10000;
+        return entity2;
     }
 
     public interface EntityLink {
         Entity arcanicvisuals$entity();
 
-        void arcanicvisuals$setEntity(Entity var1);
+        void arcanicvisuals$setEntity(Entity entity);
     }
 }

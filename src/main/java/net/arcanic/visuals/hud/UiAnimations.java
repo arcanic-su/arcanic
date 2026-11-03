@@ -28,21 +28,21 @@ import net.minecraft.client.gui.GuiGraphics;
 /** The game's own interface eased: the hotbar frame slides, chat lines rise, the tab list opens, the camera pulls back. */
 public final class UiAnimations extends Module {
     private final Setting.Bool hotbar = this.add(new Setting.Bool("hotbar", "Хотбар", true));
-    private final Setting.Num hotbarMs = (Setting.Num)
-            this.add(new Setting.Num("hotbar_ms", "Длительность хотбара", 100.0, 50.0, 500.0, 10.0, " мс"))
-                    .showIf(this.hotbar::on);
+    private final Setting.Num hotbarMs = this.add(
+                    new Setting.Num("hotbar_ms", "Длительность хотбара", 100.0, 50.0, 500.0, 10.0, " мс"))
+            .showIf(this.hotbar::on);
     private final Setting.Bool chat = this.add(new Setting.Bool("chat", "Чат", true));
-    private final Setting.Num chatMs =
-            (Setting.Num) this.add(new Setting.Num("chat_ms", "Длительность чата", 200.0, 50.0, 500.0, 10.0, " мс"))
-                    .showIf(this.chat::on);
+    private final Setting.Num chatMs = this.add(
+                    new Setting.Num("chat_ms", "Длительность чата", 200.0, 50.0, 500.0, 10.0, " мс"))
+            .showIf(this.chat::on);
     private final Setting.Bool tab = this.add(new Setting.Bool("tab", "Таб", true));
-    private final Setting.Num tabMs =
-            (Setting.Num) this.add(new Setting.Num("tab_ms", "Длительность таба", 200.0, 50.0, 500.0, 10.0, " мс"))
-                    .showIf(this.tab::on);
+    private final Setting.Num tabMs = this.add(
+                    new Setting.Num("tab_ms", "Длительность таба", 200.0, 50.0, 500.0, 10.0, " мс"))
+            .showIf(this.tab::on);
     private final Setting.Bool view = this.add(new Setting.Bool("perspective", "Смена перспективы", true));
-    private final Setting.Num viewMs = (Setting.Num)
-            this.add(new Setting.Num("perspective_ms", "Длительность перспективы", 300.0, 50.0, 1000.0, 10.0, " мс"))
-                    .showIf(this.view::on);
+    private final Setting.Num viewMs = this.add(
+                    new Setting.Num("perspective_ms", "Длительность перспективы", 300.0, 50.0, 1000.0, 10.0, " мс"))
+            .showIf(this.view::on);
 
     private int slot = -1;
     private float slotFrom;
@@ -69,7 +69,7 @@ public final class UiAnimations extends Module {
     }
 
     private static float progress(long since, Setting.Num ms) {
-        return ease((System.currentTimeMillis() - since) / (float) ((Double) ms.get()).doubleValue());
+        return ease((System.currentTimeMillis() - since) / (float) ms.get().doubleValue());
     }
 
     /** Where the selection frame is drawn, sliding to the slot picked. */

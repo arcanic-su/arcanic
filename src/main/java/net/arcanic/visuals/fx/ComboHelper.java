@@ -38,9 +38,9 @@ public final class ComboHelper extends Module {
     final Setting.Bool reach = this.add(new Setting.Bool("reach", "Дистанция", true));
     final Setting.Bool combo = this.add(new Setting.Bool("combo", "Счётчик комбо", true));
     final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.6, 1.6, 0.05, "×"));
-    private static final int GREEN = -9508937;
-    private static final int RED = -495247;
-    private static final int AMBER = -670613;
+    private static final int GREEN = 0xFF6EE7B7;
+    private static final int RED = 0xFFF87171;
+    private static final int AMBER = 0xFFF5C46B;
     private LivingEntity target;
     private long targetSeen;
     private long attackAt;
@@ -101,7 +101,7 @@ public final class ComboHelper extends Module {
 
             this.say(
                     early ? "рано" : (wasted ? "неуязвим" : "точно"),
-                    early ? -495247 : (wasted ? -670613 : -9508937),
+                    early ? 0xFFF87171 : (wasted ? 0xFFF5C46B : 0xFF6EE7B7),
                     now);
             if (p.isSprinting()) {
                 this.sprintHitAt = now;
@@ -113,9 +113,9 @@ public final class ComboHelper extends Module {
         Minecraft mc = mc();
         if (mc.player != null) {
             long now = System.currentTimeMillis();
-            Entity var5 = mc.crosshairPickEntity;
-            if (var5 instanceof LivingEntity) {
-                LivingEntity l = (LivingEntity) var5;
+            Entity entity2 = mc.crosshairPickEntity;
+            if (entity2 instanceof LivingEntity) {
+                LivingEntity l = (LivingEntity) entity2;
                 if (l.isAlive() && l != this.target) {
                     this.target = l;
                     this.comboCount = 0;
@@ -150,7 +150,7 @@ public final class ComboHelper extends Module {
                 if (this.comboCount >= 2) {
                     this.brokenAt = now;
                     this.brokenCount = this.comboCount;
-                    this.say("комбо сбито", -495247, now);
+                    this.say("комбо сбито", 0xFFF87171, now);
                 }
 
                 this.comboCount = 0;
@@ -210,7 +210,7 @@ public final class ComboHelper extends Module {
                     int ix = x + pad;
                     int mid = y + h / 2;
                     if (dW > 0) {
-                        int dc = inReach ? -9508937 : (dist <= range + 1.5 ? -670613 : -495247);
+                        int dc = inReach ? 0xFF6EE7B7 : (dist <= range + 1.5 ? 0xFFF5C46B : 0xFFF87171);
                         Px.text(g, d, ix, mid - fs / 2, Px.Weight.SEMIBOLD, fs, dc);
                         Px.text(
                                 g,
@@ -219,7 +219,7 @@ public final class ComboHelper extends Module {
                                 mid - small / 2 + Math.round(1.0F * u),
                                 Px.Weight.MEDIUM,
                                 small,
-                                -6515282);
+                                0xFF9C95AE);
                         ix += dW + (barW > 0 ? gap : 0);
                     }
 
@@ -232,9 +232,9 @@ public final class ComboHelper extends Module {
                         float gk = this.anim.to("go", go ? 1.0F : 0.0F, 16.0F);
                         int by = mid - barH / 2;
                         Px.round(g, ix, by, barW, barH, barH / 2, 788529151);
-                        int fc = Px.mix(inReach ? Theme.accent2() | 0xFF000000 : -7436389, -9508937, gk);
-                        fc = Px.mix(fc, -495247, flash(now, this.earlyAt));
-                        fc = Px.mix(fc, -670613, flash(now, this.wastedAt));
+                        int fc = Px.mix(inReach ? Theme.accent2() | 0xFF000000 : 0xFF8E879B, 0xFF6EE7B7, gk);
+                        fc = Px.mix(fc, 0xFFF87171, flash(now, this.earlyAt));
+                        fc = Px.mix(fc, 0xFFF5C46B, flash(now, this.wastedAt));
                         int fw = Math.round((float) barW * Math.max(0.0F, Math.min(1.0F, fill)));
                         if (fw > 0) {
                             Px.round(g, ix, by, Math.max(barH, fw), barH, barH / 2, fc);
@@ -243,7 +243,7 @@ public final class ComboHelper extends Module {
                         if (gk > 0.02F) {
                             float pulse = (float) (Math.sin((double) now / 120.0) * 0.5 + 0.5);
                             Px.fade = base * show * gk * (0.25F + 0.2F * pulse);
-                            Px.round(g, ix - 2, by - 2, barW + 4, barH + 4, barH / 2 + 2, -9508937);
+                            Px.round(g, ix - 2, by - 2, barW + 4, barH + 4, barH / 2 + 2, 0xFF6EE7B7);
                             Px.fade = base * show;
                         }
 
@@ -253,7 +253,7 @@ public final class ComboHelper extends Module {
                     if (cWa > 0.5F) {
                         ix += gap;
                         float pop = Math.min(1.0F, (float) (now - this.comboAt) / 160.0F);
-                        int col = this.comboCount >= 6 ? -20448 : -856328;
+                        int col = this.comboCount >= 6 ? -20448 : 0xFFF2EEF8;
                         float k = Px.fade;
                         Px.fade = k * Math.min(1.0F, cWa / Math.max(1.0F, cW == 0 ? cWa : (float) cW));
                         g.pose().pushMatrix();
@@ -307,7 +307,7 @@ public final class ComboHelper extends Module {
                                 (150.0F + 100.0F * pulse)));
                         int ww = Px.textWidth("W", Px.Weight.BOLD, small);
                         Px.text(g, "W", sx + (kh - ww) / 2, sy + (kh - small) / 2, Px.Weight.BOLD, small, -6216);
-                        Px.text(g, t, sx + kh + dash, sy + (kh - small) / 2, Px.Weight.SEMIBOLD, small, -661816);
+                        Px.text(g, t, sx + kh + dash, sy + (kh - small) / 2, Px.Weight.SEMIBOLD, small, 0xFFF5E6C8);
                     }
 
                     Px.fade = base;

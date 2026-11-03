@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin({Camera.class})
 public abstract class EffectShakeMixin {
     @Shadow
-    protected abstract void setRotation(float var1, float var2);
+    protected abstract void setRotation(float yaw, float pitch);
 
     @Inject(
             method = {"setup"},

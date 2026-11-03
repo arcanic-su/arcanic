@@ -51,15 +51,14 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 public final class PotionFx extends Module {
-    final Setting.Mode palette = (Setting.Mode)
-            this.add(new Setting.Mode("palette", "Цвета", "Зелье", new String[] {"Зелье", "Радуга", "Тема"}));
+    final Setting.Mode palette = this.add(new Setting.Mode("palette", "Цвета", "Зелье", "Зелье", "Радуга", "Тема"));
     final Setting.Bool drink = this.add(new Setting.Bool("drink", "Когда пьёшь", true));
     final Setting.Bool thrown = this.add(new Setting.Bool("throw", "Когда кидаешь", true));
     final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.6, 1.6, 0.05, "×"));
     final Setting.Bool screen = this.add(new Setting.Bool("screen", "Волны по миру", true));
     final Setting.Bool shake = this.add(new Setting.Bool("shake", "Тряска камеры", true));
     final Setting.Bool sound = this.add(new Setting.Bool("sound", "Звук", true));
-    final Setting.Num volume = (Setting.Num)
+    final Setting.Num volume =
             (this.add(new Setting.Num("volume", "Громкость", 0.6, 0.1, 1.0, 0.05, ""))).showIf(() -> this.sound.on());
     private static final Identifier RING = Identifier.fromNamespaceAndPath("arcanic", "textures/totem/ring.png");
     private static final Identifier ORB = Identifier.fromNamespaceAndPath("arcanic", "textures/targetesp/orb.png");
@@ -134,7 +133,7 @@ public final class PotionFx extends Module {
                 float k = b.strength * (1.0F - smooth((t - 2.0500002F) / 0.3F));
                 float fade1 = 1.0F - smooth((u1 - 0.65F) / 0.35F);
                 float fade2 = 1.0F - smooth((u2 - 0.7F) / 0.3F);
-                int c1 = Fx.lerp(b.colours[0], -1510145, 0.7F);
+                int c1 = Fx.lerp(b.colours[0], 0xFFE8F4FF, 0.7F);
                 int c2 = Fx.lerp(b.colours[b.colours.length / 2], -1, 0.2F);
                 return new Waves(
                         b.origin,
@@ -161,7 +160,7 @@ public final class PotionFx extends Module {
         if (this.palette.is("Радуга")) {
             int[] c = new int[8];
 
-            for (int i = 0; i < c.length; ++i) {
+            for (int i = 0; i < c.length; i++) {
                 c[i] = 0xFF000000 | Mth.hsvToRgb((float) i / (float) c.length, 0.62F, 1.0F);
             }
 
@@ -174,11 +173,11 @@ public final class PotionFx extends Module {
             };
         } else {
             PotionContents contents = (PotionContents) stack.get(DataComponents.POTION_CONTENTS);
-            int base = contents == null ? -8408321 : contents.getColor() | 0xFF000000;
+            int base = contents == null ? 0xFF7FB2FF : contents.getColor() | 0xFF000000;
             float[] hsv = hsv(base);
             int[] c = new int[6];
 
-            for (int i = 0; i < c.length; ++i) {
+            for (int i = 0; i < c.length; i++) {
                 float h = hsv[0] + ((float) i - 2.5F) * 0.035F;
                 c[i] = 0xFF000000
                         | Mth.hsvToRgb(
@@ -339,7 +338,7 @@ public final class PotionFx extends Module {
                             false);
                 }
 
-                for (int i = 0; i < 140; ++i) {
+                for (int i = 0; i < 140; i++) {
                     Vector3f d = dir(b);
                     float sp = (8.0F + b.rnd.nextFloat() * 10.0F) * s;
                     int c = b.colours[b.rnd.nextInt(b.colours.length)];
@@ -354,7 +353,7 @@ public final class PotionFx extends Module {
                             .colour(Fx.lerp(c, -1, 0.4F), c & 0xFFFFFF);
                 }
 
-                for (int i = 0; i < 60; ++i) {
+                for (int i = 0; i < 60; i++) {
                     Vector3f d = dir(b);
                     float sp = (1.6F + b.rnd.nextFloat() * 3.4F) * s;
                     int c = b.colours[b.rnd.nextInt(b.colours.length)];
@@ -422,7 +421,7 @@ public final class PotionFx extends Module {
                             float[] ys = new float[n];
                             float[] zs = new float[n];
 
-                            for (int i = 0; i < n; ++i) {
+                            for (int i = 0; i < n; i++) {
                                 float d = tail + (head - tail) * (float) i / (float) (n - 1);
                                 xs[i] = x + r.dir.x * d;
                                 ys[i] = y + r.dir.y * d;
@@ -546,10 +545,10 @@ public final class PotionFx extends Module {
         float sr = Mth.sin((double) rot) * half;
         float[][] k =
                 new float[][] {{cr - sr, sr + cr}, {cr + sr, sr - cr}, {-cr + sr, -sr - cr}, {-cr - sr, -sr + cr}};
-        float[] tu = new float[] {0.0F, 0.0F, 1.0F, 1.0F};
-        float[] tv = new float[] {0.0F, 1.0F, 1.0F, 0.0F};
+        float[] tu = {0.0F, 0.0F, 1.0F, 1.0F};
+        float[] tv = {0.0F, 1.0F, 1.0F, 0.0F};
         twice(pose, tex, shape, glow, (e) -> {
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < 4; i++) {
                 e.v(
                         x + l.x * k[i][0] + u.x * k[i][1],
                         y + l.y * k[i][0] + u.y * k[i][1],
@@ -576,7 +575,7 @@ public final class PotionFx extends Module {
         float[] oy = new float[n];
         float[] oz = new float[n];
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             int p = Math.max(0, i - 1);
             int q = Math.min(n - 1, i + 1);
             float tx = xs[q] - xs[p];
@@ -596,7 +595,7 @@ public final class PotionFx extends Module {
         }
 
         twice(pose, Fx.Tex.LINE_GLOW.id, 0.0F, a, (e) -> {
-            for (int i = 0; i + 1 < n; ++i) {
+            for (int i = 0; i + 1 < n; i++) {
                 int c0 = alpha(c, taper(i, n));
                 int c1 = alpha(c, taper(i + 1, n));
                 e.v(xs[i] - ox[i], ys[i] - oy[i], zs[i] - oz[i], 0.0F, 0.0F, c0);
@@ -683,7 +682,7 @@ public final class PotionFx extends Module {
             this.strength = strength;
             this.origin = origin;
 
-            for (int i = 0; i < 22; ++i) {
+            for (int i = 0; i < 22; i++) {
                 double a = (double) i * Math.PI * 2.0 / 22.0 + this.rnd.nextDouble() * 0.3;
                 double y = -0.25 + this.rnd.nextDouble() * 1.05;
                 Vector3f d = (new Vector3f((float) Math.cos(a), (float) y, (float) Math.sin(a))).normalize();

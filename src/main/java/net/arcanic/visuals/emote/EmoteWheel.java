@@ -79,8 +79,7 @@ public final class EmoteWheel extends Screen {
         if (mc.player != null && Modules.EMOTES.enabled() && warmStep != Integer.MAX_VALUE) {
             if (preload == null) {
                 if (mc.player.tickCount >= 40) {
-                    Emotes var10000 = Modules.EMOTES;
-                    preload = CompletableFuture.supplyAsync(var10000::reload);
+                    preload = CompletableFuture.supplyAsync(Modules.EMOTES::reload);
                 }
 
             } else if (preload.isDone()) {
@@ -194,7 +193,7 @@ public final class EmoteWheel extends Screen {
         int mid = (R + rIn) / 2;
         Emotes.Emote playing = Modules.EMOTES.playing();
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             this.glow[i] = Draw.approach(this.glow[i], i == this.hot ? 1.0F : 0.0F, 0.35F);
             double a = (-Math.PI / 2D) + (double) i * step;
             float pop = this.glow[i] * (float) R * 0.045F;
@@ -290,7 +289,7 @@ public final class EmoteWheel extends Screen {
             int x = cx - ((this.pages() - 1) * (dot + dot) + wide) / 2;
             int y = cy + R + big;
 
-            for (int i = 0; i < this.pages(); ++i) {
+            for (int i = 0; i < this.pages(); i++) {
                 int ww = i == this.page ? wide : dot;
                 Draw.round(g, x, y, ww, dot, dot / 2, Px.am(i == this.page ? Theme.accent() : 0x99FFFFFF, in));
                 x += ww + gap;
@@ -408,14 +407,14 @@ public final class EmoteWheel extends Screen {
             double gap = Math.max(3.0, (double) R * 0.03);
             double round = Math.max(3.0, (double) R * 0.06);
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 double a = (-Math.PI / 2D) + (double) i * Math.PI * 2.0 / (double) n;
                 double x0 = (double) 1.0E9F;
                 double y0 = (double) 1.0E9F;
                 double x1 = (double) -1.0E9F;
                 double y1 = (double) -1.0E9F;
 
-                for (int k = 0; k <= 16; ++k) {
+                for (int k = 0; k <= 16; k++) {
                     double t = a - half + 2.0 * half * (double) k / 16.0;
 
                     for (double r : new double[] {(double) rIn, (double) R}) {
@@ -436,8 +435,8 @@ public final class EmoteWheel extends Screen {
                 double ca = Math.cos(a);
                 double sa = Math.sin(a);
 
-                for (int y = 0; y < bh; ++y) {
-                    for (int x = 0; x < bw; ++x) {
+                for (int y = 0; y < bh; y++) {
+                    for (int x = 0; x < bw; x++) {
                         double px = (double) (bx + x) + 0.5;
                         double py = (double) (by + y) + 0.5;
                         double u = px * ca + py * sa;

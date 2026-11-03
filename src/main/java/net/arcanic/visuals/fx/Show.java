@@ -90,10 +90,10 @@ final class Show {
         Vector3f u = v.up;
         float[][] k =
                 new float[][] {{cr - sr, sr + cr}, {cr + sr, sr - cr}, {-cr + sr, -sr - cr}, {-cr - sr, -sr + cr}};
-        float[] tu = new float[] {0.0F, 0.0F, 1.0F, 1.0F};
-        float[] tv = new float[] {0.0F, 1.0F, 1.0F, 0.0F};
+        float[] tu = {0.0F, 0.0F, 1.0F, 1.0F};
+        float[] tv = {0.0F, 1.0F, 1.0F, 0.0F};
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; i++) {
             e.v(
                     x + l.x * k[i][0] + u.x * k[i][1],
                     y + l.y * k[i][0] + u.y * k[i][1],
@@ -150,7 +150,7 @@ final class Show {
             float[] oy = new float[n];
             float[] oz = new float[n];
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 int p = Math.max(0, i - 1);
                 int q = Math.min(n - 1, i + 1);
                 float tx = xs[q] - xs[p];
@@ -168,7 +168,7 @@ final class Show {
             }
 
             twice(v.pose, tex, shape, glow, (e) -> {
-                for (int i = 0; i + 1 < n; ++i) {
+                for (int i = 0; i + 1 < n; i++) {
                     int c0 = alpha(colours[i], taper(i, n));
                     int c1 = alpha(colours[i + 1], taper(i + 1, n));
                     e.v(xs[i] - ox[i], ys[i] - oy[i], zs[i] - oz[i], 0.0F, 0.0F, c0);
@@ -192,7 +192,7 @@ final class Show {
         int n = xs.length;
         if (n >= 2 && !(a <= 0.003F)) {
             twice(v.pose, Fx.Tex.LINE_GLOW.id, 0.0F, a, (e) -> {
-                for (int i = 0; i + 1 < n; ++i) {
+                for (int i = 0; i + 1 < n; i++) {
                     float dx = xs[i + 1] - xs[i];
                     float dz = zs[i + 1] - zs[i];
                     float l = (float) Math.hypot((double) dx, (double) dz) + 1.0E-5F;

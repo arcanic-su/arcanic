@@ -45,7 +45,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 
 public final class HandShaders extends Module {
-    private static final String[] MODES = new String[] {
+    private static final String[] MODES = {
         "Solid",
         "Rainbow",
         "Wave",
@@ -98,8 +98,8 @@ public final class HandShaders extends Module {
                 false);
         this.mode = this.add(new Setting.Mode("shader", "Шейдер Arcanic", "Nebula", MODES));
         this.colour = this.add(new Setting.Colour("colour", "Цвет", true));
-        this.speed = (Setting.Num) this.add(new Setting.Num("speed", "Скорость", 1.0, 0.0, 5.0, 0.1, ""));
-        this.opacity = (Setting.Num) this.add(new Setting.Num("opacity", "Плотность", 1.0, 0.1, 1.0, 0.05, ""));
+        this.speed = this.add(new Setting.Num("speed", "Скорость", 1.0, 0.0, 5.0, 0.1, ""));
+        this.opacity = this.add(new Setting.Num("opacity", "Плотность", 1.0, 0.1, 1.0, 0.05, ""));
         this.only = this.add(new Setting.Bool("only", "Только рисунок шейдера", false));
     }
 

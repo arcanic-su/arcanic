@@ -44,6 +44,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -51,13 +54,13 @@ import org.lwjgl.opengl.GL33;
 
 public final class HandGlow extends Module {
     public final Setting.Num strength = this.add(new Setting.Num("strength", "Сила свечения", 3.0, 1.0, 5.0, 1.0, ""));
-    public final Setting.Mode colourMode = this.add(
-            new Setting.Mode("colour_mode", "Цвет", "Переливание", new String[] {"Тема", "Свой", "Переливание"}));
-    public final Setting.Colour colour = (this.add(new Setting.Colour("colour", "Свой цвет", false, -13395457)))
+    public final Setting.Mode colourMode =
+            this.add(new Setting.Mode("colour_mode", "Цвет", "Переливание", "Тема", "Свой", "Переливание"));
+    public final Setting.Colour colour = (this.add(new Setting.Colour("colour", "Свой цвет", false, 0xFF3399FF)))
             .showIf(() -> this.colourMode.is("Свой"));
-    public final Setting.Colour gradientA = (this.add(new Setting.Colour("gradient_a", "Цвет 1", false, -14780161)))
+    public final Setting.Colour gradientA = (this.add(new Setting.Colour("gradient_a", "Цвет 1", false, 0xFF1E78FF)))
             .showIf(() -> this.colourMode.is("Переливание"));
-    public final Setting.Colour gradientB = (this.add(new Setting.Colour("gradient_b", "Цвет 2", false, -16725761)))
+    public final Setting.Colour gradientB = (this.add(new Setting.Colour("gradient_b", "Цвет 2", false, 0xFF00C8FF)))
             .showIf(() -> this.colourMode.is("Переливание"));
     public final Setting.Bool chamsFill = this.add(new Setting.Bool("fill", "Заливка предмета", true));
     public final Setting.Num fillAlpha;
@@ -112,26 +115,19 @@ public final class HandGlow extends Module {
 
     public HandGlow() {
         super("hand_glow", "Свечение в руке", "Светящийся ореол и шлейф за предметами в руках", Category.HANDS, false);
-        Setting.Num var10001 =
-                this.add(new Setting.Num("fill_alpha", "Плотность заливки", 100.0, 10.0, 100.0, 5.0, "%"));
-        Setting.Bool var10002 = this.chamsFill;
-        this.fillAlpha = (Setting.Num) var10001.showIf(var10002::on);
+        Setting.Num num = this.add(new Setting.Num("fill_alpha", "Плотность заливки", 100.0, 10.0, 100.0, 5.0, "%"));
+        this.fillAlpha = (Setting.Num) num.showIf(this.chamsFill::on);
         this.trail = this.add(new Setting.Bool("trail", "Шлейф", true));
-        var10001 = this.add(new Setting.Num("trail_length", "Длина шлейфа", 50.0, 0.0, 80.0, 1.0, ""));
-        var10002 = this.trail;
-        this.trailLength = (Setting.Num) var10001.showIf(var10002::on);
-        var10001 = this.add(new Setting.Num("trail_rise", "Подъём шлейфа", 2.5, 0.5, 4.0, 0.1, ""));
-        var10002 = this.trail;
-        this.trailRise = (Setting.Num) var10001.showIf(var10002::on);
-        var10001 = this.add(new Setting.Num("trail_wobble", "Колыхание", 2.0, 0.0, 2.0, 0.1, ""));
-        var10002 = this.trail;
-        this.trailWobble = (Setting.Num) var10001.showIf(var10002::on);
-        var10001 = this.add(new Setting.Num("trail_bright", "Яркость шлейфа", 2.0, 0.5, 4.0, 0.1, ""));
-        var10002 = this.trail;
-        this.trailBright = (Setting.Num) var10001.showIf(var10002::on);
-        var10001 = this.add(new Setting.Num("trail_soft", "Мягкость шлейфа", 3.0, 1.0, 5.0, 1.0, ""));
-        var10002 = this.trail;
-        this.trailSoft = (Setting.Num) var10001.showIf(var10002::on);
+        this.trailLength = this.add(new Setting.Num("trail_length", "Длина шлейфа", 50.0, 0.0, 80.0, 1.0, ""))
+                .showIf(this.trail::on);
+        this.trailRise = this.add(new Setting.Num("trail_rise", "Подъём шлейфа", 2.5, 0.5, 4.0, 0.1, ""))
+                .showIf(this.trail::on);
+        this.trailWobble = this.add(new Setting.Num("trail_wobble", "Колыхание", 2.0, 0.0, 2.0, 0.1, ""))
+                .showIf(this.trail::on);
+        this.trailBright = this.add(new Setting.Num("trail_bright", "Яркость шлейфа", 2.0, 0.5, 4.0, 0.1, ""))
+                .showIf(this.trail::on);
+        this.trailSoft = this.add(new Setting.Num("trail_soft", "Мягкость шлейфа", 3.0, 1.0, 5.0, 1.0, ""))
+                .showIf(this.trail::on);
     }
 
     protected void onDisable() {
@@ -200,7 +196,7 @@ public final class HandGlow extends Module {
                 }
             } catch (Throwable t) {
                 broken = true;
-                System.err.println("[ArcanicVisuals] hand glow off: " + String.valueOf(t));
+                System.err.println("[ArcanicVisuals] hand glow off: " + t);
                 return;
             } finally {
                 ITEMS.clear();
@@ -226,9 +222,8 @@ public final class HandGlow extends Module {
             buffers.crumblingBufferSource().endBatch();
             buffers.outlineBufferSource().endOutlineBatch();
             dispatcher.endFrame();
-            boolean var12 = true;
-            return var12;
-        } catch (Throwable var10) {
+            return true;
+        } catch (Throwable e) {
             try {
                 queue.clear();
             } catch (Throwable ignored) {
@@ -305,7 +300,7 @@ public final class HandGlow extends Module {
         int t = GL11.glGenTextures();
         GlStateManager._bindTexture(t);
         int pbo = AmbienceWeather.cleanUnpack();
-        GL11.glTexImage2D(3553, 0, 32856, w, h, 0, 6408, 5121, 0L);
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, w, h, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, 0L);
         AmbienceWeather.restoreUnpack(pbo);
         linear();
         GlStateManager._bindTexture(0);
@@ -313,11 +308,11 @@ public final class HandGlow extends Module {
     }
 
     private static void linear() {
-        GL11.glTexParameteri(3553, 10241, 9729);
-        GL11.glTexParameteri(3553, 10240, 9729);
-        GL11.glTexParameteri(3553, 10242, 33071);
-        GL11.glTexParameteri(3553, 10243, 33071);
-        GL11.glTexParameteri(3553, 33085, 0);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MAX_LEVEL, 0);
     }
 
     private static void render(int screen, int w, int h, boolean captured, boolean trailOn, Minecraft mc) {
@@ -507,7 +502,7 @@ public final class HandGlow extends Module {
         blur(blurH, ping, source, repeat, offset);
         blur(blurV, pong, ping, repeat, offset);
 
-        for (int i = 1; i < passes; ++i) {
+        for (int i = 1; i < passes; i++) {
             blur(blurH, ping, pong, repeat, offset);
             blur(blurV, pong, ping, repeat, offset);
         }
@@ -524,19 +519,19 @@ public final class HandGlow extends Module {
     }
 
     private static void draw(int times) {
-        for (int i = 0; i < times; ++i) {
+        for (int i = 0; i < times; i++) {
             GL11.glDrawArrays(4, 0, 3);
         }
     }
 
     private static void target(int tex, int w, int h, boolean clear) {
-        GL30.glBindFramebuffer(36160, fbo);
-        GL30.glFramebufferTexture2D(36160, 36064, 3553, tex, 0);
-        GL30.glFramebufferTexture2D(36160, 36096, 3553, 0, 0);
+        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
+        GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0);
+        GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, 0, 0);
         GlStateManager._viewport(0, 0, w, h);
         if (clear) {
             GL11.glClearColor(0.0F, 0.0F, 0.0F, 0.0F);
-            GL11.glClear(16384);
+            GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
         }
     }
 
@@ -552,20 +547,18 @@ public final class HandGlow extends Module {
     }
 
     private static int id(GpuTextureView v) {
-        int var10000;
+        int n2;
         if (v != null && !v.isClosed()) {
-            GpuTexture var2 = v.texture();
-            if (var2 instanceof GlTexture) {
-                GlTexture t = (GlTexture) var2;
+            GpuTexture gpuTexture = v.texture();
+            if (gpuTexture instanceof GlTexture) {
+                GlTexture t = (GlTexture) gpuTexture;
                 if (!t.isClosed()) {
-                    var10000 = t.glId();
-                    return var10000;
+                    return t.glId();
                 }
             }
         }
 
-        var10000 = 0;
-        return var10000;
+        return 0;
     }
 
     private static int program(String frag) {
@@ -577,7 +570,7 @@ public final class HandGlow extends Module {
         GL20.glLinkProgram(p);
         GL20.glDeleteShader(v);
         GL20.glDeleteShader(f);
-        if (GL20.glGetProgrami(p, 35714) == 0) {
+        if (GL20.glGetProgrami(p, GL20.GL_LINK_STATUS) == 0) {
             throw new IllegalStateException("hand glow link: " + GL20.glGetProgramInfoLog(p));
         } else {
             return p;
@@ -587,24 +580,9 @@ public final class HandGlow extends Module {
     private static int shader(int type, String name) {
         String src;
         try {
-            InputStream in = HandGlow.class.getResourceAsStream("/assets/arcanicvisuals/shaders/handglow/" + name);
-
-            try {
+            try (InputStream in =
+                    HandGlow.class.getResourceAsStream("/assets/arcanicvisuals/shaders/handglow/" + name)) {
                 src = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (Throwable var7) {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (Throwable var6) {
-                        var7.addSuppressed(var6);
-                    }
-                }
-
-                throw var7;
-            }
-
-            if (in != null) {
-                in.close();
             }
         } catch (Exception e) {
             throw new IllegalStateException(name, e);
@@ -613,7 +591,7 @@ public final class HandGlow extends Module {
         int s = GL20.glCreateShader(type);
         GL20.glShaderSource(s, src);
         GL20.glCompileShader(s);
-        if (GL20.glGetShaderi(s, 35713) == 0) {
+        if (GL20.glGetShaderi(s, GL20.GL_COMPILE_STATUS) == 0) {
             throw new IllegalStateException(name + ": " + GL20.glGetShaderInfoLog(s));
         } else {
             return s;
@@ -623,48 +601,48 @@ public final class HandGlow extends Module {
     private static record Held(LivingEntity entity, ItemStack stack, ItemDisplayContext context, PoseStack pose) {}
 
     private static final class Snapshot {
-        final int fb = GL11.glGetInteger(36006);
-        final int vaoB = GL11.glGetInteger(34229);
-        final int ab = GL11.glGetInteger(34964);
-        final int prog = GL11.glGetInteger(35725);
-        final int active = GL11.glGetInteger(34016);
-        final int srcRgb = GL11.glGetInteger(32969);
-        final int dstRgb = GL11.glGetInteger(32968);
-        final int srcA = GL11.glGetInteger(32971);
-        final int dstA = GL11.glGetInteger(32970);
+        final int fb = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+        final int vaoB = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
+        final int ab = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
+        final int prog = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        final int active = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
+        final int srcRgb = GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB);
+        final int dstRgb = GL11.glGetInteger(GL14.GL_BLEND_DST_RGB);
+        final int srcA = GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA);
+        final int dstA = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
         final int[] tex = new int[2];
         final int[] smp = new int[2];
         final int[] vp = new int[4];
         final int[] sc = new int[4];
         final float[] clear = new float[4];
-        final boolean depth = GL11.glIsEnabled(2929);
-        final boolean cull = GL11.glIsEnabled(2884);
-        final boolean scissor = GL11.glIsEnabled(3089);
-        final boolean blend = GL11.glIsEnabled(3042);
-        final boolean mask = GL11.glGetBoolean(2930);
+        final boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        final boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
+        final boolean scissor = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+        final boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+        final boolean mask = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
 
         Snapshot() {
-            GL11.glGetIntegerv(2978, this.vp);
-            GL11.glGetIntegerv(3088, this.sc);
-            GL11.glGetFloatv(3106, this.clear);
-            int was = GL11.glGetInteger(34016);
+            GL11.glGetIntegerv(GL11.GL_VIEWPORT, this.vp);
+            GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, this.sc);
+            GL11.glGetFloatv(GL11.GL_COLOR_CLEAR_VALUE, this.clear);
+            int was = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
 
-            for (int u = 0; u < 2; ++u) {
+            for (int u = 0; u < 2; u++) {
                 GL33.glActiveTexture('蓀' + u);
-                this.tex[u] = GL11.glGetInteger(32873);
-                this.smp[u] = GL11.glGetInteger(35097);
+                this.tex[u] = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+                this.smp[u] = GL11.glGetInteger(GL33.GL_SAMPLER_BINDING);
             }
 
             GL33.glActiveTexture(was);
         }
 
         void restore() {
-            GL30.glBindFramebuffer(36160, this.fb);
+            GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.fb);
             GL30.glBindVertexArray(this.vaoB);
-            GL15.glBindBuffer(34962, this.ab);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.ab);
             GL20.glUseProgram(this.prog);
 
-            for (int u = 0; u < 2; ++u) {
+            for (int u = 0; u < 2; u++) {
                 GlStateManager._activeTexture('蓀' + u);
                 GlStateManager._bindTexture(this.tex[u]);
                 GL33.glBindSampler(u, this.smp[u]);

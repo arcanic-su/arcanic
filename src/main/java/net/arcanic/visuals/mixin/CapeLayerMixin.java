@@ -54,9 +54,9 @@ public abstract class CapeLayerMixin {
             CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null) {
-            Entity var10 = mc.level.getEntity(state.id);
-            if (var10 instanceof AbstractClientPlayer) {
-                AbstractClientPlayer player = (AbstractClientPlayer) var10;
+            Entity entity2 = mc.level.getEntity(state.id);
+            if (entity2 instanceof AbstractClientPlayer) {
+                AbstractClientPlayer player = (AbstractClientPlayer) entity2;
                 if (Capes.resolve(player) != null
                         && !player.getItemBySlot(EquipmentSlot.CHEST).has(DataComponents.GLIDER)) {
                     RenderLayer<AvatarRenderState, PlayerModel> self =

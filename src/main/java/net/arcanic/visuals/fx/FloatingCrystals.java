@@ -88,7 +88,7 @@ public final class FloatingCrystals extends Module {
                 }
             }
 
-            for (int i = 0; i < 4 && alive < 100; ++i) {
+            for (int i = 0; i < 4 && alive < 100; i++) {
                 Vec3 at = spawn(mc);
                 if (at == null) {
                     break;
@@ -116,7 +116,7 @@ public final class FloatingCrystals extends Module {
     private static Vec3 spawn(Minecraft mc) {
         Vec3 first = null;
 
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 8; i++) {
             Vec3 p = mc.player.position().add(random(-20.0, 20.0), random(1.6, 6.0), random(-20.0, 20.0));
             if (!solid(mc, p)) {
                 if (first == null) {
@@ -213,8 +213,8 @@ public final class FloatingCrystals extends Module {
         List<int[]> e = new ArrayList<>();
         float edge = 2.0F * k;
 
-        for (int i = 0; i < v.length; ++i) {
-            for (int j = i + 1; j < v.length; ++j) {
+        for (int i = 0; i < v.length; i++) {
+            for (int j = i + 1; j < v.length; j++) {
                 float dx = v[i][0] - v[j][0];
                 float dy = v[i][1] - v[j][1];
                 float dz = v[i][2] - v[j][2];
@@ -229,15 +229,12 @@ public final class FloatingCrystals extends Module {
     }
 
     private Shape current() {
-        Shape var10000;
-        switch ((String) Modules.AMBIENCE.crystalShape.get()) {
-            case "Пирамида" -> var10000 = PYRAMID;
-            case "Звезда" -> var10000 = STAR;
-            case "Икосаэдр" -> var10000 = ICOSAHEDRON;
-            default -> var10000 = CRYSTAL;
-        }
-
-        return var10000;
+        return switch ((String) Modules.AMBIENCE.crystalShape.get()) {
+            case "Пирамида" -> PYRAMID;
+            case "Звезда" -> STAR;
+            case "Икосаэдр" -> ICOSAHEDRON;
+            default -> CRYSTAL;
+        };
     }
 
     public static void render(WorldRenderContext ctx, Vec3 cam, Vector3f left, Vector3f up, float pt) {
@@ -306,7 +303,7 @@ public final class FloatingCrystals extends Module {
                                 .rotate((new Quaternionf()).rotationXYZ((float) r.x, (float) r.y, (float) r.z))
                                 .scale(p.size);
 
-                        for (int i = 0; i < c.length; ++i) {
+                        for (int i = 0; i < c.length; i++) {
                             c[i] = mx.transformPosition(s.v[i][0], s.v[i][1], s.v[i][2], new Vector3f());
                         }
 

@@ -24,28 +24,37 @@ import net.arcanic.visuals.core.Module;
 import net.arcanic.visuals.core.Setting;
 
 public final class SkyShader extends Module {
-    public final Setting.Mode mode = this.add(new Setting.Mode("mode", "Режим", "Туманность", new String[] {
-        "Туманность", "Сияние", "Звёзды", "Плазма", "Неон", "Каустика", "Космос", "Галактика", "Глубокий космос"
-    }));
+    public final Setting.Mode mode = this.add(new Setting.Mode(
+            "mode",
+            "Режим",
+            "Туманность",
+            "Туманность",
+            "Сияние",
+            "Звёзды",
+            "Плазма",
+            "Неон",
+            "Каустика",
+            "Космос",
+            "Галактика",
+            "Глубокий космос"));
     public final Setting.Colour color =
-            (this.add(new Setting.Colour("color", "Цвет", false, -13395457))).showIf(() -> !this.mode.is("Неон"));
-    public final Setting.Mode palitraNeona = (this.add(new Setting.Mode(
-                    "neon_palette", "Палитра неона", "RGB", new String[] {"RGB", "Тёмные", "Светлые", "Свои"})))
+            (this.add(new Setting.Colour("color", "Цвет", false, 0xFF3399FF))).showIf(() -> !this.mode.is("Неон"));
+    public final Setting.Mode palitraNeona = (this.add(
+                    new Setting.Mode("neon_palette", "Палитра неона", "RGB", "RGB", "Тёмные", "Светлые", "Свои")))
             .showIf(() -> this.mode.is("Неон"));
     public final Setting.Colour neonColor1 =
             (this.add(new Setting.Colour("neon_1", "Неон цвет 1", false, -65536))).showIf(this::customNeon);
     public final Setting.Colour neonColor2 =
-            (this.add(new Setting.Colour("neon_2", "Неон цвет 2", false, -16711936))).showIf(this::customNeon);
+            (this.add(new Setting.Colour("neon_2", "Неон цвет 2", false, 0xFF00FF00))).showIf(this::customNeon);
     public final Setting.Colour neonColor3 =
-            (this.add(new Setting.Colour("neon_3", "Неон цвет 3", false, -16776961))).showIf(this::customNeon);
+            (this.add(new Setting.Colour("neon_3", "Неон цвет 3", false, 0xFF0000FF))).showIf(this::customNeon);
     public final Setting.Num speed = this.add(new Setting.Num("speed", "Скорость", 1.0, 0.1, 5.0, 0.1, ""));
     public final Setting.Num size =
             (this.add(new Setting.Num("size", "Размер", 5.0, 1.0, 20.0, 0.5, ""))).showIf(() -> !this.overlay());
-    public final Setting.Num intensivnost =
-            (Setting.Num) (this.add(new Setting.Num("intensity", "Интенсивность", 0.01, 0.001, 0.05, 0.001, "")))
-                    .showIf(() -> !this.overlay());
-    public final Setting.Num opacity =
-            (Setting.Num) this.add(new Setting.Num("opacity", "Прозрачность", 1.0, 0.3, 1.0, 0.05, ""));
+    public final Setting.Num intensivnost = (this.add(
+                    new Setting.Num("intensity", "Интенсивность", 0.01, 0.001, 0.05, 0.001, "")))
+            .showIf(() -> !this.overlay());
+    public final Setting.Num opacity = this.add(new Setting.Num("opacity", "Прозрачность", 1.0, 0.3, 1.0, 0.05, ""));
     private static boolean irisChecked;
     private static Object iris;
     private static Method packInUse;
@@ -83,7 +92,7 @@ public final class SkyShader extends Module {
 
             try {
                 Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
-                iris = api.getMethod("getInstance").invoke((Object) null);
+                iris = api.getMethod("getInstance").invoke(null);
                 packInUse = api.getMethod("isShaderPackInUse");
             } catch (Throwable ignored) {
             }
@@ -91,7 +100,7 @@ public final class SkyShader extends Module {
 
         try {
             return packInUse != null && (Boolean) packInUse.invoke(iris);
-        } catch (Throwable var2) {
+        } catch (Throwable e) {
             return false;
         }
     }

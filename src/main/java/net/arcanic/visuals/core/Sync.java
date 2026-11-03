@@ -231,9 +231,9 @@ public final class Sync {
 
         JsonObject wear = new JsonObject();
         String[][] slots = new String[][] {{"wings", "w"}, {"backpack", "b"}, {"companion", "c"}, {"headwear", "h"}};
-        Wearables[] mods = new Wearables[] {Modules.WINGS, Modules.BACKPACKS, null, Modules.HEADWEAR};
+        Wearables[] mods = {Modules.WINGS, Modules.BACKPACKS, null, Modules.HEADWEAR};
 
-        for (int i = 0; i < mods.length; ++i) {
+        for (int i = 0; i < mods.length; i++) {
             Wearables m = mods[i];
             Wearables.Item it = m != null && m.enabled() ? m.current() : null;
             if (it != null) {
@@ -333,8 +333,7 @@ public final class Sync {
             sentWho = null;
         }
 
-        String var10000 = String.valueOf(mc.player.getUUID());
-        String who = var10000 + "|" + mc.player.getName().getString();
+        String who = mc.player.getUUID() + "|" + mc.player.getName().getString();
         if (!who.equals(sentWho)) {
             sentWho = who;
             sentSee = null;
@@ -423,9 +422,9 @@ public final class Sync {
                     Remote old = (Remote) REMOTE.get(id);
                     remember(
                             id,
-                            (String) null,
+                            null,
                             old == null
-                                    ? new Remote(str(p, "name"), (String) null, Map.of())
+                                    ? new Remote(str(p, "name"), null, Map.of())
                                     : new Remote(str(p, "name"), old.cape(), old.wear()));
                     break;
                 case "gone":
@@ -443,7 +442,7 @@ public final class Sync {
         if (p.has("wear") && p.get("wear").isJsonObject()) {
             for (Map.Entry<String, JsonElement> e : p.getAsJsonObject("wear").entrySet()) {
                 if (((JsonElement) e.getValue()).isJsonPrimitive()) {
-                    wear.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsString());
+                    wear.put(e.getKey(), ((JsonElement) e.getValue()).getAsString());
                 }
             }
         }
@@ -453,7 +452,7 @@ public final class Sync {
 
     private static void remember(UUID id, String name, Remote r) {
         REMOTE.put(id, r);
-        String n = name == null ? (String) NAMES.get(id) : lower(name);
+        String n = name == null ? NAMES.get(id) : lower(name);
         if (n != null && !n.isEmpty()) {
             String was = (String) NAMES.put(id, n);
             if (was != null && !was.equals(n)) {
@@ -539,7 +538,7 @@ public final class Sync {
             if (p != mc.player) {
                 Remote r = of((Entity) p);
                 String want = r == null ? null : r.emote();
-                String had = (String) PLAYING.get(p.getUUID());
+                String had = PLAYING.get(p.getUUID());
                 if (!Objects.equals(want, had) && Emotes.playOn(p, want)) {
                     if (want == null) {
                         PLAYING.remove(p.getUUID());
@@ -563,7 +562,7 @@ public final class Sync {
 
     public static record Remote(String emote, String cape, Map<String, String> wear) {
         public String worn(String slot) {
-            return this.wear == null ? null : (String) this.wear.get(slot);
+            return this.wear == null ? null : this.wear.get(slot);
         }
     }
 }

@@ -97,7 +97,7 @@ public final class Frost {
                     if (uniforms == null) {
                         uniforms = new GpuBuffer[STEPS.length];
 
-                        for (int i = 0; i < STEPS.length; ++i) {
+                        for (int i = 0; i < STEPS.length; i++) {
                             uniforms[i] = device.createBuffer(() -> "Arcanic frost step", 136, 16L);
                         }
                     }
@@ -111,7 +111,7 @@ public final class Frost {
                     float texH = 1.0F / (float) main.height;
                     TextureTarget out = a;
 
-                    for (int i = 0; i < STEPS.length; ++i) {
+                    for (int i = 0; i < STEPS.length; i++) {
                         DATA.clear();
                         DATA.putFloat(texW).putFloat(texH).putFloat(STEPS[i]).putFloat(0.0F);
                         DATA.flip();
@@ -141,7 +141,7 @@ public final class Frost {
                     ready = true;
                 } catch (RuntimeException e) {
                     broken = true;
-                    System.err.println("[ArcanicVisuals] frosted glass off: " + String.valueOf(e));
+                    System.err.println("[ArcanicVisuals] frosted glass off: " + e);
                 }
 
                 return ready;
@@ -165,7 +165,7 @@ public final class Frost {
                 r = Math.max(0, Math.min(r, Math.min(w, h) / 2));
                 strip(g, x, y + r, w, h - 2 * r, 0, r, sx, sy, ux, uy, c);
 
-                for (int i = 0; i < r; ++i) {
+                for (int i = 0; i < r; i++) {
                     double dy = (double) (r - i) - 0.5;
                     int inset = (int) Math.round((double) r - Math.sqrt(Math.max(0.0, (double) (r * r) - dy * dy)));
                     strip(g, x + inset, y + i, w - inset * 2, 1, inset, i, sx, sy, ux, uy, c);

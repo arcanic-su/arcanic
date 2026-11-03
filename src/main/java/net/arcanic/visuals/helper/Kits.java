@@ -25,7 +25,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -105,7 +104,7 @@ public final class Kits extends Module {
             this.loaded = true;
 
             try {
-                if (!Files.exists(FILE, new LinkOption[0])) {
+                if (!Files.exists(FILE)) {
                     return;
                 }
 
@@ -118,11 +117,11 @@ public final class Kits extends Module {
                     String[] k = new String[41];
                     JsonArray a = ((JsonElement) e.getValue()).getAsJsonArray();
 
-                    for (int i = 0; i < 41; ++i) {
+                    for (int i = 0; i < 41; i++) {
                         k[i] = i < a.size() ? a.get(i).getAsString() : "";
                     }
 
-                    this.kits.put((String) e.getKey(), k);
+                    this.kits.put(e.getKey(), k);
                 }
             } catch (Exception ignored) {
             }
@@ -172,7 +171,7 @@ public final class Kits extends Module {
                         Inventory inv = mc.player.getInventory();
                         String[] k = new String[41];
 
-                        for (int i = 0; i < 41; ++i) {
+                        for (int i = 0; i < 41; i++) {
                             k[i] = id(inv.getItem(i));
                         }
 
@@ -196,7 +195,7 @@ public final class Kits extends Module {
         }
 
         mc.setScreen(PromptScreen.pick(mc.screen, "Раскладка", names, at, "Выбрать", (i) -> {
-            this.active = i < this.kits.size() ? (String) names.get(i) : "";
+            this.active = i < this.kits.size() ? names.get(i) : "";
             this.write();
         }));
     }
@@ -209,7 +208,7 @@ public final class Kits extends Module {
         } else {
             List<String> names = new ArrayList(this.kits.keySet());
             mc.setScreen(PromptScreen.pick(mc.screen, "Удалить раскладку", names, 0, "Удалить", (i) -> {
-                String n = (String) names.get(i);
+                String n = names.get(i);
                 this.kits.remove(n);
                 if (n.equals(this.active)) {
                     this.active = "";
@@ -230,7 +229,7 @@ public final class Kits extends Module {
             }
         }
 
-        for (int i = 0; i < 41; ++i) {
+        for (int i = 0; i < 41; i++) {
             String s = id(inv.getItem(i));
             if (!s.isEmpty()) {
                 have.merge(s, 1, Integer::sum);
@@ -260,7 +259,7 @@ public final class Kits extends Module {
                 int top = acc.arcanicvisuals$top();
                 Map<String, Integer> spare = new LinkedHashMap<>();
 
-                for (int i = 0; i < 41; ++i) {
+                for (int i = 0; i < 41; i++) {
                     String now = id(inv.getItem(i));
                     if (!now.isEmpty() && !now.equals(k[i])) {
                         spare.merge(now, 1, Integer::sum);
@@ -319,7 +318,7 @@ public final class Kits extends Module {
                             py + pad,
                             Px.Weight.SEMIBOLD,
                             fs,
-                            -723720);
+                            0xFFF4F4F8);
                     int y = py + pad + Math.round(10.0F * gs) + pad;
                     if (lack.isEmpty()) {
                         Px.text(
@@ -329,7 +328,7 @@ public final class Kits extends Module {
                                 y + (row - fs) / 2,
                                 Px.Weight.MEDIUM,
                                 fs,
-                                wrong ? -14003 : -11870592);
+                                wrong ? -14003 : 0xFF4ADE80);
                     }
 
                     for (Missing m : lack) {
@@ -347,7 +346,7 @@ public final class Kits extends Module {
                                 y + (row - fs) / 2,
                                 Px.Weight.MEDIUM,
                                 fs,
-                                -1644820);
+                                0xFFE6E6EC);
                         Px.textRight(g, t, px + w - pad, y + (row - fs) / 2, Px.Weight.BOLD, fs, -42396);
                         y += row;
                     }
@@ -431,15 +430,15 @@ public final class Kits extends Module {
 
             String[] now = new String[41];
 
-            for (int i = 0; i < 41; ++i) {
+            for (int i = 0; i < 41; i++) {
                 now[i] = id(mc.player.getInventory().getItem(i));
             }
 
-            for (int t = 0; t < 41; ++t) {
+            for (int t = 0; t < 41; t++) {
                 if (k[t] != null && !k[t].isEmpty() && !k[t].equals(now[t]) && menuSlot.containsKey(t)) {
                     int from = -1;
 
-                    for (int i = 0; i < 41; ++i) {
+                    for (int i = 0; i < 41; i++) {
                         if (i != t && k[t].equals(now[i]) && !k[t].equals(k[i]) && menuSlot.containsKey(i)) {
                             from = i;
                             break;
@@ -447,9 +446,9 @@ public final class Kits extends Module {
                     }
 
                     if (from >= 0) {
-                        this.clicks.add(new int[] {menu, (Integer) menuSlot.get(from)});
-                        this.clicks.add(new int[] {menu, (Integer) menuSlot.get(t)});
-                        this.clicks.add(new int[] {menu, (Integer) menuSlot.get(from)});
+                        this.clicks.add(new int[] {menu, menuSlot.get(from)});
+                        this.clicks.add(new int[] {menu, menuSlot.get(t)});
+                        this.clicks.add(new int[] {menu, menuSlot.get(from)});
                         String moved = now[t];
                         now[t] = now[from];
                         now[from] = moved;
@@ -462,9 +461,9 @@ public final class Kits extends Module {
     public void tick() {
         Minecraft mc = Minecraft.getInstance();
         if (!this.clicks.isEmpty()) {
-            Screen var3 = mc.screen;
-            if (var3 instanceof InventoryScreen) {
-                InventoryScreen s = (InventoryScreen) var3;
+            Screen screen2 = mc.screen;
+            if (screen2 instanceof InventoryScreen) {
+                InventoryScreen s = (InventoryScreen) screen2;
                 if (mc.player != null && mc.gameMode != null) {
                     int[] c = (int[]) this.clicks.poll();
                     if (c[0] != ((InventoryMenu) s.getMenu()).containerId) {

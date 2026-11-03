@@ -100,7 +100,7 @@ public final class WorldFx {
             float lo = 1.55F * m.size.f();
             float li = 0.6F * m.size.f();
 
-            for (int i = 1; i <= steps; ++i) {
+            for (int i = 1; i <= steps; i++) {
                 float ph = from + (phi - from) * (float) i / (float) steps;
                 Vec3 dir = e1.scale(Math.cos((double) ph)).add(e2.scale(Math.sin((double) ph)));
                 swingPts.addLast(new SwingPt(

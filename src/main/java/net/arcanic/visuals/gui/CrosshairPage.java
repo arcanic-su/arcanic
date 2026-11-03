@@ -318,7 +318,7 @@ final class CrosshairPage {
                 Px.rect(g, pvx, b - r * 2, pvw, r, 0xFFC4DBFF);
             }
             default -> {
-                Px.round(g, pvx, t, pvw, ph, r, lt ? 0xFF1B1D24 : -15921905);
+                Px.round(g, pvx, t, pvw, ph, r, lt ? 0xFF1B1D24 : 0xFF0D0D0F);
                 g.enableScissor(pvx, t, pvx + pvw, b);
                 Px.glow(g, pvx + pvw / 10, t - ph / 10, pvw * 4 / 5, ph, Px.a(ArcanicMenu.acc(), 40));
                 g.disableScissor();

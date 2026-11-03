@@ -50,14 +50,14 @@ final class WardrobePage {
 
     void wardrobe(GuiGraphics g) {
         TexWarm.pump(3000000L);
-        ArcanicMenu var10000 = this.menu;
-        ArcanicMenu var10001 = this.menu;
+        ArcanicMenu arcanicMenu = this.menu;
+        ArcanicMenu arcanicMenu2 = this.menu;
         if (ArcanicMenu.wardrobe >= ArcanicMenu.WARD.length) {
-            var10000 = this.menu;
+            arcanicMenu = this.menu;
             ArcanicMenu.wardrobe = 0;
         }
 
-        var10000 = this.menu;
+        arcanicMenu = this.menu;
         switch (ArcanicMenu.wardrobe) {
             case 3:
                 this.wearWardrobe(g, Modules.HEADWEAR, "Головной убор снят", "Головной убор: ");
@@ -69,7 +69,7 @@ final class WardrobePage {
                 this.wearWardrobe(g, Modules.WINGS, "Крылья сняты", "Крылья: ");
                 return;
             default:
-                var10000 = this.menu;
+                arcanicMenu = this.menu;
                 boolean capes = ArcanicMenu.wardrobe == 0;
                 MeleeSlot slot = ArcanicMenu.wardSlot(ArcanicMenu.wardrobe);
                 List<MeleeDesign> designs = slot == null ? List.of() : MeleeCatalog.of(slot);
@@ -81,7 +81,7 @@ final class WardrobePage {
                 int ch = capes ? Math.round((float) cw * 1.4F) : this.menu.S(180.0);
                 int count = capes ? Capes.designs().size() : designs.size();
                 int total = (count + cols - 1) / cols * (ch + gap);
-                var10000 = this.menu;
+                arcanicMenu = this.menu;
                 String key = "w:" + ArcanicMenu.wardrobe;
                 float sc = (float) Math.round(this.menu.scrolled(key, total, this.menu.top, this.menu.bottom));
                 g.enableScissor(
@@ -100,7 +100,7 @@ final class WardrobePage {
                                 && !((float) (y + ch) - sc < (float) this.menu.top)) {
                             g.nextStratum();
                             boolean worn = Modules.CAPES.enabled() && Modules.CAPES.design.is(design);
-                            var10000 = this.menu;
+                            arcanicMenu = this.menu;
                             float app = ArcanicMenu.ease(
                                     (float) (this.menu.now - this.menu.contentAt - (long) Math.min(i, 14) * 24L)
                                             / 320.0F);
@@ -153,7 +153,7 @@ final class WardrobePage {
 
                                             Config.dirty();
                                         },
-                                        (Runnable) null);
+                                        null);
                             }
 
                             ++i;
@@ -169,7 +169,7 @@ final class WardrobePage {
                                 && !((float) (y + ch) - sc < (float) this.menu.top)) {
                             g.nextStratum();
                             boolean worn = owner.enabled() && owner.skin.is(skin.getDisplayName());
-                            var10000 = this.menu;
+                            arcanicMenu = this.menu;
                             float app = ArcanicMenu.ease(
                                     (float) (this.menu.now - this.menu.contentAt - (long) Math.min(i, 14) * 24L)
                                             / 320.0F);
@@ -255,7 +255,7 @@ final class WardrobePage {
         int cw = (this.menu.cw0 - gap * (cols - 1)) / cols;
         int ch = cw + this.menu.S(30.0);
         int total = (items.size() + cols - 1) / cols * (ch + gap);
-        ArcanicMenu var10000 = this.menu;
+        ArcanicMenu arcanicMenu3 = this.menu;
         String key = "w:" + ArcanicMenu.wardrobe;
         float sc = (float) Math.round(this.menu.scrolled(key, total, this.menu.top, this.menu.bottom));
         g.enableScissor(
@@ -266,7 +266,7 @@ final class WardrobePage {
         g.pose().pushMatrix();
         g.pose().translate(0.0F, -sc);
 
-        for (int i = 0; i < items.size(); ++i) {
+        for (int i = 0; i < items.size(); i++) {
             int x = this.menu.cx0 + i % cols * (cw + gap);
             int y = this.menu.top + this.menu.S(2.0) + i / cols * (ch + gap);
             if (!((float) y - sc > (float) this.menu.bottom) && !((float) (y + ch) - sc < (float) this.menu.top)) {
@@ -274,7 +274,7 @@ final class WardrobePage {
                 Wearables.Item it = (Wearables.Item) items.get(i);
                 String name = it.name();
                 boolean worn = master.enabled() && master.design.is(name);
-                var10000 = this.menu;
+                arcanicMenu3 = this.menu;
                 float app = ArcanicMenu.ease(
                         (float) (this.menu.now - this.menu.contentAt - (long) Math.min(i, 14) * 24L) / 320.0F);
                 float hv = this.garment(g, master.id + ":" + it.n(), x, y, cw, ch, sc, worn, app);
@@ -337,7 +337,7 @@ final class WardrobePage {
 
                                 Config.dirty();
                             },
-                            (Runnable) null);
+                            null);
                 }
             }
         }
@@ -360,14 +360,14 @@ final class WardrobePage {
     void petLabel(GuiGraphics g, int x, int y, int w, String name, boolean worn, float hv) {
         int fs = this.menu.S(12.0);
         String s = Px.ellipsize(Lang.tr(name), Px.Weight.MEDIUM, fs, w - this.menu.S(14.0));
-        int var10002 = x + w / 2;
-        int var10003 = y + this.menu.S(4.0);
-        ArcanicMenu var10006 = this.menu;
+        int n2 = x + w / 2;
+        int n3 = y + this.menu.S(4.0);
+        ArcanicMenu arcanicMenu4 = this.menu;
         Px.textCenter(
                 g,
                 s,
-                var10002,
-                var10003,
+                n2,
+                n3,
                 Px.Weight.MEDIUM,
                 fs,
                 Px.mix(ArcanicMenu.T().text(), Theme.accent2() | 0xFF000000, worn ? 1.0F : hv * 0.4F));
@@ -392,18 +392,18 @@ final class WardrobePage {
         int yy = y + Math.round((1.0F - app) * (float) this.menu.S(6.0));
         int R = this.menu.S(12.0);
         Px.round(g, x, yy, w, h, R, Px.mix(ArcanicMenu.cardBg(), ArcanicMenu.cardHi(), hv));
-        int var10006 = ArcanicMenu.edgeMedium();
-        ArcanicMenu var10007 = this.menu;
-        Px.outline(g, x, yy, w, h, R, Px.mix(var10006, ArcanicMenu.acc(), wa));
+        int n4 = ArcanicMenu.edgeMedium();
+        ArcanicMenu arcanicMenu5 = this.menu;
+        Px.outline(g, x, yy, w, h, R, Px.mix(n4, ArcanicMenu.acc(), wa));
         if (wa > 0.01F) {
             int r = this.menu.S(9.0);
             int ccx = x + w - this.menu.S(10.0) - r;
             int ccy = yy + this.menu.S(10.0) + r;
             float o = Px.fade;
             Px.fade = o * wa;
-            ArcanicMenu var10004 = this.menu;
+            ArcanicMenu arcanicMenu6 = this.menu;
             Px.circle(g, ccx, ccy, r, ArcanicMenu.acc());
-            ArcanicMenu var10000 = this.menu;
+            ArcanicMenu arcanicMenu7 = this.menu;
             ArcanicMenu.glyph(g, "check", ccx - this.menu.S(5.0), ccy - this.menu.S(5.0), this.menu.S(10.0), -1);
             Px.fade = o;
         }
@@ -413,31 +413,31 @@ final class WardrobePage {
     }
 
     void garmentLabel(GuiGraphics g, int x, int y, int w, String name, boolean worn, float hv, boolean studio) {
-        String var10001 = Px.ellipsize(Lang.tr(name), Px.Weight.SEMIBOLD, this.menu.S(13.0), w - this.menu.S(28.0));
-        int var10002 = x + this.menu.S(14.0);
-        Px.Weight var10004 = Px.Weight.SEMIBOLD;
-        int var10005 = this.menu.S(13.0);
-        ArcanicMenu var10006 = this.menu;
-        Px.text(g, var10001, var10002, y, var10004, var10005, ArcanicMenu.T().text());
-        var10001 = Lang.tr(
+        String text2 = Px.ellipsize(Lang.tr(name), Px.Weight.SEMIBOLD, this.menu.S(13.0), w - this.menu.S(28.0));
+        int n5 = x + this.menu.S(14.0);
+        Px.Weight weight = Px.Weight.SEMIBOLD;
+        int n6 = this.menu.S(13.0);
+        ArcanicMenu arcanicMenu8 = this.menu;
+        Px.text(g, text2, n5, y, weight, n6, ArcanicMenu.T().text());
+        text2 = Lang.tr(
                 studio && hv > 0.5F
                         ? (worn ? "ЛКМ: снять, ПКМ: студия" : "ЛКМ: надеть, ПКМ: студия")
                         : (worn ? "Надето" : (hv > 0.5F ? "Нажми, чтобы надеть" : "Не надето")));
-        var10002 = x + this.menu.S(14.0);
-        int var10003 = y + this.menu.S(19.0);
-        var10004 = Px.Weight.MEDIUM;
-        var10005 = this.menu.S(11.0);
-        int var14;
+        n5 = x + this.menu.S(14.0);
+        int n7 = y + this.menu.S(19.0);
+        weight = Px.Weight.MEDIUM;
+        n6 = this.menu.S(11.0);
+        int n8;
         if (worn) {
-            ArcanicMenu var13 = this.menu;
-            var14 = ArcanicMenu.accText();
+            ArcanicMenu arcanicMenu9 = this.menu;
+            n8 = ArcanicMenu.accText();
         } else {
-            ArcanicMenu var15 = this.menu;
-            int var16 = ArcanicMenu.T().dim();
-            ArcanicMenu var10007 = this.menu;
-            var14 = Px.mix(var16, ArcanicMenu.T().muted(), hv);
+            ArcanicMenu arcanicMenu10 = this.menu;
+            int n9 = ArcanicMenu.T().dim();
+            ArcanicMenu arcanicMenu11 = this.menu;
+            n8 = Px.mix(n9, ArcanicMenu.T().muted(), hv);
         }
 
-        Px.text(g, var10001, var10002, var10003, var10004, var10005, var14);
+        Px.text(g, text2, n5, n7, weight, n6, n8);
     }
 }

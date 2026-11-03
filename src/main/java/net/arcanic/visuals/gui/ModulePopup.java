@@ -73,15 +73,15 @@ final class ModulePopup {
             boolean live = this.menu.popMod != null && !this.menu.blocked() && k > 0.5F;
             int sw = Px.width();
             int sh = Px.height();
-            ItemZones var10000;
+            ItemZones itemZones;
             if (m instanceof ItemZones) {
                 ItemZones z = (ItemZones) m;
-                var10000 = z;
+                itemZones = z;
             } else {
-                var10000 = null;
+                itemZones = null;
             }
 
-            ItemZones iz = var10000;
+            ItemZones iz = itemZones;
             ItemZones.Item page = iz != null && this.itemPage != null ? iz.item(this.itemPage) : null;
             List<Setting<?>> list = new ArrayList<>();
             if (page != null) {
@@ -165,10 +165,10 @@ final class ModulePopup {
 
             int bg = ArcanicMenu.panelBg();
             int R = this.menu.S(12.0);
-            int var10002 = y + this.menu.S(8.0);
-            int var10005 = this.menu.S(24.0);
-            ArcanicMenu var10007 = this.menu;
-            Px.shadow(g, x, var10002, w, h, var10005, Px.a(0, ArcanicMenu.light() ? 30 : 130));
+            int n2 = y + this.menu.S(8.0);
+            int n3 = this.menu.S(24.0);
+            ArcanicMenu arcanicMenu = this.menu;
+            Px.shadow(g, x, n2, w, h, n3, Px.a(0, ArcanicMenu.light() ? 30 : 130));
             Px.round(g, x, y, w, h, R, bg);
             Px.outline(g, x, y, w, h, R, ArcanicMenu.hairline(16));
             this.menu.topLight(g, x, y, w, R);
@@ -263,8 +263,7 @@ final class ModulePopup {
                 Px.Weight.MEDIUM,
                 this.menu.S(11.0),
                 ArcanicMenu.faint());
-        String var10001 = m.id;
-        float mOn = this.menu.tween("on:" + var10001, m.enabled() ? 1.0F : 0.0F, 180.0F);
+        float mOn = this.menu.tween("on:" + m.id, m.enabled() ? 1.0F : 0.0F, 180.0F);
         int tgY = y + this.menu.S(14.0);
         boolean tgHv = live && this.menu.hover(cx + cw - tgW, Math.round((float) tgY - sc), tgW, this.menu.S(30.0));
         this.menu.toggle(g, cx + cw - tgW, tgY, tgW, this.menu.S(30.0), mOn, tgHv ? 1.0F : 0.0F);
@@ -291,7 +290,7 @@ final class ModulePopup {
                             Config.dirty();
                         }
                     },
-                    (Runnable) null);
+                    null);
         }
     }
 
@@ -316,10 +315,8 @@ final class ModulePopup {
             this.menu.hot("more:" + m.id);
         }
 
-        String var10001 = m.id;
-        float hk = this.menu.an("moreH:" + var10001, hv ? 1.0F : 0.0F, 18.0F);
-        var10001 = m.id;
-        float ok = this.menu.tween("more:" + var10001, open ? 1.0F : 0.0F, 220.0F);
+        float hk = this.menu.an("moreH:" + m.id, hv ? 1.0F : 0.0F, 18.0F);
+        float ok = this.menu.tween("more:" + m.id, open ? 1.0F : 0.0F, 220.0F);
         String label = Lang.tr(open ? "Скрыть" : "Ещё настройки");
         int fs = this.menu.S(12.0);
         int col = Px.mix(ArcanicMenu.sub(), ArcanicMenu.T().text(), hk);
@@ -355,7 +352,7 @@ final class ModulePopup {
 
                         UiSound.play("click");
                     },
-                    (Runnable) null);
+                    null);
         }
     }
 
@@ -429,7 +426,7 @@ final class ModulePopup {
         for (Map.Entry<String, List<ItemZones.Item>> e : groups(iz).entrySet()) {
             Px.text(
                     g,
-                    Lang.tr((String) e.getKey()),
+                    Lang.tr(e.getKey()),
                     x,
                     cy + this.menu.S(8.0),
                     Px.Weight.SEMIBOLD,
@@ -438,7 +435,7 @@ final class ModulePopup {
             cy += this.menu.S(30.0);
             List<ItemZones.Item> l = (List) e.getValue();
 
-            for (int i = 0; i < l.size(); ++i) {
+            for (int i = 0; i < l.size(); i++) {
                 ItemZones.Item it = (ItemZones.Item) l.get(i);
                 int rx = x + i % 2 * colW - this.menu.S(8.0);
                 int ry = cy + i / 2 * this.menu.S(36.0);
@@ -452,10 +449,8 @@ final class ModulePopup {
                     this.menu.hot("it:" + it.key);
                 }
 
-                String var10001 = it.key;
-                float hk = this.menu.an("itH:" + var10001, hv ? 1.0F : 0.0F, 18.0F);
-                var10001 = it.key;
-                float on = this.menu.tween("itO:" + var10001, it.on.on() ? 1.0F : 0.0F, 200.0F);
+                float hk = this.menu.an("itH:" + it.key, hv ? 1.0F : 0.0F, 18.0F);
+                float on = this.menu.tween("itO:" + it.key, it.on.on() ? 1.0F : 0.0F, 200.0F);
                 if (hk > 0.01F) {
                     Px.round(g, rx, ry, rw, rh, this.menu.S(8.0), Px.a(ArcanicMenu.cardHi(), (int) (255.0F * hk)));
                 }
@@ -594,9 +589,9 @@ final class ModulePopup {
                     b,
                     () -> {
                         UiSound.play("pop", 0.9F, 0.6F);
-                        this.openItem((String) null);
+                        this.openItem(null);
                     },
-                    (Runnable) null);
+                    null);
         }
     }
 }

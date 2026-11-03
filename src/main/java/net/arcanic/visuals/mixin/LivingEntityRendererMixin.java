@@ -81,7 +81,7 @@ public abstract class LivingEntityRendererMixin {
             }
 
             return Modules.HIT_COLOR.colour(state, Modules.HOLY_THING.tint(e, colour));
-        } catch (RuntimeException var14) {
+        } catch (RuntimeException e) {
             return colour;
         }
     }

@@ -75,7 +75,7 @@ final class Curtain {
             int n = Math.max(64, Math.min(256, (int) (rr * 9.0)));
             double[][] path = new double[n][];
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 double t = (double) i * Math.PI * 2.0 / (double) n;
                 path[i] = new double[] {o.x + Math.cos(t) * rr, o.z + Math.sin(t) * rr};
             }
@@ -107,13 +107,13 @@ final class Curtain {
             if (under) {
                 int bands = 4;
 
-                for (int b = 0; b < bands; ++b) {
+                for (int b = 0; b < bands; b++) {
                     double k0 = (double) b / (double) bands;
                     double k1 = (double) (b + 1) / (double) bands;
                     int c0 = TrapZone.alpha(colour, a * 0.16F * (float) (k0 * k0));
                     int c1 = TrapZone.alpha(colour, a * 0.16F * (float) (k1 * k1));
 
-                    for (int i = 0; i < n; ++i) {
+                    for (int i = 0; i < n; i++) {
                         double t0 = (double) i * Math.PI * 2.0 / (double) n;
                         double t1 = (double) (i + 1) * Math.PI * 2.0 / (double) n;
                         double ax = o.x + Math.cos(t0) * rr * k0;
@@ -156,11 +156,11 @@ final class Curtain {
                 double fill = step * dash / (dash + gap);
                 double turn = (double) f.time() * 0.12;
 
-                for (int i = 0; i < count; ++i) {
+                for (int i = 0; i < count; i++) {
                     double s0 = (double) i * step + turn;
                     int parts = 4;
 
-                    for (int j = 0; j < parts; ++j) {
+                    for (int j = 0; j < parts; j++) {
                         double t0 = s0 + fill * (double) j / (double) parts;
                         double t1 = s0 + fill * (double) (j + 1) / (double) parts;
                         double ax = o.x + Math.cos(t0) * rr;
@@ -196,7 +196,7 @@ final class Curtain {
             int by = (int) Math.floor(ref);
             int bz = (int) Math.floor(z);
             long key = BlockPos.asLong(bx, by, bz);
-            Double v = (Double) GROUND.get(key);
+            Double v = GROUND.get(key);
             if (v != null) {
                 return v;
             } else {
@@ -210,7 +210,7 @@ final class Curtain {
     private static double scan(Level level, int x, int y, int z, double ref) {
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         if (solid(level, p.set(x, y, z))) {
-            for (int i = 1; i <= 8; ++i) {
+            for (int i = 1; i <= 8; i++) {
                 if (!solid(level, p.set(x, y + i, z))) {
                     return top(level, p.set(x, y + i - 1, z));
                 }
@@ -218,7 +218,7 @@ final class Curtain {
 
             return ref;
         } else {
-            for (int i = 1; i <= 16; ++i) {
+            for (int i = 1; i <= 16; i++) {
                 if (solid(level, p.set(x, y - i, z))) {
                     return top(level, p);
                 }
@@ -268,8 +268,8 @@ final class Curtain {
             double[][] corners =
                     new double[][] {{mx - hx, mz - hz}, {mx + hx, mz - hz}, {mx + hx, mz + hz}, {mx - hx, mz + hz}};
 
-            for (int s = 0; s < 4; ++s) {
-                for (int i = 0; i < per; ++i) {
+            for (int s = 0; s < 4; s++) {
+                for (int i = 0; i < per; i++) {
                     double t = (double) i / (double) per;
                     double[] p = corners[s];
                     double[] q = corners[(s + 1) % 4];
@@ -303,8 +303,8 @@ final class Curtain {
                     new double[][] {{mx - hx, mz - hz}, {mx + hx, mz - hz}, {mx + hx, mz + hz}, {mx - hx, mz + hz}};
             double[][] path = new double[per * 4][];
 
-            for (int s = 0; s < 4; ++s) {
-                for (int i = 0; i < per; ++i) {
+            for (int s = 0; s < 4; s++) {
+                for (int i = 0; i < per; i++) {
                     double t = (double) i / (double) per;
                     double[] p = corners[s];
                     double[] q = corners[(s + 1) % 4];
@@ -318,7 +318,7 @@ final class Curtain {
                 int bright = TrapZone.alpha(Fx.lerp(base, -1, 0.35F), a);
                 int dim = TrapZone.alpha(base, a * 0.35F);
 
-                for (int s = 0; s < 4; ++s) {
+                for (int s = 0; s < 4; s++) {
                     double[] p = corners[s];
                     double[] q = corners[(s + 1) % 4];
                     double[] o = corners[(s + 3) % 4];
@@ -368,21 +368,21 @@ final class Curtain {
         double ref = y + 0.02;
         double[] gy = new double[n];
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             gy[i] = terrain ? ground(path[i][0], path[i][1], ref) + 0.02 : y;
         }
 
         if (under) {
             int bands = 5;
 
-            for (int b = 0; b < bands; ++b) {
+            for (int b = 0; b < bands; b++) {
                 float k0 = (float) b / (float) bands;
                 float k1 = (float) (b + 1) / (float) bands;
                 float fillA = terrain ? 0.2F : 0.12F;
                 int c0 = TrapZone.alpha(c, a * fillA * k0 * k0);
                 int c1 = TrapZone.alpha(c, a * fillA * k1 * k1);
 
-                for (int i = 0; i < n; ++i) {
+                for (int i = 0; i < n; i++) {
                     double[] p = path[i];
                     double[] q = path[(i + 1) % n];
                     double ax = mx + (p[0] - mx) * (double) k0;
@@ -420,13 +420,13 @@ final class Curtain {
                 int rows = 12;
                 float speed = 0.45F + 0.9F * burnt;
 
-                for (int j = 0; j < rows; ++j) {
+                for (int j = 0; j < rows; j++) {
                     float t0 = (float) j / (float) rows;
                     float t1 = (float) (j + 1) / (float) rows;
                     int c0 = TrapZone.alpha(c, a * wall(t0, f.time(), speed, rising));
                     int c1 = TrapZone.alpha(c, a * wall(t1, f.time(), speed, rising));
 
-                    for (int i = 0; i < n; ++i) {
+                    for (int i = 0; i < n; i++) {
                         double[] p = path[i];
                         double[] q = path[(i + 1) % n];
                         double pa = gy[i] + h * (double) t0;
@@ -442,7 +442,7 @@ final class Curtain {
             int lc = TrapZone.alpha(Fx.lerp(c, -1, terrain ? 0.3F : 0.2F), a);
             double lift = terrain ? 0.04 : 0.0;
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 double[] p = path[i];
                 double[] q = path[(i + 1) % n];
                 TrapZone.line(
@@ -464,7 +464,7 @@ final class Curtain {
         } else {
             float band = 0.0F;
 
-            for (int i = 0; i < 2; ++i) {
+            for (int i = 0; i < 2; i++) {
                 float at = (time * speed + (float) i * 0.5F) % 1.0F;
                 float d = (t - at) / 0.09F;
                 band += (float) Math.exp((double) (-d * d));

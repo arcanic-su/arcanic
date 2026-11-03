@@ -44,43 +44,41 @@ public final class UiSound {
         if (p.sounds.on() && !((Double) p.volume.get() <= 0.0)) {
             if ((!name.endsWith("hover") || p.hoverSounds.on()) && (!name.equals("tick") || p.sliderSounds.on())) {
                 long now = System.currentTimeMillis();
-                long var10000;
-                switch (name) {
-                    case "hover" -> var10000 = 45L;
-                    case "tick" -> var10000 = 26L;
-                    case "type" -> var10000 = 18L;
-                    default -> var10000 = 35L;
-                }
-
-                long gap = var10000;
-                Long last = (Long) LAST.get(name);
+                long gap =
+                        switch (name) {
+                            case "hover" -> 45L;
+                            case "tick" -> 26L;
+                            case "type" -> 18L;
+                            default -> 35L;
+                        };
+                Long last = LAST.get(name);
                 if (last == null || now - last >= gap) {
                     LAST.put(name, now);
                     SoundEvent ev = (SoundEvent) EVENTS.computeIfAbsent(
                             name,
                             (n) -> SoundEvent.createVariableRangeEvent(
                                     Identifier.fromNamespaceAndPath("arcanicvisuals", "ui." + n)));
-                    float var15;
+                    float f;
                     switch (name) {
                         case "hover":
-                            var15 = 0.35F;
+                            f = 0.35F;
                             break;
                         case "tick":
-                            var15 = 0.5F;
+                            f = 0.5F;
                             break;
                         case "type":
-                            var15 = 0.45F;
+                            f = 0.45F;
                             break;
                         case "open":
                         case "close":
                         case "unlock":
-                            var15 = 0.8F;
+                            f = 0.8F;
                             break;
                         default:
-                            var15 = 0.7F;
+                            f = 0.7F;
                     }
 
-                    float base = var15;
+                    float base = f;
                     float vol = (float) ((Double) p.volume.get() / 100.0) * base * volume;
                     if (name.equals("click")
                             || name.equals("hover")

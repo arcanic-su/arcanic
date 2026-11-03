@@ -122,7 +122,7 @@ public final class CommandBindsScreen extends Screen {
         } else {
             List<CommandBinds.Bind> list = this.binds();
 
-            for (int i = 0; i < list.size(); ++i) {
+            for (int i = 0; i < list.size(); i++) {
                 int[] kp = this.keyPill(i);
                 int[] cb = this.commandBox(i);
                 if (PromptScreen.Kit.in(mx, my, kp[0], kp[1], kp[2], kp[3])) {
@@ -134,16 +134,17 @@ public final class CommandBindsScreen extends Screen {
                 if (PromptScreen.Kit.in(mx, my, cb[0], cb[1], cb[2], cb[3])) {
                     CommandBinds.Bind b = (CommandBinds.Bind) list.get(i);
                     UiSound.play("pop");
-                    Minecraft var10000 = Minecraft.getInstance();
-                    PromptScreen var10001 = PromptScreen.field(this, "Бинд", "/команда или текст", "Сохранить", (v) -> {
-                                b.command = v;
-                                this.changed();
-                            })
+                    Minecraft minecraft2 = Minecraft.getInstance();
+                    PromptScreen promptScreen = PromptScreen.field(
+                                    this, "Бинд", "/команда или текст", "Сохранить", (v) -> {
+                                        b.command = v;
+                                        this.changed();
+                                    })
                             .value(b.command)
                             .limit(200);
-                    String var10002 = Lang.tr("Клавиша");
-                    var10000.setScreen(
-                            var10001.note(var10002 + ": " + Keys.label(b.key)).danger("Удалить", () -> {
+                    minecraft2.setScreen(promptScreen
+                            .note(Lang.tr("Клавиша") + ": " + Keys.label(b.key))
+                            .danger("Удалить", () -> {
                                 list.remove(b);
                                 this.changed();
                             }));
@@ -222,7 +223,7 @@ public final class CommandBindsScreen extends Screen {
                         PromptScreen.Kit.dim());
             }
 
-            for (int i = 0; i < list.size(); ++i) {
+            for (int i = 0; i < list.size(); i++) {
                 CommandBinds.Bind b = (CommandBinds.Bind) list.get(i);
                 int[] kp = this.keyPill(i);
                 int[] cb = this.commandBox(i);

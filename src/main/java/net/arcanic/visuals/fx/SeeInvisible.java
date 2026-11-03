@@ -85,7 +85,7 @@ public final class SeeInvisible extends Module {
         VertexConsumer glow = ctx.consumers().getBuffer(Fx.ribbon(Fx.Tex.LINE_GLOW, false));
         VertexConsumer edge = ctx.consumers().getBuffer(Fx.ribbon(Fx.Tex.LINE_AA, false));
         int c = this.colour.argb() | 0xFF000000;
-        float alpha = ((Double) this.opacity.get()).floatValue() / 100.0F;
+        float alpha = this.opacity.get().floatValue() / 100.0F;
         for (Player p : mc.level.players()) {
             boolean on = marked(p, mc.player);
             float[] k = this.shown.get(p.getId());

@@ -40,8 +40,12 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL21;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL33;
 
@@ -133,7 +137,7 @@ public final class AmbienceWeather {
                         }
                     } catch (Throwable t) {
                         broken = true;
-                        System.err.println("[ArcanicVisuals] Ambience weather off: " + String.valueOf(t));
+                        System.err.println("[ArcanicVisuals] Ambience weather off: " + t);
                     }
                 }
             }
@@ -209,7 +213,7 @@ public final class AmbienceWeather {
                         }
                     } catch (Throwable t) {
                         waveBroken = true;
-                        System.err.println("[ArcanicVisuals] potion waves off: " + String.valueOf(t));
+                        System.err.println("[ArcanicVisuals] potion waves off: " + t);
                     }
                 }
             }
@@ -333,10 +337,10 @@ public final class AmbienceWeather {
             roofY = (float) cam.y;
             ROOF_DATA.clear();
 
-            for (int i = 0; i < 96; ++i) {
+            for (int i = 0; i < 96; i++) {
                 int bz = (int) Math.floor((double) (roofZ + (float) i * 2.0F));
 
-                for (int j = 0; j < 96; ++j) {
+                for (int j = 0; j < 96; j++) {
                     int bx = (int) Math.floor((double) (roofX + (float) j * 2.0F));
                     int top = mc.level.getHeight(Types.MOTION_BLOCKING, bx, bz);
                     ROOF_DATA.put((byte) Math.max(0, Math.min(255, Math.round((float) top - roofY) + 128)));
@@ -344,10 +348,10 @@ public final class AmbienceWeather {
             }
 
             ROOF_DATA.flip();
-            GlStateManager._activeTexture(33984);
+            GlStateManager._activeTexture(GL13.GL_TEXTURE0);
             GlStateManager._bindTexture(roof);
             int pbo = cleanUnpack();
-            GL11.glTexSubImage2D(3553, 0, 0, 0, 96, 96, 6403, 5121, ROOF_DATA);
+            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, 96, 96, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, ROOF_DATA);
             restoreUnpack(pbo);
             roofReady = true;
         }
@@ -361,7 +365,7 @@ public final class AmbienceWeather {
             float[][] corner =
                     new float[][] {{0.0F, 0.0F}, {0.0F, 1.0F}, {1.0F, 1.0F}, {0.0F, 0.0F}, {1.0F, 1.0F}, {1.0F, 0.0F}};
 
-            for (int i = 0; i < count; ++i) {
+            for (int i = 0; i < count; i++) {
                 float x = random.nextFloat() * 42.0F;
                 float y = random.nextFloat() * 30.0F;
                 float z = random.nextFloat() * 42.0F;
@@ -378,35 +382,35 @@ public final class AmbienceWeather {
 
             data.flip();
             GL30.glBindVertexArray(streakVao);
-            GL15.glBindBuffer(34962, streakVbo);
-            GL15.glBufferData(34962, data, 35044);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, streakVbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, data, GL15.GL_STATIC_DRAW);
             GL20.glEnableVertexAttribArray(0);
-            GL20.glVertexAttribPointer(0, 3, 5126, false, 24, 0L);
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 24, 0L);
             GL20.glEnableVertexAttribArray(1);
-            GL20.glVertexAttribPointer(1, 2, 5126, false, 24, 12L);
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 24, 12L);
             GL20.glEnableVertexAttribArray(2);
-            GL20.glVertexAttribPointer(2, 4, 5121, true, 24, 20L);
+            GL20.glVertexAttribPointer(2, 4, GL11.GL_UNSIGNED_BYTE, true, 24, 20L);
             GL30.glBindVertexArray(0);
         }
     }
 
     static int cleanUnpack() {
-        int pbo = GL11.glGetInteger(35055);
+        int pbo = GL11.glGetInteger(GL21.GL_PIXEL_UNPACK_BUFFER_BINDING);
         if (pbo != 0) {
-            GL15.glBindBuffer(35052, 0);
+            GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0);
         }
 
-        GL11.glPixelStorei(3314, 0);
-        GL11.glPixelStorei(3315, 0);
-        GL11.glPixelStorei(3316, 0);
-        GL11.glPixelStorei(3317, 1);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1);
         return pbo;
     }
 
     static void restoreUnpack(int pbo) {
-        GL11.glPixelStorei(3317, 4);
+        GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 4);
         if (pbo != 0) {
-            GL15.glBindBuffer(35052, pbo);
+            GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, pbo);
         }
     }
 
@@ -431,9 +435,9 @@ public final class AmbienceWeather {
             fbo = GL30.glGenFramebuffers();
             readFbo = GL30.glGenFramebuffers();
             roof = GL11.glGenTextures();
-            GlStateManager._activeTexture(33984);
+            GlStateManager._activeTexture(GL13.GL_TEXTURE0);
             GlStateManager._bindTexture(roof);
-            GL11.glTexImage2D(3553, 0, 33321, 96, 96, 0, 6403, 5121, 0L);
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_R8, 96, 96, 0, GL11.GL_RED, GL11.GL_UNSIGNED_BYTE, 0L);
             params(9728);
         }
 
@@ -443,9 +447,9 @@ public final class AmbienceWeather {
             }
 
             temp = GL11.glGenTextures();
-            GlStateManager._activeTexture(33984);
+            GlStateManager._activeTexture(GL13.GL_TEXTURE0);
             GlStateManager._bindTexture(temp);
-            GL11.glTexImage2D(3553, 0, 32856, w, h, 0, 6408, 5121, 0L);
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, w, h, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, 0L);
             params(9729);
             tempW = w;
             tempH = h;
@@ -453,18 +457,18 @@ public final class AmbienceWeather {
     }
 
     private static void copy(int colour, int w, int h) {
-        GL30.glBindFramebuffer(36008, readFbo);
-        GL30.glFramebufferTexture2D(36008, 36064, 3553, colour, 0);
-        GL30.glBindFramebuffer(36009, fbo);
-        GL30.glFramebufferTexture2D(36009, 36064, 3553, temp, 0);
-        GL30.glFramebufferTexture2D(36009, 36096, 3553, 0, 0);
-        GL30.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, 16384, 9728);
+        GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, readFbo);
+        GL30.glFramebufferTexture2D(GL30.GL_READ_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, colour, 0);
+        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, fbo);
+        GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, temp, 0);
+        GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, 0, 0);
+        GL30.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
     }
 
     private static void target(int colour, int depth, int w, int h) {
-        GL30.glBindFramebuffer(36160, fbo);
-        GL30.glFramebufferTexture2D(36160, 36064, 3553, colour, 0);
-        GL30.glFramebufferTexture2D(36160, 36096, 3553, depth, 0);
+        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
+        GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, colour, 0);
+        GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, depth, 0);
         GlStateManager._viewport(0, 0, w, h);
     }
 
@@ -476,12 +480,12 @@ public final class AmbienceWeather {
     }
 
     private static void params(int filter) {
-        GL11.glTexParameteri(3553, 10241, filter);
-        GL11.glTexParameteri(3553, 10240, filter);
-        GL11.glTexParameteri(3553, 10242, 33071);
-        GL11.glTexParameteri(3553, 10243, 33071);
-        GL11.glTexParameteri(3553, 33085, 0);
-        GL11.glTexParameteri(3553, 34892, 0);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, filter);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, filter);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL12.GL_CLAMP_TO_EDGE);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL12.GL_CLAMP_TO_EDGE);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MAX_LEVEL, 0);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL14.GL_TEXTURE_COMPARE_MODE, 0);
     }
 
     private static void matrix(int program, String name, Matrix4f m) {
@@ -494,20 +498,18 @@ public final class AmbienceWeather {
     }
 
     private static int id(GpuTextureView v) {
-        int var10000;
+        int n2;
         if (v != null && !v.isClosed()) {
-            GpuTexture var2 = v.texture();
-            if (var2 instanceof GlTexture) {
-                GlTexture t = (GlTexture) var2;
+            GpuTexture gpuTexture = v.texture();
+            if (gpuTexture instanceof GlTexture) {
+                GlTexture t = (GlTexture) gpuTexture;
                 if (!t.isClosed()) {
-                    var10000 = t.glId();
-                    return var10000;
+                    return t.glId();
                 }
             }
         }
 
-        var10000 = 0;
-        return var10000;
+        return 0;
     }
 
     private static int program(String vert, String frag) {
@@ -522,7 +524,7 @@ public final class AmbienceWeather {
         GL20.glLinkProgram(p);
         GL20.glDeleteShader(v);
         GL20.glDeleteShader(f);
-        if (GL20.glGetProgrami(p, 35714) == 0) {
+        if (GL20.glGetProgrami(p, GL20.GL_LINK_STATUS) == 0) {
             throw new IllegalStateException("weather link " + frag + ": " + GL20.glGetProgramInfoLog(p));
         } else {
             return p;
@@ -532,25 +534,9 @@ public final class AmbienceWeather {
     private static int shader(int type, String name) {
         String src;
         try {
-            InputStream in =
-                    AmbienceWeather.class.getResourceAsStream("/assets/arcanicvisuals/shaders/weather/" + name);
-
-            try {
+            try (InputStream in =
+                    AmbienceWeather.class.getResourceAsStream("/assets/arcanicvisuals/shaders/weather/" + name)) {
                 src = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (Throwable var7) {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (Throwable var6) {
-                        var7.addSuppressed(var6);
-                    }
-                }
-
-                throw var7;
-            }
-
-            if (in != null) {
-                in.close();
             }
         } catch (Exception e) {
             throw new IllegalStateException(name, e);
@@ -559,7 +545,7 @@ public final class AmbienceWeather {
         int s = GL20.glCreateShader(type);
         GL20.glShaderSource(s, src);
         GL20.glCompileShader(s);
-        if (GL20.glGetShaderi(s, 35713) == 0) {
+        if (GL20.glGetShaderi(s, GL20.GL_COMPILE_STATUS) == 0) {
             throw new IllegalStateException(name + ": " + GL20.glGetShaderInfoLog(s));
         } else {
             return s;
@@ -567,50 +553,50 @@ public final class AmbienceWeather {
     }
 
     private static final class Snapshot {
-        final int drawFb = GL11.glGetInteger(36006);
-        final int readFb = GL11.glGetInteger(36010);
-        final int vaoB = GL11.glGetInteger(34229);
-        final int ab = GL11.glGetInteger(34964);
-        final int prog = GL11.glGetInteger(35725);
-        final int active = GL11.glGetInteger(34016);
-        final int srcRgb = GL11.glGetInteger(32969);
-        final int dstRgb = GL11.glGetInteger(32968);
-        final int srcA = GL11.glGetInteger(32971);
-        final int dstA = GL11.glGetInteger(32970);
-        final int depthFunc = GL11.glGetInteger(2932);
-        final int unpack = GL11.glGetInteger(3317);
+        final int drawFb = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+        final int readFb = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
+        final int vaoB = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
+        final int ab = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
+        final int prog = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        final int active = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
+        final int srcRgb = GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB);
+        final int dstRgb = GL11.glGetInteger(GL14.GL_BLEND_DST_RGB);
+        final int srcA = GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA);
+        final int dstA = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
+        final int depthFunc = GL11.glGetInteger(GL11.GL_DEPTH_FUNC);
+        final int unpack = GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT);
         final int[] tex = new int[3];
         final int[] smp = new int[3];
         final int[] vp = new int[4];
         final int[] sc = new int[4];
-        final boolean depth = GL11.glIsEnabled(2929);
-        final boolean cull = GL11.glIsEnabled(2884);
-        final boolean scissor = GL11.glIsEnabled(3089);
-        final boolean blend = GL11.glIsEnabled(3042);
-        final boolean mask = GL11.glGetBoolean(2930);
+        final boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        final boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
+        final boolean scissor = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+        final boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+        final boolean mask = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
 
         Snapshot() {
-            GL11.glGetIntegerv(2978, this.vp);
-            GL11.glGetIntegerv(3088, this.sc);
-            int was = GL11.glGetInteger(34016);
+            GL11.glGetIntegerv(GL11.GL_VIEWPORT, this.vp);
+            GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, this.sc);
+            int was = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
 
-            for (int u = 0; u < 3; ++u) {
+            for (int u = 0; u < 3; u++) {
                 GL33.glActiveTexture('蓀' + u);
-                this.tex[u] = GL11.glGetInteger(32873);
-                this.smp[u] = GL11.glGetInteger(35097);
+                this.tex[u] = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+                this.smp[u] = GL11.glGetInteger(GL33.GL_SAMPLER_BINDING);
             }
 
             GL33.glActiveTexture(was);
         }
 
         void restore() {
-            GL30.glBindFramebuffer(36008, this.readFb);
-            GL30.glBindFramebuffer(36009, this.drawFb);
+            GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, this.readFb);
+            GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, this.drawFb);
             GL30.glBindVertexArray(this.vaoB);
-            GL15.glBindBuffer(34962, this.ab);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.ab);
             GL20.glUseProgram(this.prog);
 
-            for (int u = 0; u < 3; ++u) {
+            for (int u = 0; u < 3; u++) {
                 GlStateManager._activeTexture('蓀' + u);
                 GlStateManager._bindTexture(this.tex[u]);
                 GL33.glBindSampler(u, this.smp[u]);
@@ -619,7 +605,7 @@ public final class AmbienceWeather {
             GlStateManager._activeTexture(this.active);
             GlStateManager._viewport(this.vp[0], this.vp[1], this.vp[2], this.vp[3]);
             GlStateManager._scissorBox(this.sc[0], this.sc[1], this.sc[2], this.sc[3]);
-            GL11.glPixelStorei(3317, this.unpack);
+            GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, this.unpack);
             if (this.depth) {
                 GlStateManager._enableDepthTest();
             } else {

@@ -161,7 +161,7 @@ public abstract class ItemInHandRendererMixin {
 
     @Invoker("renderPlayerArm")
     abstract void arcanicvisuals$renderPlayerArm(
-            PoseStack var1, SubmitNodeCollector var2, int var3, float var4, float var5, HumanoidArm var6);
+            PoseStack pose, SubmitNodeCollector collector, int light, float equip, float swing, HumanoidArm arm);
 
     @Unique
     private static float side(AbstractClientPlayer player, InteractionHand hand) {

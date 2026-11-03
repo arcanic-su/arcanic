@@ -305,7 +305,7 @@ public final class MeleeRenderer {
             byte[] sides = this.knifeSides(model);
             Matrix4f[] at = new Matrix4f[3];
 
-            for (int side = 1; side <= 2; ++side) {
+            for (int side = 1; side <= 2; side++) {
                 boolean right = side == 1;
                 MeleeSkins.Placement p = !right && other != null ? other : knife;
                 Matrix4f move = (new Matrix4f()).translation((float) (right ? 1 : -1) * p.x(), p.y(), -p.z());
@@ -329,7 +329,7 @@ public final class MeleeRenderer {
                 }
             }
 
-            for (int i = 0; i < sides.length; ++i) {
+            for (int i = 0; i < sides.length; i++) {
                 Matrix4f m = at[sides[i]];
                 if (m != null) {
                     bones.world[i].set((new Matrix4f(m)).mul(bones.world[i]));
@@ -367,7 +367,7 @@ public final class MeleeRenderer {
             Integer left = (Integer) model.getBoneIndex().get("knife_and_left");
             byte[] out = new byte[count];
 
-            for (int i = 0; i < count; ++i) {
+            for (int i = 0; i < count; i++) {
                 if (model.meshOf(i) != null) {
                     byte side = (byte) (right == null ? 1 : 0);
                     boolean hand = false;
@@ -501,8 +501,7 @@ public final class MeleeRenderer {
                     : (MeleeVariant) design.getVariants().getFirst();
         }
 
-        String var10000 = design.getGeometryKey();
-        String key = var10000 + "|" + variant.suffix();
+        String key = design.getGeometryKey() + "|" + variant.suffix();
         Hold hold = (Hold) this.holds.get(key);
         if (hold == null || hold.model() != model) {
             hold = this.computeHold(model, variant);
@@ -519,7 +518,7 @@ public final class MeleeRenderer {
         MeleeBuffer bones = this.restBones(model, variant);
         List<Vector3f> points = new ArrayList<>();
 
-        for (int i = 0; i < count; ++i) {
+        for (int i = 0; i < count; i++) {
             float[] mesh = model.meshOf(i);
             if (bones.visible[i] && mesh != null) {
                 for (int at = 0; at < mesh.length; at += 8) {
@@ -557,7 +556,7 @@ public final class MeleeRenderer {
         this.buildWorld(bones, model, idle, hidden);
         Integer root = (Integer) model.getBoneIndex().get("knife_and_right");
 
-        for (int i = 0; i < count; ++i) {
+        for (int i = 0; i < count; i++) {
             boolean under = root == null;
             boolean hand = false;
 
@@ -567,8 +566,7 @@ public final class MeleeRenderer {
                 under |= root != null && b == root;
             }
 
-            boolean[] var10000 = bones.visible;
-            var10000[i] &= under && !hand;
+            bones.visible[i] &= under && !hand;
         }
 
         return bones;
@@ -594,10 +592,10 @@ public final class MeleeRenderer {
             double[][] cov = new double[3][3];
 
             for (Vector3f q : points) {
-                double[] d = new double[] {(double) (q.x - c.x), (double) (q.y - c.y), (double) (q.z - c.z)};
+                double[] d = {(double) (q.x - c.x), (double) (q.y - c.y), (double) (q.z - c.z)};
 
-                for (int a = 0; a < 3; ++a) {
-                    for (int b = 0; b < 3; ++b) {
+                for (int a = 0; a < 3; a++) {
+                    for (int b = 0; b < 3; b++) {
                         cov[a][b] += d[a] * d[b];
                     }
                 }
@@ -674,7 +672,7 @@ public final class MeleeRenderer {
             {0.0, 0.0, 1.0}
         };
 
-        for (int sweep = 0; sweep < 60; ++sweep) {
+        for (int sweep = 0; sweep < 60; sweep++) {
             int p = 0;
             int q = 1;
             if (Math.abs(a[0][2]) > Math.abs(a[p][q])) {
@@ -694,21 +692,21 @@ public final class MeleeRenderer {
             double cs = Math.cos(theta);
             double sn = Math.sin(theta);
 
-            for (int k = 0; k < 3; ++k) {
+            for (int k = 0; k < 3; k++) {
                 double kp = a[k][p];
                 double kq = a[k][q];
                 a[k][p] = cs * kp - sn * kq;
                 a[k][q] = sn * kp + cs * kq;
             }
 
-            for (int k = 0; k < 3; ++k) {
+            for (int k = 0; k < 3; k++) {
                 double pk = a[p][k];
                 double qk = a[q][k];
                 a[p][k] = cs * pk - sn * qk;
                 a[q][k] = sn * pk + cs * qk;
             }
 
-            for (int k = 0; k < 3; ++k) {
+            for (int k = 0; k < 3; k++) {
                 double kp = e[k][p];
                 double kq = e[k][q];
                 e[k][p] = cs * kp - sn * kq;
@@ -716,11 +714,11 @@ public final class MeleeRenderer {
             }
         }
 
-        Integer[] order = new Integer[] {0, 1, 2};
+        Integer[] order = {0, 1, 2};
         Arrays.sort(order, (x, y) -> Double.compare(a[y][y], a[x][x]));
         Vector3f[] out = new Vector3f[3];
 
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 3; i++) {
             int k = order[i];
             out[i] = (new Vector3f((float) e[0][k], (float) e[1][k], (float) e[2][k])).normalize();
         }
@@ -792,7 +790,7 @@ public final class MeleeRenderer {
         int count = model.boneCount();
         bones.ensureCapacity(count);
 
-        for (int i = 0; i < count; ++i) {
+        for (int i = 0; i < count; i++) {
             bones.visible[i] = i >= hidden.length || !hidden[i];
             int c = i * 9;
             this.local.identity();
@@ -894,7 +892,7 @@ public final class MeleeRenderer {
             boolean mirrored) {
         int count = model.boneCount();
         collector.submitCustomGeometry(pose, type, (last, consumer) -> {
-            for (int bone = 0; bone < count; ++bone) {
+            for (int bone = 0; bone < count; bone++) {
                 float[] mesh = model.meshOf(bone);
                 if (mesh != null && bones.visible[bone] && this.holy[bone] == emissive) {
                     Matrix4f matrix = bones.combined[bone].set(last.pose()).mul(bones.world[bone]);

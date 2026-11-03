@@ -52,14 +52,10 @@ public final class Wallpaper {
     private static boolean load() {
         if (!loaded && !broken) {
             try {
-                InputStream a =
-                        Wallpaper.class.getResourceAsStream("/assets/arcanicvisuals/textures/gui/menu/wallpaper.png");
-
-                try {
-                    InputStream b = Wallpaper.class.getResourceAsStream(
-                            "/assets/arcanicvisuals/textures/gui/menu/wallpaper_blur.png");
-
-                    try {
+                try (InputStream a =
+                        Wallpaper.class.getResourceAsStream("/assets/arcanicvisuals/textures/gui/menu/wallpaper.png")) {
+                    try (InputStream b = Wallpaper.class.getResourceAsStream(
+                            "/assets/arcanicvisuals/textures/gui/menu/wallpaper_blur.png")) {
                         NativeImage sharp = NativeImage.read(a);
                         NativeImage soft = NativeImage.read(b);
                         w = sharp.getWidth();
@@ -70,39 +66,11 @@ public final class Wallpaper {
                         textures.register(SHARP, new Texture("Arcanic wallpaper", sharp));
                         textures.register(SOFT, new Texture("Arcanic wallpaper, blurred", soft));
                         loaded = true;
-                    } catch (Throwable var7) {
-                        if (b != null) {
-                            try {
-                                b.close();
-                            } catch (Throwable var6) {
-                                var7.addSuppressed(var6);
-                            }
-                        }
-
-                        throw var7;
                     }
-
-                    if (b != null) {
-                        b.close();
-                    }
-                } catch (Throwable var8) {
-                    if (a != null) {
-                        try {
-                            a.close();
-                        } catch (Throwable var5) {
-                            var8.addSuppressed(var5);
-                        }
-                    }
-
-                    throw var8;
-                }
-
-                if (a != null) {
-                    a.close();
                 }
             } catch (Exception ex) {
                 broken = true;
-                System.err.println("[ArcanicVisuals] menu wallpaper: " + String.valueOf(ex));
+                System.err.println("[ArcanicVisuals] menu wallpaper: " + ex);
             }
 
             return loaded;

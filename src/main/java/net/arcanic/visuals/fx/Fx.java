@@ -111,7 +111,7 @@ public final class Fx {
             if (additive != null) {
                 try {
                     return (RenderType) additive.apply(t.id);
-                } catch (RuntimeException var3) {
+                } catch (RuntimeException e) {
                     additive = null;
                     additiveFailed = true;
                 }
@@ -135,7 +135,7 @@ public final class Fx {
 
             try {
                 return (RenderType) additive.apply(texture);
-            } catch (RuntimeException var2) {
+            } catch (RuntimeException e) {
                 return null;
             }
         }
@@ -153,7 +153,7 @@ public final class Fx {
             if (onTop != null) {
                 try {
                     return (RenderType) onTop.apply(t.id);
-                } catch (RuntimeException var2) {
+                } catch (RuntimeException e) {
                     onTop = null;
                     onTopFailed = true;
                 }
@@ -168,12 +168,12 @@ public final class Fx {
             try {
                 Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
                 Class<?> prog = Class.forName("net.irisshaders.iris.api.v0.IrisProgram");
-                Object inst = api.getMethod("getInstance").invoke((Object) null);
+                Object inst = api.getMethod("getInstance").invoke(null);
                 Object program = Enum.valueOf(
                         (Class) prog, System.getProperty("arcanicvisuals.irisprogram", "EMISSIVE_ENTITIES"));
                 api.getMethod("assignPipeline", RenderPipeline.class, prog).invoke(inst, pipeline, program);
             } catch (Throwable e) {
-                System.err.println("[ArcanicVisuals] Iris pipeline assignment failed: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] Iris pipeline assignment failed: " + e);
             }
         }
     }
@@ -206,7 +206,7 @@ public final class Fx {
                                 .createRenderSetup());
             } catch (Throwable e) {
                 softFailed = true;
-                System.err.println("[ArcanicVisuals] soft pipeline unavailable: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] soft pipeline unavailable: " + e);
                 return solid(onTop);
             }
 
@@ -218,8 +218,7 @@ public final class Fx {
 
     public static RenderType ribbon(Tex tex, boolean onTop) {
         int i = onTop ? 1 : 0;
-        String var10000 = tex.name().toLowerCase(Locale.ROOT);
-        String name = "arcanicvisuals_ribbon_" + var10000 + (onTop ? "_top" : "");
+        String name = "arcanicvisuals_ribbon_" + tex.name().toLowerCase(Locale.ROOT) + (onTop ? "_top" : "");
         RenderType cached = (RenderType) RIBBON.get(name);
         if (cached != null) {
             return cached;
@@ -257,7 +256,7 @@ public final class Fx {
                 return type;
             } catch (Throwable e) {
                 ribbonFailed = true;
-                System.err.println("[ArcanicVisuals] ribbon pipeline unavailable: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] ribbon pipeline unavailable: " + e);
                 return soft(onTop);
             }
         }
@@ -291,7 +290,7 @@ public final class Fx {
                                 .createRenderSetup());
             } catch (Throwable e) {
                 solidFailed = true;
-                System.err.println("[ArcanicVisuals] solid pipeline unavailable: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] solid pipeline unavailable: " + e);
                 return RenderTypes.eyes(Fx.Tex.WHITE.id);
             }
 
@@ -330,8 +329,7 @@ public final class Fx {
                                     .sortOnUpload()
                                     .createRenderSetup()));
         } catch (Throwable e) {
-            System.err.println(
-                    "[ArcanicVisuals] additive pipeline unavailable, using translucent: " + String.valueOf(e));
+            System.err.println("[ArcanicVisuals] additive pipeline unavailable, using translucent: " + e);
             return null;
         }
     }
@@ -355,7 +353,7 @@ public final class Fx {
                                 .createRenderSetup());
             } catch (Throwable e) {
                 glowLinesFailed = true;
-                System.err.println("[ArcanicVisuals] glow lines unavailable: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] glow lines unavailable: " + e);
             }
 
             return glowLines;
@@ -464,8 +462,8 @@ public final class Fx {
             float x = (float) (p.x - cam.x);
             float y = (float) (p.y - cam.y);
             float z = (float) (p.z - cam.z);
-            switch (p.mode.ordinal()) {
-                case 1:
+            switch (p.mode) {
+                case STRETCH:
                     Vector3f v = new Vector3f((float) p.vx, (float) p.vy, (float) p.vz);
                     float speed = v.length();
                     if (speed < 1.0E-4F) {
@@ -492,7 +490,7 @@ public final class Fx {
                             side.z,
                             col);
                     break;
-                case 2:
+                case FLAT:
                     float c = (float) Math.cos((double) p.rot) * size;
                     float s = (float) Math.sin((double) p.rot) * size;
                     quad(vc, pose, x, y, z, c, 0.0F, s, -s, 0.0F, c, col);

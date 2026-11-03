@@ -137,7 +137,7 @@ public final class Px {
             if (r == 0) {
                 rect(g, x, y, w, h, c);
             } else {
-                int[] d = (int[]) DISC.get(r);
+                int[] d = DISC.get(r);
                 sprite(g, x, y, d[0], d[1], r, r, c);
                 sprite(g, x + w - r, y, d[0] + r, d[1], r, r, c);
                 sprite(g, x, y + h - r, d[0], d[1] + r, r, r, c);
@@ -156,7 +156,7 @@ public final class Px {
             }
 
             r = Math.max(1, Math.min(Math.min(r, 36), Math.min(w, h) / 2));
-            int[] d = (int[]) RING.get(r);
+            int[] d = RING.get(r);
             sprite(g, x, y, d[0], d[1], r, r, c);
             sprite(g, x + w - r, y, d[0] + r, d[1], r, r, c);
             sprite(g, x, y + h - r, d[0], d[1] + r, r, r, c);
@@ -173,7 +173,7 @@ public final class Px {
             if (r > 36) {
                 round(g, cx - r, cy - r, r * 2, r * 2, r, c);
             } else {
-                int[] d = (int[]) DISC.get(r);
+                int[] d = DISC.get(r);
                 sprite(g, cx - r, cy - r, d[0], d[1], r * 2, r * 2, c);
             }
         }
@@ -184,7 +184,7 @@ public final class Px {
             if (r > 36) {
                 outline(g, cx - r, cy - r, r * 2, r * 2, r, c);
             } else {
-                int[] d = (int[]) RING.get(r);
+                int[] d = RING.get(r);
                 sprite(g, cx - r, cy - r, d[0], d[1], r * 2, r * 2, c);
             }
         }
@@ -252,7 +252,7 @@ public final class Px {
         if (w <= 2 * r) {
             round(g, x, y, w, h, r, c1);
         } else {
-            int[] d = (int[]) DISC.get(Math.max(1, r));
+            int[] d = DISC.get(Math.max(1, r));
             sprite(g, x, y, d[0], d[1], r, r, c1);
             sprite(g, x, y + h - r, d[0], d[1] + r, r, r, c1);
             rect(g, x, y + r, r, h - 2 * r, c1);
@@ -267,11 +267,11 @@ public final class Px {
             GuiGraphics g, float cx, float cy, float r, int thickness, double start, double sweep, int c1, int c2) {
         if (!(Math.abs(sweep) < 0.001) && thickness > 0) {
             int dr = Math.max(1, Math.round((float) thickness / 2.0F));
-            int[] d = (int[]) DISC.get(Math.min(36, dr));
+            int[] d = DISC.get(Math.min(36, dr));
             int steps = Math.max(
                     2, (int) Math.ceil(Math.abs(sweep) * (double) r / (double) Math.max(0.8F, (float) dr * 0.45F)));
 
-            for (int i = 0; i <= steps; ++i) {
+            for (int i = 0; i <= steps; i++) {
                 double t = (double) i / (double) steps;
                 double a = start + sweep * t;
                 int x = Math.round((float) ((double) cx + Math.cos(a) * (double) r)) - dr;
@@ -460,7 +460,7 @@ public final class Px {
     }
 
     public static Component icon(String name, int px) {
-        Integer cp = (Integer) ICONS.get(name);
+        Integer cp = ICONS.get(name);
         return Component.literal(cp == null ? "?" : new String(Character.toChars(cp)))
                 .withStyle(style("icons", Math.max(8, Math.min(40, px))));
     }
@@ -485,9 +485,9 @@ public final class Px {
             } else if (name.startsWith("w.")) {
                 return (Integer) KIT.getOrDefault(name.substring(2), -1);
             } else {
-                String n = (String) ICON_ALIAS.get(name);
+                String n = ICON_ALIAS.get(name);
                 if (n == null && name.endsWith("-s")) {
-                    n = (String) ICON_ALIAS.get(name.substring(0, name.length() - 2));
+                    n = ICON_ALIAS.get(name.substring(0, name.length() - 2));
                 }
 
                 if (n == null && name.startsWith("a.")) {
@@ -496,9 +496,7 @@ public final class Px {
                         base = base.substring(0, base.length() - 2);
                     }
 
-                    n = ICON_ALIAS.containsKey(base)
-                            ? (String) ICON_ALIAS.get(base)
-                            : (KIT.containsKey(base) ? base : null);
+                    n = ICON_ALIAS.containsKey(base) ? ICON_ALIAS.get(base) : (KIT.containsKey(base) ? base : null);
                 }
 
                 if (n == null && KIT.containsKey(name)) {
@@ -548,9 +546,7 @@ public final class Px {
 
     static {
         try {
-            InputStream in = Px.class.getResourceAsStream("/assets/arcanicvisuals/atlas.json");
-
-            try {
+            try (InputStream in = Px.class.getResourceAsStream("/assets/arcanicvisuals/atlas.json")) {
                 JsonObject o = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
                         .getAsJsonObject();
 
@@ -558,7 +554,7 @@ public final class Px {
                         o.getAsJsonObject("disc").entrySet()) {
                     JsonArray a = ((JsonElement) e.getValue()).getAsJsonArray();
                     DISC.put(
-                            Integer.parseInt((String) e.getKey()),
+                            Integer.parseInt(e.getKey()),
                             new int[] {a.get(0).getAsInt(), a.get(1).getAsInt()});
                 }
 
@@ -566,7 +562,7 @@ public final class Px {
                         o.getAsJsonObject("ring").entrySet()) {
                     JsonArray a = ((JsonElement) e.getValue()).getAsJsonArray();
                     RING.put(
-                            Integer.parseInt((String) e.getKey()),
+                            Integer.parseInt(e.getKey()),
                             new int[] {a.get(0).getAsInt(), a.get(1).getAsInt()});
                 }
 
@@ -584,49 +580,19 @@ public final class Px {
                 JsonArray size = o.getAsJsonArray("size");
                 atlasW = size.get(0).getAsInt();
                 atlasH = size.get(1).getAsInt();
-            } catch (Throwable var13) {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (Throwable var7) {
-                        var13.addSuppressed(var7);
-                    }
-                }
-
-                throw var13;
-            }
-
-            if (in != null) {
-                in.close();
             }
         } catch (Exception e) {
             throw new IllegalStateException("arcanicvisuals atlas", e);
         }
 
         try {
-            InputStream in = Px.class.getResourceAsStream("/assets/arcanicvisuals/icons.json");
-
-            try {
+            try (InputStream in = Px.class.getResourceAsStream("/assets/arcanicvisuals/icons.json")) {
                 JsonObject o = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
                         .getAsJsonObject();
 
                 for (Map.Entry<String, JsonElement> e : o.entrySet()) {
-                    ICONS.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsInt());
+                    ICONS.put(e.getKey(), ((JsonElement) e.getValue()).getAsInt());
                 }
-            } catch (Throwable var11) {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (Throwable var6) {
-                        var11.addSuppressed(var6);
-                    }
-                }
-
-                throw var11;
-            }
-
-            if (in != null) {
-                in.close();
             }
         } catch (Exception e) {
             throw new IllegalStateException("arcanicvisuals icons", e);
@@ -641,9 +607,7 @@ public final class Px {
         ICON_ALIAS = new HashMap<>();
 
         try {
-            InputStream in = Px.class.getResourceAsStream("/assets/arcanicvisuals/kit_icons.json");
-
-            try {
+            try (InputStream in = Px.class.getResourceAsStream("/assets/arcanicvisuals/kit_icons.json")) {
                 if (in != null) {
                     JsonObject o = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
                             .getAsJsonObject();
@@ -652,26 +616,12 @@ public final class Px {
 
                     for (Map.Entry<String, JsonElement> e :
                             o.getAsJsonObject("icons").entrySet()) {
-                        KIT.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsInt());
+                        KIT.put(e.getKey(), ((JsonElement) e.getValue()).getAsInt());
                     }
                 }
-            } catch (Throwable var9) {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (Throwable var8) {
-                        var9.addSuppressed(var8);
-                    }
-                }
-
-                throw var9;
-            }
-
-            if (in != null) {
-                in.close();
             }
         } catch (Exception e) {
-            System.err.println("[ArcanicVisuals] kit icons: " + String.valueOf(e));
+            System.err.println("[ArcanicVisuals] kit icons: " + e);
         }
 
         String[][] alias = new String[][] {

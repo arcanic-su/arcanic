@@ -100,16 +100,15 @@ public final class Paint {
     }
 
     public abstract static class Base extends Module {
-        public final Setting.Mode mode = this.add(new Setting.Mode(
-                "mode", "Режим", "Переливание", new String[] {"Переливание", "Градиент", "Радуга", "Один цвет"}));
+        public final Setting.Mode mode = this.add(
+                new Setting.Mode("mode", "Режим", "Переливание", "Переливание", "Градиент", "Радуга", "Один цвет"));
         public final Setting.Colour a = this.add(new Setting.Colour("color_a", "Цвет 1", true));
-        public final Setting.Colour b = (this.add(new Setting.Colour("color_b", "Цвет 2", false, -14494738)))
+        public final Setting.Colour b = (this.add(new Setting.Colour("color_b", "Цвет 2", false, 0xFF22D3EE)))
                 .showIf(() -> !this.mode.is("Один цвет") && !this.mode.is("Радуга"));
-        public final Setting.Mode style = (Setting.Mode)
-                this.add(new Setting.Mode("style", "Стиль", "Перекраска", new String[] {"Перекраска", "Оттенок"}));
-        public final Setting.Num speed =
-                (Setting.Num) ((Setting.Num) this.add(new Setting.Num("speed", "Скорость", 1.0, 0.2, 3.0, 0.1, "×")))
-                        .showIf(() -> !this.mode.is("Градиент") || this.shineOn());
+        public final Setting.Mode style =
+                this.add(new Setting.Mode("style", "Стиль", "Перекраска", "Перекраска", "Оттенок"));
+        public final Setting.Num speed = (this.add(new Setting.Num("speed", "Скорость", 1.0, 0.2, 3.0, 0.1, "×")))
+                .showIf(() -> !this.mode.is("Градиент") || this.shineOn());
         public final Setting.Bool shine = this.add(new Setting.Bool("shine", "Блик", true));
         public final Setting.Bool glow;
 
@@ -136,19 +135,19 @@ public final class Paint {
 
         public int colourAt(float t, float time) {
             float tm = time * this.speed.f();
-            int var10000;
-            switch ((String) this.mode.get()) {
-                case "Градиент" -> var10000 = Paint.lerp(this.colourA(), this.colourB(), Paint.clamp(t));
-                case "Радуга" -> var10000 = Paint.hsv(Paint.frac(t * 0.55F - tm * 0.22F), 0.7F, 1.0F);
-                case "Один цвет" -> var10000 = this.colourA();
+            int n;
+            switch (this.mode.get()) {
+                case "Градиент" -> n = Paint.lerp(this.colourA(), this.colourB(), Paint.clamp(t));
+                case "Радуга" -> n = Paint.hsv(Paint.frac(t * 0.55F - tm * 0.22F), 0.7F, 1.0F);
+                case "Один цвет" -> n = this.colourA();
                 default ->
-                    var10000 = Paint.lerp(
+                    n = Paint.lerp(
                             this.colourA(),
                             this.colourB(),
                             0.5F + 0.5F * (float) Math.sin((double) (t * 1.7F - tm * 1.1F) * Math.PI));
             }
 
-            int c = var10000;
+            int c = n;
             if (this.shine.on()) {
                 float p = Paint.frac(tm * 0.38F) * 2.2F - 0.6F;
                 float d = Math.abs(t - p);

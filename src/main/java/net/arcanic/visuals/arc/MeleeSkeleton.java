@@ -172,7 +172,7 @@ public final class MeleeSkeleton {
             boolean found = false;
 
             for (String name : bones) {
-                Integer bone = (Integer) this.boneIndex.get(name);
+                Integer bone = this.boneIndex.get(name);
                 if (bone != null) {
                     marked[bone] = true;
                     found = true;
@@ -182,7 +182,7 @@ public final class MeleeSkeleton {
             if (!found) {
                 return false;
             } else {
-                for (int i = 0; i < marked.length; ++i) {
+                for (int i = 0; i < marked.length; i++) {
                     int parent = this.boneParents[i];
                     if (parent >= 0 && marked[parent]) {
                         marked[i] = true;
@@ -209,11 +209,11 @@ public final class MeleeSkeleton {
         float[][] meshes = new float[count][];
         Map<String, Integer> index = new HashMap(count);
 
-        for (int i = 0; i < count; ++i) {
+        for (int i = 0; i < count; i++) {
             index.put(((GeoPart) bones.get(i)).name, i);
         }
 
-        for (int i = 0; i < count; ++i) {
+        for (int i = 0; i < count; i++) {
             GeoPart bone = (GeoPart) bones.get(i);
             names[i] = bone.name;
             parents[i] = bone.parent == null ? -1 : (Integer) index.getOrDefault(bone.parent.name, -1);

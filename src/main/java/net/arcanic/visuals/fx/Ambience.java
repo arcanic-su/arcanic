@@ -42,20 +42,19 @@ import net.minecraft.resources.Identifier;
 import org.joml.Vector4f;
 
 public final class Ambience extends Module {
-    private static final int NIGHT_BLUE = -11503396;
+    private static final int NIGHT_BLUE = 0xFF5078DC;
     public final Setting.Bool sky = this.add(new Setting.Bool("sky", "Цвет неба", true));
     public final Setting.Bool clouds = this.add(new Setting.Bool("clouds", "Цвет облаков", true));
     public final Setting.Bool stars = this.add(new Setting.Bool("stars", "Цвет звёзд", true));
     public final Setting.Bool themeSync = this.add(new Setting.Bool("theme_sync", "Цвет темы", true));
-    public final Setting.Colour skyColour =
-            (Setting.Colour) (this.add(new Setting.Colour("sky_colour", "Цвет неба", false, -11503396)))
-                    .showIf(() -> !this.themeSync.on() && this.sky.on());
-    public final Setting.Colour cloudColour =
-            (Setting.Colour) (this.add(new Setting.Colour("cloud_colour", "Цвет облаков", false, -11503396)))
-                    .showIf(() -> !this.themeSync.on() && this.clouds.on());
-    public final Setting.Colour starColour =
-            (Setting.Colour) (this.add(new Setting.Colour("star_colour", "Цвет звёзд", false, -11503396)))
-                    .showIf(() -> !this.themeSync.on() && this.stars.on());
+    public final Setting.Colour skyColour = (this.add(new Setting.Colour("sky_colour", "Цвет неба", false, 0xFF5078DC)))
+            .showIf(() -> !this.themeSync.on() && this.sky.on());
+    public final Setting.Colour cloudColour = (this.add(
+                    new Setting.Colour("cloud_colour", "Цвет облаков", false, 0xFF5078DC)))
+            .showIf(() -> !this.themeSync.on() && this.clouds.on());
+    public final Setting.Colour starColour = (this.add(
+                    new Setting.Colour("star_colour", "Цвет звёзд", false, 0xFF5078DC)))
+            .showIf(() -> !this.themeSync.on() && this.stars.on());
     public final Setting.Bool night = this.add(new Setting.Bool("night", "Ночной режим", true));
     public final Setting.Bool nightSync;
     public final Setting.Colour nightColour;
@@ -72,7 +71,7 @@ public final class Ambience extends Module {
     public final Setting.Bool crystals;
     public final Setting.Mode crystalShape;
     public final Setting.Colour crystalColour;
-    public static int drawnSky = -8869889;
+    public static int drawnSky = 0xFF78A7FF;
     private static final RenderPipeline NIGHT;
     private static final ByteBuffer DATA;
     private static GpuBuffer uniforms;
@@ -93,49 +92,35 @@ public final class Ambience extends Module {
                 "Небо, облака и звёзды в цвет темы, синяя ночь и парящие кристаллы",
                 Category.WORLD,
                 false);
-        Setting.Bool var10001 = this.add(new Setting.Bool("night_sync", "Ночь цветом темы", true));
-        Setting.Bool var10002 = this.night;
-        this.nightSync = (Setting.Bool) var10001.showIf(var10002::on);
-        this.nightColour =
-                (Setting.Colour) (this.add(new Setting.Colour("night_colour", "Цвет ночи", false, -11503396)))
-                        .showIf(() -> this.night.on() && !this.nightSync.on());
-        Setting.Num var1 = this.add(new Setting.Num("night_strength", "Сила ночи", 70.0, 0.0, 100.0, 1.0, "%"));
-        var10002 = this.night;
-        this.nightStrength = (Setting.Num) var1.showIf(var10002::on);
+        this.nightSync = this.add(new Setting.Bool("night_sync", "Ночь цветом темы", true))
+                .showIf(this.night::on);
+        this.nightColour = (this.add(new Setting.Colour("night_colour", "Цвет ночи", false, 0xFF5078DC)))
+                .showIf(() -> this.night.on() && !this.nightSync.on());
+        this.nightStrength = this.add(new Setting.Num("night_strength", "Сила ночи", 70.0, 0.0, 100.0, 1.0, "%"))
+                .showIf(this.night::on);
         this.wet = this.add(new Setting.Bool("wet", "Мокрый мир", false));
-        var1 = this.add(new Setting.Num("wet_reflection", "Отражения", 70.0, 0.0, 100.0, 5.0, "%"));
-        var10002 = this.wet;
-        this.wetReflection = (Setting.Num) var1.showIf(var10002::on);
-        var1 = this.add(new Setting.Num("wet_amount", "Влажность", 60.0, 0.0, 100.0, 5.0, "%"));
-        var10002 = this.wet;
-        this.wetAmount = (Setting.Num) var1.showIf(var10002::on);
-        Setting.Mode var4 = this.add(new Setting.Mode(
-                "wet_quality", "Качество отражений", "Среднее", new String[] {"Низкое", "Среднее", "Высокое"}));
-        var10002 = this.wet;
-        this.wetQuality = (Setting.Mode) var4.showIf(var10002::on);
+        this.wetReflection = this.add(new Setting.Num("wet_reflection", "Отражения", 70.0, 0.0, 100.0, 5.0, "%"))
+                .showIf(this.wet::on);
+        this.wetAmount = this.add(new Setting.Num("wet_amount", "Влажность", 60.0, 0.0, 100.0, 5.0, "%"))
+                .showIf(this.wet::on);
+        Setting.Mode mode = this.add(
+                new Setting.Mode("wet_quality", "Качество отражений", "Среднее", "Низкое", "Среднее", "Высокое"));
+        this.wetQuality = (Setting.Mode) mode.showIf(this.wet::on);
         this.rain = this.add(new Setting.Bool("rain", "Дождь", false));
-        Setting.Num var5 = this.add(new Setting.Num("rain_density", "Плотность дождя", 100.0, 10.0, 200.0, 5.0, "%"));
-        var10002 = this.rain;
-        this.rainDensity = (Setting.Num) var5.showIf(var10002::on);
-        var5 = this.add(new Setting.Num("rain_opacity", "Прозрачность дождя", 45.0, 5.0, 100.0, 5.0, "%"));
-        var10002 = this.rain;
-        this.rainOpacity = (Setting.Num) var5.showIf(var10002::on);
-        var5 = this.add(new Setting.Num("rain_drops", "Капли на экране", 60.0, 0.0, 100.0, 5.0, "%"));
-        var10002 = this.rain;
-        this.rainDrops = (Setting.Num) var5.showIf(var10002::on);
-        var5 = this.add(new Setting.Num("rain_splashes", "Всплески", 60.0, 0.0, 100.0, 5.0, "%"));
-        var10002 = this.rain;
-        this.rainSplashes = (Setting.Num) var5.showIf(var10002::on);
+        this.rainDensity = this.add(new Setting.Num("rain_density", "Плотность дождя", 100.0, 10.0, 200.0, 5.0, "%"))
+                .showIf(this.rain::on);
+        this.rainOpacity = this.add(new Setting.Num("rain_opacity", "Прозрачность дождя", 45.0, 5.0, 100.0, 5.0, "%"))
+                .showIf(this.rain::on);
+        this.rainDrops = this.add(new Setting.Num("rain_drops", "Капли на экране", 60.0, 0.0, 100.0, 5.0, "%"))
+                .showIf(this.rain::on);
+        this.rainSplashes = this.add(new Setting.Num("rain_splashes", "Всплески", 60.0, 0.0, 100.0, 5.0, "%"))
+                .showIf(this.rain::on);
         this.crystals = this.add(new Setting.Bool("crystals", "Парящие кристаллы", false));
-        Setting.Mode var9 = (Setting.Mode)
-                this.add(new Setting.Mode("crystal_shape", "Фигура кристаллов", "Кристалл", new String[] {
-                    "Кристалл", "Пирамида", "Звезда", "Икосаэдр"
-                }));
-        var10002 = this.crystals;
-        this.crystalShape = (Setting.Mode) var9.showIf(var10002::on);
-        Setting.Colour var10 = this.add(new Setting.Colour("crystal_colour", "Цвет кристаллов", true));
-        var10002 = this.crystals;
-        this.crystalColour = (Setting.Colour) var10.showIf(var10002::on);
+        Setting.Mode mode2 = this.add(new Setting.Mode(
+                "crystal_shape", "Фигура кристаллов", "Кристалл", "Кристалл", "Пирамида", "Звезда", "Икосаэдр"));
+        this.crystalShape = (Setting.Mode) mode2.showIf(this.crystals::on);
+        this.crystalColour = this.add(new Setting.Colour("crystal_colour", "Цвет кристаллов", true))
+                .showIf(this.crystals::on);
     }
 
     private int resolved(Setting.Colour own) {
@@ -167,7 +152,7 @@ public final class Ambience extends Module {
     }
 
     private boolean nightActive() {
-        return this.enabled() && this.night.on() && (Double) this.nightStrength.get() > 0.0;
+        return this.enabled() && this.night.on() && this.nightStrength.get() > 0.0;
     }
 
     public static void tintLightmap(GpuTextureView lightmap) {
@@ -203,7 +188,7 @@ public final class Ambience extends Module {
                 }
             } catch (RuntimeException e) {
                 failed = true;
-                System.err.println("[ArcanicVisuals] Ambience night off: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] Ambience night off: " + e);
             }
         }
     }

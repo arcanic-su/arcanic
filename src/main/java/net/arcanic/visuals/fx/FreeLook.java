@@ -31,10 +31,10 @@ import net.minecraft.world.InteractionHand;
 import org.lwjgl.glfw.GLFW;
 
 public final class FreeLook extends Module {
-    private final Setting.Mode key = this.add(new Setting.Mode(
-            "key", "Клавиша", "Левый Alt", new String[] {"Левый Alt", "X", "V", "Z", "Колёсико мыши"}));
-    private final Setting.Mode mode = (Setting.Mode)
-            this.add(new Setting.Mode("mode", "Режим", "Удерживать", new String[] {"Удерживать", "Переключать"}));
+    private final Setting.Mode key =
+            this.add(new Setting.Mode("key", "Клавиша", "Левый Alt", "Левый Alt", "X", "V", "Z", "Колёсико мыши"));
+    private final Setting.Mode mode =
+            this.add(new Setting.Mode("mode", "Режим", "Удерживать", "Удерживать", "Переключать"));
     private final Setting.Num smooth =
             this.add(new Setting.Num("smooth", "Плавность камеры", 50.0, 0.0, 100.0, 5.0, "%"));
     private boolean held;
@@ -131,16 +131,13 @@ public final class FreeLook extends Module {
 
     private boolean down(Minecraft mc) {
         long win = mc.getWindow().handle();
-        boolean var10000;
-        switch ((String) this.key.get()) {
-            case "X" -> var10000 = InputConstants.isKeyDown(mc.getWindow(), 88);
-            case "V" -> var10000 = InputConstants.isKeyDown(mc.getWindow(), 86);
-            case "Z" -> var10000 = InputConstants.isKeyDown(mc.getWindow(), 90);
-            case "Колёсико мыши" -> var10000 = GLFW.glfwGetMouseButton(win, 2) == 1;
-            default -> var10000 = InputConstants.isKeyDown(mc.getWindow(), 342);
-        }
-
-        return var10000;
+        return switch (this.key.get()) {
+            case "X" -> InputConstants.isKeyDown(mc.getWindow(), 88);
+            case "V" -> InputConstants.isKeyDown(mc.getWindow(), 86);
+            case "Z" -> InputConstants.isKeyDown(mc.getWindow(), 90);
+            case "Колёсико мыши" -> GLFW.glfwGetMouseButton(win, 2) == 1;
+            default -> InputConstants.isKeyDown(mc.getWindow(), 342);
+        };
     }
 
     public void tick() {

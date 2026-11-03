@@ -54,8 +54,8 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 public final class EnchantSearch extends Module {
     public final Setting.Sizes chosen = this.add(new Setting.Sizes("chosen", "Зачарования"));
     final Setting.Action pick = this.add(new Setting.Action("pick", "Зачарования", "Выбрать", () -> openPicker(this)));
-    public final Setting.Mode match = this.add(
-            new Setting.Mode("match", "Совпадение", "Любое из них", new String[] {"Любое из них", "Все сразу"}));
+    public final Setting.Mode match =
+            this.add(new Setting.Mode("match", "Совпадение", "Любое из них", "Любое из них", "Все сразу"));
     final Setting.Bool everywhere =
             this.add(new Setting.Bool("everywhere", "Во всех сундуках, не только в /ah", false));
     final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет подсветки", true));
@@ -179,7 +179,7 @@ public final class EnchantSearch extends Module {
                     .getCompound("PublicBukkitValues")
                     .flatMap((tx) -> tx.getList("minecraft:custom-enchantments"));
             if (list.isPresent()) {
-                for (int i = 0; i < ((ListTag) list.get()).size(); ++i) {
+                for (int i = 0; i < ((ListTag) list.get()).size(); i++) {
                     CompoundTag en = ((ListTag) list.get()).getCompoundOrEmpty(i);
                     String type = en.getStringOr("minecraft:type", "").toLowerCase(Locale.ROOT);
                     if (!type.isEmpty() && !c.type().startsWith("ft-") && typeIs(type, c)) {
@@ -211,21 +211,18 @@ public final class EnchantSearch extends Module {
 
     private static boolean typeIs(String type, Custom c) {
         String t = type.replace("-enchant-custom", "").replace("-enchant", "");
-        boolean var10000;
-        switch (c.type()) {
-            case "drill" -> var10000 = t.contains("drill") && !t.contains("mega");
-            case "farmer" -> var10000 = t.contains("farmer") && !t.contains("mob");
-            default -> var10000 = t.contains(c.type());
-        }
-
-        return var10000;
+        return switch (c.type()) {
+            case "drill" -> t.contains("drill") && !t.contains("mega");
+            case "farmer" -> t.contains("farmer") && !t.contains("mob");
+            default -> t.contains(c.type());
+        };
     }
 
     private static int fromRoman(String r) {
         if (r.matches("\\d{1,2}")) {
             return Integer.parseInt(r);
         } else {
-            for (int i = 1; i <= 13; ++i) {
+            for (int i = 1; i <= 13; i++) {
                 if (roman(i).equalsIgnoreCase(r)) {
                     return i;
                 }
@@ -266,7 +263,7 @@ public final class EnchantSearch extends Module {
             boolean all = this.match.is("Все сразу");
 
             for (Map.Entry<String, Double> w : want.entrySet()) {
-                boolean has = (double) level(st, (String) w.getKey()) >= Math.max(1.0, (Double) w.getValue());
+                boolean has = (double) level(st, w.getKey()) >= Math.max(1.0, w.getValue());
                 if (has && !all) {
                     return true;
                 }
@@ -331,8 +328,8 @@ public final class EnchantSearch extends Module {
                 sb.append(", ");
             }
 
-            sb.append(name((String) w.getKey()));
-            int lv = (int) Math.round((Double) w.getValue());
+            sb.append(name(w.getKey()));
+            int lv = (int) Math.round(w.getValue());
             if (lv > 1) {
                 sb.append(' ').append(roman(lv)).append('+');
             }
@@ -365,7 +362,7 @@ public final class EnchantSearch extends Module {
     }
 
     public static String roman(int n) {
-        String[] r = new String[] {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+        String[] r = {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
         return n >= 0 && n < r.length ? r[n] : String.valueOf(n);
     }
 

@@ -82,9 +82,8 @@ public final class Survival {
                     false,
                     0.46,
                     0.6);
-            Setting.Num var10001 = this.add(new Setting.Num("volume", "Громкость стука", 60.0, 10.0, 100.0, 5.0, "%"));
-            Setting.Bool var10002 = this.beat;
-            this.volume = (Setting.Num) var10001.showIf(var10002::on);
+            this.volume = this.add(new Setting.Num("volume", "Громкость стука", 60.0, 10.0, 100.0, 5.0, "%"))
+                    .showIf(this.beat::on);
             instance = this;
         }
 
@@ -184,7 +183,7 @@ public final class Survival {
                 if (p == null) {
                     return false;
                 } else {
-                    for (int i = 9; i < 36; ++i) {
+                    for (int i = 9; i < 36; i++) {
                         if (!p.getInventory().getItem(i).isEmpty()) {
                             return true;
                         }
@@ -209,7 +208,7 @@ public final class Survival {
             this.panel(g, 0.0F, 0.0F, width, height, RADIUS);
             this.iconColumn(g, "bag", 20.0F, height);
             float cw = (width - 20.0F) / 9.0F, ch = (height - 4.0F) / rows, is = 8.3F;
-            for (int i = 0; i < rows * 9; ++i) {
+            for (int i = 0; i < rows * 9; i++) {
                 int slot = i < 27 ? 9 + i : i - 27;
                 ItemStack st = p == null ? ItemStack.EMPTY : p.getInventory().getItem(slot);
                 if (st.isEmpty()) continue;
@@ -251,9 +250,9 @@ public final class Survival {
             Minecraft mc = Survival.mc();
             Player p = mc.player;
             if (this.enabled() && p != null && !mc.options.hideGui && Survival.playing()) {
-                Entity var5 = p.getVehicle();
-                if (var5 instanceof LivingEntity) {
-                    LivingEntity v = (LivingEntity) var5;
+                Entity entity2 = p.getVehicle();
+                if (entity2 instanceof LivingEntity) {
+                    LivingEntity v = (LivingEntity) entity2;
                     if (v.showVehicleHealth()) {
                         return;
                     }
@@ -302,7 +301,7 @@ public final class Survival {
                                         : 0.0F)
                                 : 0.0F;
 
-                        for (int i = 0; i < 10; ++i) {
+                        for (int i = 0; i < 10; i++) {
                             float have = Math.max(0.0F, Math.min(2.0F, sat - (float) (i * 2))) / 2.0F;
                             float more = Math.max(0.0F, Math.min(2.0F, sat + extra - (float) (i * 2))) / 2.0F;
                             if (more <= 0.0F) {
@@ -357,7 +356,7 @@ public final class Survival {
         public void tick() {
             Player p = Survival.mc().player;
             if (p != null) {
-                for (int i = 0; i < 4; ++i) {
+                for (int i = 0; i < 4; i++) {
                     ItemStack st = p.getItemBySlot(SLOTS[i]);
                     if (!st.isEmpty() && st.isDamageableItem()) {
                         int pct = Math.round(
@@ -368,8 +367,7 @@ public final class Survival {
                             boolean end = pct <= 5;
                             boolean elytra = st.is(Items.ELYTRA);
                             boolean many = elytra || i >= 2;
-                            String var10000 = Lang.tr(elytra ? "Элитры" : NAMES[i]);
-                            String title = var10000 + " "
+                            String title = Lang.tr(elytra ? "Элитры" : NAMES[i]) + " "
                                     + Lang.tr(
                                             end
                                                     ? (many ? "вот-вот сломаются" : "вот-вот сломается")

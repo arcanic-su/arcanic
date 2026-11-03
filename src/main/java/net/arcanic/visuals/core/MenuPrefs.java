@@ -21,8 +21,8 @@ package net.arcanic.visuals.core;
 import net.arcanic.visuals.render.Anim;
 
 public final class MenuPrefs extends Module {
-    public final Setting.Mode language = (Setting.Mode)
-            this.add(new Setting.Mode("language", "Язык / Language", "Русский", new String[] {"Русский", "English"}));
+    public final Setting.Mode language =
+            this.add(new Setting.Mode("language", "Язык / Language", "Русский", "Русский", "English"));
     public final Setting.Bool sounds = this.add(new Setting.Bool("sounds", "Звуки меню", true));
     public final Setting.Bool wide = this.add(new Setting.Bool("wide", "Большое меню", false));
     public final Setting.Num volume;
@@ -52,15 +52,12 @@ public final class MenuPrefs extends Module {
 
     public MenuPrefs() {
         super("menu", "Меню", "Настройки самого меню", Category.HUD, true);
-        Setting.Num var10001 = this.add(new Setting.Num("volume", "Громкость", 70.0, 0.0, 100.0, 5.0, "%"));
-        Setting.Bool var10002 = this.sounds;
-        this.volume = (Setting.Num) var10001.showIf(var10002::on);
-        Setting.Bool var1 = this.add(new Setting.Bool("hover_sounds", "Звук при наведении", true));
-        var10002 = this.sounds;
-        this.hoverSounds = (Setting.Bool) var1.showIf(var10002::on);
-        var1 = this.add(new Setting.Bool("slider_sounds", "Щелчки ползунков", true));
-        var10002 = this.sounds;
-        this.sliderSounds = (Setting.Bool) var1.showIf(var10002::on);
+        this.volume = this.add(new Setting.Num("volume", "Громкость", 70.0, 0.0, 100.0, 5.0, "%"))
+                .showIf(this.sounds::on);
+        this.hoverSounds = this.add(new Setting.Bool("hover_sounds", "Звук при наведении", true))
+                .showIf(this.sounds::on);
+        this.sliderSounds = this.add(new Setting.Bool("slider_sounds", "Щелчки ползунков", true))
+                .showIf(this.sounds::on);
         this.blur = this.add(new Setting.Bool("blur", "Размытие мира", true));
         this.dim = this.add(new Setting.Num("dim", "Затемнение", 40.0, 0.0, 90.0, 5.0, "%"));
         this.spotlight = this.add(new Setting.Bool("spotlight", "Свет за курсором", true));
@@ -69,19 +66,17 @@ public final class MenuPrefs extends Module {
         this.notify = this.add(new Setting.Bool("notify", "Уведомления биндов", true));
         this.presetAutosave = this.add(new Setting.Bool("preset_autosave", "Автосохранение конфига", false));
         this.animations = this.add(new Setting.Bool("animations", "Анимации", true));
-        Setting.Num var3 = this.add(new Setting.Num("anim_speed", "Скорость", 1.0, 0.5, 2.0, 0.1, "×"));
-        var10002 = this.animations;
-        this.animSpeed = (Setting.Num) var3.showIf(var10002::on);
+        this.animSpeed = this.add(new Setting.Num("anim_speed", "Скорость", 1.0, 0.5, 2.0, 0.1, "×"))
+                .showIf(this.animations::on);
         this.scale = this.add(new Setting.Num("scale", "Размер меню", 100.0, 50.0, 200.0, 5.0, "%"));
         this.drag = this.add(new Setting.Bool("drag", "Перетаскивание", true));
-        Setting.Bool var4 = this.add(new Setting.Bool("remember", "Помнить позицию", true));
-        var10002 = this.drag;
-        this.remember = (Setting.Bool) var4.showIf(var10002::on);
+        this.remember =
+                this.add(new Setting.Bool("remember", "Помнить позицию", true)).showIf(this.drag::on);
     }
 
     public void sync() {
         Theme.animations = this.animations.on();
-        Theme.menuScale = (Double) this.scale.get() / 100.0;
+        Theme.menuScale = this.scale.get() / 100.0;
         Anim.speedMul = this.animations.on() ? this.animSpeed.f() : 1.0F;
     }
 }

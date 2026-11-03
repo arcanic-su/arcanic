@@ -55,16 +55,16 @@ import net.minecraft.world.item.alchemy.PotionContents;
 
 public final class Notify {
     private static final LinkedList<Toast> LIST = new LinkedList<>();
-    private static final int TEXT = -723206;
-    private static final int ON = -14236020;
+    private static final int TEXT = 0xFFF4F6FA;
+    private static final int ON = 0xFF26C68C;
     private static final int OFF = -44462;
     private static final int GOLD = -14003;
     private static long gappleAt;
     private static ItemStack gappleItem;
     private static final Map<Integer, Use> USES = new HashMap<>();
     private static long lastFrame = System.currentTimeMillis();
-    private static final Toast SAMPLE = new Toast(
-            (Object) null, "sparkles", (ItemStack) null, -14236020, List.of(new Part("Уведомления", -723206)));
+    private static final Toast SAMPLE =
+            new Toast(null, "sparkles", (ItemStack) null, 0xFF26C68C, List.of(new Part("Уведомления", 0xFFF4F6FA)));
 
     private Notify() {}
 
@@ -118,11 +118,11 @@ public final class Notify {
                     List.of("module", m.id),
                     "receipt",
                     (ItemStack) null,
-                    m.enabled() ? -14236020 : -44462,
+                    m.enabled() ? 0xFF26C68C : -44462,
                     List.of(
-                            new Part(Lang.tr("Функция "), -723206),
+                            new Part(Lang.tr("Функция "), 0xFFF4F6FA),
                             new Part(m.title(), Theme.accent2() | 0xFF000000),
-                            new Part(Lang.tr(m.enabled() ? " включена" : " выключена"), -723206)));
+                            new Part(Lang.tr(m.enabled() ? " включена" : " выключена"), 0xFFF4F6FA)));
             return true;
         } else {
             return false;
@@ -134,15 +134,15 @@ public final class Notify {
             String s = Lang.tr(line);
             int i = s.indexOf(": ");
             List<Part> parts = i < 0
-                    ? List.of(new Part(s, -723206))
+                    ? List.of(new Part(s, 0xFFF4F6FA))
                     : List.of(
-                            new Part(s.substring(0, i + 2), -723206),
+                            new Part(s.substring(0, i + 2), 0xFFF4F6FA),
                             new Part(s.substring(i + 2), Theme.accent2() | 0xFF000000));
             push(
                     List.of("text", i < 0 ? s : s.substring(0, i)),
                     "sparkles",
                     (ItemStack) null,
-                    positive ? -14236020 : -44462,
+                    positive ? 0xFF26C68C : -44462,
                     parts);
             return true;
         } else {
@@ -151,7 +151,7 @@ public final class Notify {
     }
 
     public static void itemUsed(ItemStack stack, ItemUseAnimation how) {
-        itemUsed((String) null, stack, how);
+        itemUsed(null, stack, how);
     }
 
     public static void itemUsed(String who, ItemStack stack, ItemUseAnimation how) {
@@ -164,10 +164,10 @@ public final class Notify {
             }
 
             if (who == null) {
-                parts.add(new Part(Lang.tr("Вы использовали "), -723206));
+                parts.add(new Part(Lang.tr("Вы использовали "), 0xFFF4F6FA));
             } else {
                 parts.add(new Part(who, Theme.accent2() | 0xFF000000));
-                parts.add(new Part(Lang.tr(" использовал "), -723206));
+                parts.add(new Part(Lang.tr(" использовал "), 0xFFF4F6FA));
             }
 
             TextColor tc = stack.getStyledHoverName().getStyle().getColor();
@@ -177,20 +177,20 @@ public final class Notify {
             if (how == ItemUseAnimation.DRINK || how == ItemUseAnimation.EAT) {
                 PotionContents potion = (PotionContents) stack.get(DataComponents.POTION_CONTENTS);
                 if (potion != null) {
-                    Iterator var7 = potion.getAllEffects().iterator();
-                    if (var7.hasNext()) {
-                        MobEffectInstance e = (MobEffectInstance) var7.next();
+                    Iterator iterator2 = potion.getAllEffects().iterator();
+                    if (iterator2.hasNext()) {
+                        MobEffectInstance e = (MobEffectInstance) iterator2.next();
                         parts.add(new Part(
                                 Lang.tr(", получив эффект ")
                                         + ((MobEffect) e.getEffect().value())
                                                 .getDisplayName()
                                                 .getString(),
-                                -723206));
+                                0xFFF4F6FA));
                     }
                 }
             }
 
-            push(who == null ? null : List.of("use", who), (String) null, stack.copy(), -1, parts);
+            push(who == null ? null : List.of("use", who), null, stack.copy(), -1, parts);
         }
     }
 
@@ -205,13 +205,13 @@ public final class Notify {
                 if (effect.is(MobEffects.ABSORPTION)) {
                     push(
                             List.of("gapple"),
-                            (String) null,
+                            null,
                             gappleItem,
                             -1,
                             List.of(
-                                    new Part(Lang.tr("Действие "), -723206),
+                                    new Part(Lang.tr("Действие "), 0xFFF4F6FA),
                                     new Part(gappleItem.getHoverName().getString(), -14003),
-                                    new Part(Lang.tr(" закончилось"), -723206)));
+                                    new Part(Lang.tr(" закончилось"), 0xFFF4F6FA)));
                     gappleItem = null;
                     return;
                 }
@@ -220,13 +220,13 @@ public final class Notify {
             String name = ((MobEffect) effect.value()).getDisplayName().getString();
             push(
                     List.of("effect", name),
-                    (String) null,
+                    null,
                     (ItemStack) null,
-                    -5195580,
+                    0xFFB0B8C4,
                     List.of(
-                            new Part(Lang.tr("Эффект "), -723206),
+                            new Part(Lang.tr("Эффект "), 0xFFF4F6FA),
                             new Part(name, Theme.accent2() | 0xFF000000),
-                            new Part(Lang.tr(" закончился"), -723206)));
+                            new Part(Lang.tr(" закончился"), 0xFFF4F6FA)));
             ((Toast) LIST.getLast()).effect = effect;
         }
     }

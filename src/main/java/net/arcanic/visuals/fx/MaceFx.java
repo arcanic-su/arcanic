@@ -67,24 +67,24 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 public final class MaceFx extends Module {
-    public final Setting.Mode style = (Setting.Mode)
-            this.add(new Setting.Mode("style", "Эффект", "Кратер", new String[] {"Кратер", "Гром", "Ударная волна"}));
+    public final Setting.Mode style =
+            this.add(new Setting.Mode("style", "Эффект", "Кратер", "Кратер", "Гром", "Ударная волна"));
     final Setting.Bool players = this.add(new Setting.Bool("players", "По игрокам", true));
     final Setting.Bool monsters = this.add(new Setting.Bool("monsters", "По монстрам", true));
     final Setting.Bool animals = this.add(new Setting.Bool("animals", "По мирным", true));
     final Setting.Num size = this.add(new Setting.Num("size", "Размер", 1.0, 0.6, 1.6, 0.05, "×"));
     final Setting.Bool byHeight = this.add(new Setting.Bool("by_height", "Сила по высоте", true));
-    final Setting.Mode palette = this.add(new Setting.Mode("palette", "Цвета", "Свои", new String[] {"Свои", "Тема"}));
+    final Setting.Mode palette = this.add(new Setting.Mode("palette", "Цвета", "Свои", "Свои", "Тема"));
     final Setting.Bool screen = this.add(new Setting.Bool("screen", "Эффекты на экране", true));
     final Setting.Bool shake = this.add(new Setting.Bool("shake", "Тряска камеры", true));
     final Setting.Bool sound = this.add(new Setting.Bool("sound", "Звук", true));
-    final Setting.Num volume = (Setting.Num)
+    final Setting.Num volume =
             (this.add(new Setting.Num("volume", "Громкость", 0.8, 0.1, 1.0, 0.05, ""))).showIf(() -> this.sound.on());
     private static final Identifier RING = Identifier.fromNamespaceAndPath("arcanic", "textures/totem/ring.png");
     private static final Identifier DISC = Identifier.fromNamespaceAndPath("arcanic", "textures/totem/disc.png");
     private static final Identifier ORB = Identifier.fromNamespaceAndPath("arcanic", "textures/targetesp/orb.png");
     private static final float RING_FRONT = 0.86F;
-    private static final float[] LIFE = new float[] {2.6F, 1.8F, 2.0F};
+    private static final float[] LIFE = {2.6F, 1.8F, 2.0F};
     private final List<Smash> smashes = new ArrayList<>();
     private final List<Smash> studioSmashes = new ArrayList<>();
     private ClientLevel level;
@@ -100,14 +100,11 @@ public final class MaceFx extends Module {
             int b = Theme.accent2() | 0xFF000000;
             return new Pal(Fx.lerp(a, -1, 0.55F), a, b);
         } else {
-            Pal var10000;
-            switch (style) {
-                case 1 -> var10000 = new Pal(-722689, -7354625, -11902209);
-                case 2 -> var10000 = new Pal(-590593, -5839105, -10127361);
-                default -> var10000 = new Pal(-5208, -30178, -3923174);
-            }
-
-            return var10000;
+            return switch (style) {
+                case 1 -> new Pal(0xFFF4F8FF, 0xFF8FC6FF, 0xFF4A62FF);
+                case 2 -> new Pal(0xFFF6FCFF, 0xFFA6E6FF, 0xFF6577FF);
+                default -> new Pal(-5208, -30178, 0xFFC4231A);
+            };
         }
     }
 
@@ -135,11 +132,11 @@ public final class MaceFx extends Module {
                     double ground = y;
                     BlockState block = null;
                     int light = LevelRenderer.getLightColor(mc.level, BlockPos.containing(x, y + 0.1, z));
-                    int dust = -7568264;
+                    int dust = 0xFF8C8478;
                     BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
                     int top = Mth.floor(y + 0.05);
 
-                    for (int i = 0; i < 4; ++i) {
+                    for (int i = 0; i < 4; i++) {
                         pos.set(Mth.floor(x), top - i, Mth.floor(z));
                         BlockState st = mc.level.getBlockState(pos);
                         if (!st.isAir()) {
@@ -239,8 +236,8 @@ public final class MaceFx extends Module {
         float g = 0.46F;
         int n = (int) Math.ceil((double) (s.reach / g));
 
-        for (int i = -n; i <= n; ++i) {
-            for (int j = -n; j <= n; ++j) {
+        for (int i = -n; i <= n; i++) {
+            for (int j = -n; j <= n; j++) {
                 float ox = (float) i * g + (s.rnd.nextFloat() - 0.5F) * 0.05F;
                 float oz = (float) j * g + (s.rnd.nextFloat() - 0.5F) * 0.05F;
                 float d = (float) Math.hypot((double) ox, (double) oz);
@@ -253,7 +250,7 @@ public final class MaceFx extends Module {
         if (s.style == 0) {
             int count = 8 + Math.round(10.0F * s.power);
 
-            for (int i = 0; i < count; ++i) {
+            for (int i = 0; i < count; i++) {
                 double a = s.rnd.nextDouble() * Math.PI * 2.0;
                 Chunk c = new Chunk(
                         (new Vector3f(s.rnd.nextFloat() - 0.5F, s.rnd.nextFloat() - 0.5F, s.rnd.nextFloat() - 0.5F))
@@ -272,7 +269,7 @@ public final class MaceFx extends Module {
 
             int cracks = 8 + Math.round(4.0F * s.power);
 
-            for (int i = 0; i < cracks; ++i) {
+            for (int i = 0; i < cracks; i++) {
                 double a = (double) i * Math.PI * 2.0 / (double) cracks + (s.rnd.nextDouble() - 0.5) * 0.4;
                 float length = s.reach * (0.45F + s.rnd.nextFloat() * 0.45F);
                 addCrack(s, 0.22F, a, length, 9);
@@ -286,7 +283,7 @@ public final class MaceFx extends Module {
         }
 
         if (s.style == 1) {
-            for (int i = 0; i < 7; ++i) {
+            for (int i = 0; i < 7; i++) {
                 s.arcs.add(new float[] {
                     (float) ((double) i * Math.PI * 2.0 / 7.0 + (s.rnd.nextDouble() - 0.5) * 0.5),
                     s.reach * (0.75F + s.rnd.nextFloat() * 0.45F)
@@ -306,7 +303,7 @@ public final class MaceFx extends Module {
         zs[0] = z0;
         float step = length / (float) n;
 
-        for (int i = 1; i <= n; ++i) {
+        for (int i = 1; i <= n; i++) {
             a += (s.rnd.nextDouble() - 0.5) * 0.7;
             xs[i] = xs[i - 1] + (float) Math.cos(a) * step;
             zs[i] = zs[i - 1] + (float) Math.sin(a) * step;
@@ -373,7 +370,7 @@ public final class MaceFx extends Module {
             this.play(s, s.block.getSoundType().getBreakSound(), 1.0F, 0.7F);
             this.jolt(s, (1.6F + 2.6F * s.power) * k);
 
-            for (int i = 0; i < 36 + Math.round(30.0F * s.power); ++i) {
+            for (int i = 0; i < 36 + Math.round(30.0F * s.power); i++) {
                 double a = s.rnd.nextDouble() * Math.PI * 2.0;
                 double sp = 2.0 + s.rnd.nextDouble() * 4.0;
                 Fx.spawn()
@@ -390,7 +387,7 @@ public final class MaceFx extends Module {
         }
 
         float burn = 1.0F - smooth((t - 0.6F) / 1.9F);
-        flat(v.pose, DISC, x, y + 0.006F, z, s.reach * 0.42F / 0.9F, 0.0F, -15069946, 0.5F * burn, 0.0F);
+        flat(v.pose, DISC, x, y + 0.006F, z, s.reach * 0.42F / 0.9F, 0.0F, 0xFF1A0D06, 0.5F * burn, 0.0F);
         float grow = easeOut(t / 0.22F);
         float glow = (1.0F - smooth((t - 0.4F) / 2.0F)) * (0.82F + 0.18F * Mth.sin((double) (t * 9.0F)));
 
@@ -415,7 +412,7 @@ public final class MaceFx extends Module {
             this.play(s, SoundEvents.MACE_SMASH_GROUND_HEAVY, 1.0F, 1.0F);
             this.jolt(s, (2.2F + 2.4F * s.power) * k);
 
-            for (int i = 0; i < 70; ++i) {
+            for (int i = 0; i < 70; i++) {
                 double a = s.rnd.nextDouble() * Math.PI * 2.0;
                 double sp = 3.0 + s.rnd.nextDouble() * 6.0;
                 Fx.spawn()
@@ -439,13 +436,13 @@ public final class MaceFx extends Module {
                 z,
                 1.4F * k / 0.9F,
                 0.0F,
-                -15856108,
+                0xFF0E0E14,
                 0.55F * (1.0F - smooth((t - 0.3F) / 1.4F)),
                 0.0F);
-        float[] window = new float[] {0.0F, 0.1F, 0.22F};
-        float[] lasts = new float[] {0.075F, 0.07F, 0.13F};
+        float[] window = {0.0F, 0.1F, 0.22F};
+        float[] lasts = {0.075F, 0.07F, 0.13F};
 
-        for (int w = 0; w < 3; ++w) {
+        for (int w = 0; w < 3; w++) {
             float u = (t - window[w]) / lasts[w];
             if (!(u < 0.0F) && !(u > 1.0F)) {
                 float a = (1.0F - u) * (1.0F - u);
@@ -473,7 +470,7 @@ public final class MaceFx extends Module {
                 float[] zs = new float[n + 1];
                 float reachNow = arc[1] * easeOut(t / 0.18F);
 
-                for (int i = 0; i <= n; ++i) {
+                for (int i = 0; i <= n; i++) {
                     float f = (float) i / (float) n;
                     float d = reachNow * f;
                     float side = (jag.nextFloat() - 0.5F) * 0.35F * k * f;
@@ -496,7 +493,7 @@ public final class MaceFx extends Module {
         if (this.screen.on() && reach > 0.0F && t < 0.4F) {
             centre(v, x, y + 1.0F, z);
 
-            for (int w = 0; w < 3; ++w) {
+            for (int w = 0; w < 3; w++) {
                 float u = (t - window[w]) / lasts[w];
                 if (u >= 0.0F && u <= 1.0F) {
                     ScreenFx.flash(0.32F * (1.0F - u) * reach, r(c.light), g(c.light), b(c.light));
@@ -511,10 +508,10 @@ public final class MaceFx extends Module {
         pts.add(new Vector3f(x, y, z));
         float rough = 0.28F;
 
-        for (int depth = 0; depth < 6; ++depth) {
+        for (int depth = 0; depth < 6; depth++) {
             List<Vector3f> next = new ArrayList<>();
 
-            for (int i = 0; i + 1 < pts.size(); ++i) {
+            for (int i = 0; i + 1 < pts.size(); i++) {
                 Vector3f a = (Vector3f) pts.get(i);
                 Vector3f b = (Vector3f) pts.get(i + 1);
                 float len = a.distance(b);
@@ -544,17 +541,17 @@ public final class MaceFx extends Module {
         ribbon(v, Fx.Tex.LINE_GLOW.id, p[0], p[1], p[2], 0.14F * s.scale, c.light, a);
         Random fr = new Random(s.seed + (long) strike * 7919L);
 
-        for (int f = 0; f < 4; ++f) {
+        for (int f = 0; f < 4; f++) {
             int from = 8 + fr.nextInt(path.size() / 2);
             Vector3f start = (Vector3f) path.get(from);
             Vector3f end = (new Vector3f(start))
                     .add((fr.nextFloat() - 0.5F) * 7.0F, -2.0F - fr.nextFloat() * 4.0F, (fr.nextFloat() - 0.5F) * 7.0F);
             List<Vector3f> fork = new ArrayList(List.of(start, end));
 
-            for (int depth = 0; depth < 4; ++depth) {
+            for (int depth = 0; depth < 4; depth++) {
                 List<Vector3f> next = new ArrayList<>();
 
-                for (int i = 0; i + 1 < fork.size(); ++i) {
+                for (int i = 0; i + 1 < fork.size(); i++) {
                     Vector3f q = (Vector3f) fork.get(i);
                     Vector3f w = (Vector3f) fork.get(i + 1);
                     float len = q.distance(w);
@@ -583,7 +580,7 @@ public final class MaceFx extends Module {
         float[] ys = new float[pts.size()];
         float[] zs = new float[pts.size()];
 
-        for (int i = 0; i < pts.size(); ++i) {
+        for (int i = 0; i < pts.size(); i++) {
             xs[i] = ((Vector3f) pts.get(i)).x;
             ys[i] = ((Vector3f) pts.get(i)).y;
             zs[i] = ((Vector3f) pts.get(i)).z;
@@ -611,7 +608,7 @@ public final class MaceFx extends Module {
             shell(v, x, y, z, radius, c, fade);
             shell(v, x, y, z, radius * 0.72F, c, fade * 0.45F);
 
-            for (int i = 1; i <= 3; ++i) {
+            for (int i = 1; i <= 3; i++) {
                 float h = radius * (0.18F + 0.2F * (float) i);
                 if (!(h >= radius)) {
                     float rr = (float) Math.sqrt((double) (radius * radius - h * h));
@@ -643,9 +640,9 @@ public final class MaceFx extends Module {
             int lon = 40;
             BufferBuilder b = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
-            for (int i = 0; i < lat; ++i) {
-                for (int j = 0; j < lon; ++j) {
-                    for (int q = 0; q < 4; ++q) {
+            for (int i = 0; i < lat; i++) {
+                for (int j = 0; j < lon; j++) {
+                    for (int q = 0; q < 4; q++) {
                         int ii = i + (q != 1 && q != 2 ? 0 : 1);
                         int jj = j + (q >= 2 ? 1 : 0);
                         float phi = (float) ii / (float) lat * (float) Math.PI / 2.0F;
@@ -752,14 +749,14 @@ public final class MaceFx extends Module {
     private static void dust(Smash s, float t, View v, float spread) {
         float a = smooth(t / 0.08F) * (1.0F - smooth((t - 0.35F) / 1.5F));
         if (!(a <= 0.01F)) {
-            int col = Fx.lerp(s.dust, -4607320, 0.35F);
+            int col = Fx.lerp(s.dust, 0xFFB9B2A8, 0.35F);
             Random r = new Random(s.seed * 31L);
             float x0 = v.x(s.x);
             float y0 = v.y(s.y);
             float z0 = v.z(s.z);
             Emit e = new Emit(v.pose, 1.0F);
 
-            for (int i = 0; i < 26; ++i) {
+            for (int i = 0; i < 26; i++) {
                 float ang = r.nextFloat() * (float) Math.PI * 2.0F;
                 float far = 0.85F + r.nextFloat() * 0.35F;
                 float up = r.nextFloat();
@@ -846,10 +843,10 @@ public final class MaceFx extends Module {
         Vector3f u = v.up;
         float[][] k =
                 new float[][] {{cr - sr, sr + cr}, {cr + sr, sr - cr}, {-cr + sr, -sr - cr}, {-cr - sr, -sr + cr}};
-        float[] tu = new float[] {0.0F, 0.0F, 1.0F, 1.0F};
-        float[] tv = new float[] {0.0F, 1.0F, 1.0F, 0.0F};
+        float[] tu = {0.0F, 0.0F, 1.0F, 1.0F};
+        float[] tv = {0.0F, 1.0F, 1.0F, 0.0F};
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; i++) {
             e.v(
                     x + l.x * k[i][0] + u.x * k[i][1],
                     y + l.y * k[i][0] + u.y * k[i][1],
@@ -902,17 +899,17 @@ public final class MaceFx extends Module {
             float[] gx = new float[n];
             float[] gz = new float[n];
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 gx[i] = x + xs[i];
                 gz[i] = z + zs[i];
             }
 
-            for (int pass = 0; pass < 2; ++pass) {
+            for (int pass = 0; pass < 2; pass++) {
                 float width = pass == 0 ? 0.3F * k : 0.06F * k;
                 int col = pass == 0 ? c.main : c.light;
                 float alpha = pass == 0 ? 0.6F * a : a;
                 twice(v.pose, Fx.Tex.LINE_GLOW.id, 0.0F, alpha, (e) -> {
-                    for (int i = 0; i + 1 < n; ++i) {
+                    for (int i = 0; i + 1 < n; i++) {
                         float dx = gx[i + 1] - gx[i];
                         float dz = gz[i + 1] - gz[i];
                         float l = (float) Math.hypot((double) dx, (double) dz) + 1.0E-5F;
@@ -939,7 +936,7 @@ public final class MaceFx extends Module {
         float[] oy = new float[n];
         float[] oz = new float[n];
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             int p = Math.max(0, i - 1);
             int q = Math.min(n - 1, i + 1);
             float tx = xs[q] - xs[p];
@@ -957,7 +954,7 @@ public final class MaceFx extends Module {
         }
 
         twice(v.pose, tex, 0.0F, a, (e) -> {
-            for (int i = 0; i + 1 < n; ++i) {
+            for (int i = 0; i + 1 < n; i++) {
                 int c0 = alpha(c, taper(i, n));
                 int c1 = alpha(c, taper(i + 1, n));
                 e.v(xs[i] - ox[i], ys[i] - oy[i], zs[i] - oz[i], 0.0F, 0.0F, c0);
@@ -1050,14 +1047,14 @@ public final class MaceFx extends Module {
             this.light = light;
             this.dust = dust;
             this.seed = this.rnd.nextLong();
-            float var10002;
+            float f2;
             switch (style) {
-                case 1 -> var10002 = 1.5F + 1.1F * power;
-                case 2 -> var10002 = 2.6F + 2.1F * power;
-                default -> var10002 = 2.2F + 1.9F * power;
+                case 1 -> f2 = 1.5F + 1.1F * power;
+                case 2 -> f2 = 2.6F + 2.1F * power;
+                default -> f2 = 2.2F + 1.9F * power;
             }
 
-            this.reach = scale * var10002;
+            this.reach = scale * f2;
         }
 
         boolean once(int moment) {

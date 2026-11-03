@@ -66,16 +66,14 @@ public final class ArcEffects {
     }
 
     public static boolean jump(String style, Vec3 at, int c, float radius, float life, boolean spin) {
-        String[] var10000;
-        switch (style) {
-            case "Arc Storm" -> var10000 = new String[] {"shtorm1", "shtorm2", "glow"};
-            case "Arc Pool" -> var10000 = new String[] {"glow", "omut2", "omut3"};
-            case "Arc Rings" -> var10000 = new String[] {"colso1", "omut2", "colso3"};
-            case "Arc Explosion" -> var10000 = new String[] {"boom1", "boom2", "glow"};
-            default -> var10000 = null;
-        }
-
-        String[] layers = var10000;
+        String[] layers =
+                switch (style) {
+                    case "Arc Storm" -> new String[] {"shtorm1", "shtorm2", "glow"};
+                    case "Arc Pool" -> new String[] {"glow", "omut2", "omut3"};
+                    case "Arc Rings" -> new String[] {"colso1", "omut2", "colso3"};
+                    case "Arc Explosion" -> new String[] {"boom1", "boom2", "glow"};
+                    default -> null;
+                };
         if (layers == null) {
             return false;
         } else {

@@ -160,7 +160,7 @@ abstract class PillMenu extends Screen {
             Px.textCenter(g, this.title(), cx, top - this.s(40.0F), Px.Weight.SEMIBOLD, this.s(18.0F), TEXT);
             Px.textCenter(g, this.subtitle(), cx, top - this.s(16.0F), Px.Weight.MEDIUM, this.s(12.0F), 0xB3FFFFFF);
 
-            for (int i = 0; i < this.pills.size(); ++i) {
+            for (int i = 0; i < this.pills.size(); i++) {
                 Pill p = this.pills.get(i);
                 boolean left = i % 2 == 0;
                 int row = i / 2;
@@ -180,7 +180,7 @@ abstract class PillMenu extends Screen {
                 this.hovered = hover;
             }
 
-            for (int i = 0; i < this.pills.size(); ++i) {
+            for (int i = 0; i < this.pills.size(); i++) {
                 Pill p = this.pills.get(i);
                 int[] b = this.boxes[i];
                 float k = Anim.easeOutCubic(Math.max(0.0F, Math.min(1.0F, (t - 0.03F * i) / 0.24F)));
@@ -214,7 +214,7 @@ abstract class PillMenu extends Screen {
 
     /** The pill under a point, -1 for the close button, -2 for none. */
     int at(double mx, double my) {
-        for (int i = 0; i < this.boxes.length && i < this.pills.size(); ++i) {
+        for (int i = 0; i < this.boxes.length && i < this.pills.size(); i++) {
             int[] b = this.boxes[i];
             if (b != null && mx >= b[0] && mx < b[0] + b[2] && my >= b[1] && my < b[1] + b[3]) return i;
         }

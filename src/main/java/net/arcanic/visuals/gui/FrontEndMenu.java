@@ -103,22 +103,22 @@ public final class FrontEndMenu {
         this.anim.set("padlock", this.open ? 1.0F : 0.0F);
 
         for (AbstractButton original : originals) {
-            ComponentContents var9 = original.getMessage().getContents();
-            String var10000;
-            if (var9 instanceof TranslatableContents c) {
-                var10000 = c.getKey();
+            ComponentContents componentContents = original.getMessage().getContents();
+            String text2;
+            if (componentContents instanceof TranslatableContents c) {
+                text2 = c.getKey();
             } else {
-                var10000 = "";
+                text2 = "";
             }
 
-            String key = var10000;
+            String key = text2;
             boolean credits = key.equals("title.credits")
                     || original.getMessage().getString().contains("Mojang");
             Spec spec = credits
                     ? new Spec(0, "info", FrontEndMenu.Kind.FOOTER)
                     : (Spec) SPECS.getOrDefault(key, new Spec(0, "puzzle", FrontEndMenu.Kind.TOOL));
-            Component var10003 = original.getMessage();
-            Entry entry = new Entry(var10003, spec, key, original::onPress);
+            Component component2 = original.getMessage();
+            Entry entry = new Entry(component2, spec, key, original::onPress);
             entry.active = original.active;
             this.entries.add(entry);
         }
@@ -160,7 +160,7 @@ public final class FrontEndMenu {
             }
         }
 
-        for (int i = 0; i < this.entries.size(); ++i) {
+        for (int i = 0; i < this.entries.size(); i++) {
             Entry e = (Entry) this.entries.get(i);
             e.show = this.target(e);
             e.anim.set("show", e.show);
@@ -269,17 +269,17 @@ public final class FrontEndMenu {
     }
 
     private float target(Entry e) {
-        float var10000;
-        switch (e.spec.kind.ordinal()) {
-            case 0 ->
-                var10000 = this.open && this.expand >= Math.min(0.98F, 0.42F + (float) this.plaques.indexOf(e) * 0.07F)
+        float f;
+        switch (e.spec.kind) {
+            case PLAQUE ->
+                f = this.open && this.expand >= Math.min(0.98F, 0.42F + (float) this.plaques.indexOf(e) * 0.07F)
                         ? 1.0F
                         : 0.0F;
-            case 3 -> var10000 = 1.0F;
-            default -> var10000 = this.open && this.expand > 0.55F ? 1.0F : 0.0F;
+            case FOOTER -> f = 1.0F;
+            default -> f = this.open && this.expand > 0.55F ? 1.0F : 0.0F;
         }
 
-        return var10000;
+        return f;
     }
 
     private void unlock() {
@@ -507,8 +507,8 @@ public final class FrontEndMenu {
             int cx = sw / 2;
             int top = Math.max(this.s(70.0F), sh / 2 - this.s(230.0F));
             String date = now.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale()));
-            String var10000 = date.substring(0, 1).toUpperCase(locale());
-            date = var10000 + date.substring(1);
+            String text3 = date.substring(0, 1).toUpperCase(locale());
+            date = text3 + date.substring(1);
             Px.textCenter(g, date, cx + this.s(1.0F), top + this.s(2.0F), Px.Weight.SEMIBOLD, this.s(22.0F), 637534208);
             Px.textCenter(g, date, cx, top, Px.Weight.SEMIBOLD, this.s(22.0F), 0xE6FFFFFF);
             String time = now.format(DateTimeFormatter.ofPattern("H:mm"));
@@ -669,13 +669,13 @@ public final class FrontEndMenu {
                 y + this.s(20.0F),
                 Px.Weight.SEMIBOLD,
                 this.s(15.0F),
-                -724488);
+                0xFFF4F1F8);
         String body = Lang.tr(
                 "Войди в аккаунт Arcanic в лаунчере — другие игроки увидят твои плащи, крылья и эмоции, а ты увидишь их.");
         int ly = y + this.s(46.0F);
 
         for (String line : wrap(body, Px.Weight.MEDIUM, this.s(12.0F), tw + this.s(24.0F))) {
-            Px.text(g, line, tx, ly, Px.Weight.MEDIUM, this.s(12.0F), -5791816);
+            Px.text(g, line, tx, ly, Px.Weight.MEDIUM, this.s(12.0F), 0xFFA79FB8);
             ly += this.s(17.0F);
         }
 
@@ -696,7 +696,7 @@ public final class FrontEndMenu {
         StringBuilder line = new StringBuilder();
 
         for (String word : text.split(" ")) {
-            String next = line.isEmpty() ? word : String.valueOf(line) + " " + word;
+            String next = line.isEmpty() ? word : line + " " + word;
             if (!line.isEmpty() && Px.textWidth(next, weight, size) > width) {
                 lines.add(line.toString());
                 line = new StringBuilder(word);
@@ -824,17 +824,17 @@ public final class FrontEndMenu {
             }
 
             int acc = Theme.accent() | 0xFF000000;
-            switch (this.spec.kind.ordinal()) {
-                case 0:
+            switch (this.spec.kind) {
+                case PLAQUE:
                     this.pill(g, xx, yy, ww, hh, v, acc);
                     break;
-                case 1:
+                case TOOL:
                     Px.circle(g, xx + ww / 2, yy + hh / 2, ww / 2, Px.mix(1494224916, 0x99202028, v));
                     int is = FrontEndMenu.this.s(17.0F);
                     ArcanicMenu.glyph(
                             g, this.spec.icon, xx + (ww - is) / 2, yy + (hh - is) / 2, is, Px.mix(0xD9FFFFFF, -1, v));
                     break;
-                case 2:
+                case ACCOUNT:
                     Minecraft mc = Minecraft.getInstance();
                     if (FrontEndMenu.this.skin == null) {
                         FrontEndMenu.this.skin = mc.getSkinManager().createLookup(mc.getGameProfile(), false);
@@ -870,9 +870,9 @@ public final class FrontEndMenu {
                             yy + (hh - FrontEndMenu.this.s(13.0F)) / 2,
                             Px.Weight.SEMIBOLD,
                             FrontEndMenu.this.s(13.0F),
-                            Px.mix(-2501406, -1, v));
+                            Px.mix(0xFFD9D4E2, -1, v));
                     break;
-                case 3:
+                case FOOTER:
                     Px.textRight(
                             g,
                             Lang.tr("© Mojang AB · Minecraft"),
@@ -882,10 +882,10 @@ public final class FrontEndMenu {
                             FrontEndMenu.this.s(10.0F),
                             Px.mix(0x80FFFFFF, -1, v));
                     break;
-                case 4:
+                case HINT:
                     Px.circle(g, xx + ww / 2, yy + hh / 2, ww / 2, Px.a(-1, Math.round(28.0F * v)));
                     is = FrontEndMenu.this.s(12.0F);
-                    Px.icon(g, "x", xx + (ww - is) / 2, yy + (hh - is) / 2, is, Px.mix(-7567968, -724488, v));
+                    Px.icon(g, "x", xx + (ww - is) / 2, yy + (hh - is) / 2, is, Px.mix(0xFF8C85A0, 0xFFF4F1F8, v));
             }
 
             g.pose().popMatrix();
@@ -894,7 +894,7 @@ public final class FrontEndMenu {
         }
 
         private void pill(GuiGraphics g, int xx, int yy, int ww, int hh, float v, int acc) {
-            int fill = this.spec.rank >= 100 ? -1750963 : acc;
+            int fill = this.spec.rank >= 100 ? 0xFFE5484D : acc;
             if (v > 0.01F) {
                 Px.shadow(
                         g,

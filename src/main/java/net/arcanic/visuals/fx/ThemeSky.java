@@ -133,15 +133,13 @@ public final class ThemeSky {
     public static void render(SkyShader w) {
         Minecraft mc = Minecraft.getInstance();
         if (captured && mc.level != null && mc.player != null) {
-            String var10000;
-            switch ((String) w.mode.get()) {
-                case "Каустика" -> var10000 = "caustic";
-                case "Галактика" -> var10000 = "galaxy";
-                case "Глубокий космос" -> var10000 = "space";
-                default -> var10000 = "nebula";
-            }
-
-            String key = var10000;
+            String key =
+                    switch ((String) w.mode.get()) {
+                        case "Каустика" -> "caustic";
+                        case "Галактика" -> "galaxy";
+                        case "Глубокий космос" -> "space";
+                        default -> "nebula";
+                    };
             boolean bakes = key.equals("galaxy") || key.equals("space");
 
             try {
@@ -199,7 +197,7 @@ public final class ThemeSky {
                 }
             } catch (RuntimeException e) {
                 if (REPORTED.add(key)) {
-                    System.err.println("[ArcanicVisuals] Theme sky " + key + ": " + String.valueOf(e));
+                    System.err.println("[ArcanicVisuals] Theme sky " + key + ": " + e);
                 }
             }
         }

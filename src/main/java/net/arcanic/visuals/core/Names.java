@@ -140,7 +140,7 @@ public final class Names {
     private Names() {}
 
     public static String of(Module m) {
-        String n = (String) BY_ID.get(m.id);
+        String n = BY_ID.get(m.id);
         return n != null ? n : Lang.english(m.name);
     }
 }

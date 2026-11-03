@@ -42,22 +42,9 @@ public enum Category {
     }
 
     public Category section() {
-        Category var10000;
-        switch (this.ordinal()) {
-            case 0:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-                var10000 = VISUALS;
-                break;
-            case 1:
-            case 2:
-            case 3:
-            default:
-                var10000 = this;
-        }
-
-        return var10000;
+        return switch (this) {
+            case COMBAT, PLAYERS, EFFECTS, HANDS, WORLD -> VISUALS;
+            default -> this;
+        };
     }
 }

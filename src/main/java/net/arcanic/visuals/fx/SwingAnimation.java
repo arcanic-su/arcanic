@@ -30,12 +30,11 @@ import net.minecraft.world.entity.HumanoidArm;
 import org.joml.Quaternionfc;
 
 public final class SwingAnimation extends Module {
-    public final Setting.Mode mode = this.add(new Setting.Mode(
-            "mode", "Режим", "Плавная", new String[] {"Плавная", "Панч", "Слайд", "Свэговая", "В себя"}));
+    public final Setting.Mode mode =
+            this.add(new Setting.Mode("mode", "Режим", "Плавная", "Плавная", "Панч", "Слайд", "Свэговая", "В себя"));
     public final Setting.Num strength = this.add(new Setting.Num("strength", "Сила взмаха", 1.0, 0.0, 15.0, 1.0, ""));
     public final Setting.Bool mainOnly = this.add(new Setting.Bool("main_only", "Только в главной руке", true));
-    public final Setting.Num smooth =
-            (Setting.Num) this.add(new Setting.Num("smooth", "Плавность", 2.0, 1.0, 3.0, 0.1, ""));
+    public final Setting.Num smooth = this.add(new Setting.Num("smooth", "Плавность", 2.0, 1.0, 3.0, 0.1, ""));
     private final float[] progress = new float[2];
     private final long[] lastNanos = new long[2];
 
@@ -88,7 +87,7 @@ public final class SwingAnimation extends Module {
 
         this.progress[slot] = shown;
         float power = this.strength.f() / 20.0F;
-        switch (SwingMode.of((String) this.mode.get())) {
+        switch (SwingMode.of(this.mode.get())) {
             case SMOOTH:
                 float a = Mth.sin((double) (shown * shown * (float) Math.PI));
                 float b = Mth.sin((double) (Mth.sqrt(shown) * (float) Math.PI));

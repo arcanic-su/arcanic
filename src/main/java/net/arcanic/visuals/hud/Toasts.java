@@ -117,7 +117,7 @@ public final class Toasts {
                 int x = x0 + Math.round(slide * ((float) w + 30.0F * k));
                 float old = Px.fade;
                 Px.fade = old * Math.min(1.0F, in * 1.5F) * (1.0F - out);
-                int acc = t.on ? Theme.accent() : -7035976;
+                int acc = t.on ? Theme.accent() : 0xFF94A3B8;
                 Px.shadow(g, x, y + Math.round(2.0F * k), w, h, Math.round(14.0F * k), Px.a(0, p.light() ? 50 : 120));
                 Px.round(g, x, y, w, h, r, p.bg() & 0xFFFFFF | 0xEE000000);
                 Px.outline(g, x, y, w, h, r, p.border());
@@ -129,7 +129,7 @@ public final class Toasts {
                         x + Math.round(9.0F * k) + (ic - Math.round(15.0F * k)) / 2,
                         y + (h - Math.round(15.0F * k)) / 2,
                         Math.round(15.0F * k),
-                        t.on ? Theme.accent2() : -7035976);
+                        t.on ? Theme.accent2() : 0xFF94A3B8);
                 int tx = x + Math.round(46.0F * k);
                 Px.text(
                         g,

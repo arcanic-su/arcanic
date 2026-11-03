@@ -23,7 +23,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -45,8 +44,8 @@ import net.minecraft.client.PrioritizeChunkUpdates;
 import net.minecraft.server.level.ParticleStatus;
 
 public final class Optimizer extends Module {
-    public final Setting.Mode profile = this.add(
-            new Setting.Mode("profile", "Режим", "Максимум FPS", new String[] {"Ультра", "Максимум FPS", "Баланс"}));
+    public final Setting.Mode profile =
+            this.add(new Setting.Mode("profile", "Режим", "Максимум FPS", "Ультра", "Максимум FPS", "Баланс"));
     public final Setting.Num distance =
             this.add(new Setting.Num("distance", "Дальность прорисовки", 6.0, 2.0, 16.0, 1.0, " чанков"));
     public final Setting.Bool particles = this.add(new Setting.Bool("particles", "Меньше частиц", true));
@@ -73,14 +72,14 @@ public final class Optimizer extends Module {
         return new Slot() {
             public String get() {
                 T v = o.get();
-                String var10000;
+                String text;
                 if (v instanceof Enum<?> e) {
-                    var10000 = e.name();
+                    text = e.name();
                 } else {
-                    var10000 = String.valueOf(v);
+                    text = String.valueOf(v);
                 }
 
-                return var10000;
+                return text;
             }
 
             public void set(String v) {
@@ -123,8 +122,8 @@ public final class Optimizer extends Module {
         boolean ultra = this.ultra();
         boolean max = ultra || this.profile.is("Максимум FPS");
         Map<String, String> w = new LinkedHashMap<>();
-        int had = parse((String) before.get("renderDistance"), 12);
-        int sim = parse((String) before.get("simulationDistance"), 12);
+        int had = parse(before.get("renderDistance"), 12);
+        int sim = parse(before.get("simulationDistance"), 12);
         w.put(
                 "renderDistance",
                 String.valueOf(Math.max(
@@ -171,7 +170,7 @@ public final class Optimizer extends Module {
     private static int parse(String s, int def) {
         try {
             return Integer.parseInt(s);
-        } catch (RuntimeException var3) {
+        } catch (RuntimeException e) {
             return def;
         }
     }
@@ -232,8 +231,7 @@ public final class Optimizer extends Module {
     }
 
     private String signature() {
-        String var10000 = (String) this.profile.get();
-        return var10000 + "|" + this.distance.i() + "|" + this.particles.on() + "|" + this.unlock.on();
+        return this.profile.get() + "|" + this.distance.i() + "|" + this.particles.on() + "|" + this.unlock.on();
     }
 
     public void tick() {
@@ -262,33 +260,31 @@ public final class Optimizer extends Module {
                 before = new LinkedHashMap<>();
 
                 for (Map.Entry<String, Slot> e : slots.entrySet()) {
-                    before.put((String) e.getKey(), ((Slot) e.getValue()).get());
+                    before.put(e.getKey(), ((Slot) e.getValue()).get());
                 }
 
                 write(before);
             }
 
             for (Map.Entry<String, Slot> e : slots.entrySet()) {
-                before.putIfAbsent((String) e.getKey(), ((Slot) e.getValue()).get());
+                before.putIfAbsent(e.getKey(), ((Slot) e.getValue()).get());
             }
 
             this.visuals(before);
             Map<String, String> want = this.wanted(before);
 
             for (Map.Entry<String, Slot> e : slots.entrySet()) {
-                String v = (String) want.getOrDefault(e.getKey(), (String) before.get(e.getKey()));
+                String v = (String) want.getOrDefault(e.getKey(), before.get(e.getKey()));
                 if (v != null && !v.equals(((Slot) e.getValue()).get())) {
                     try {
                         ((Slot) e.getValue()).set(v);
                     } catch (RuntimeException ex) {
-                        PrintStream var10000 = System.err;
-                        String var10001 = (String) e.getKey();
-                        var10000.println("[ArcanicVisuals] optimizer " + var10001 + ": " + String.valueOf(ex));
+                        System.err.println("[ArcanicVisuals] optimizer " + e.getKey() + ": " + ex);
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("[ArcanicVisuals] optimizer: " + String.valueOf(e));
+            System.err.println("[ArcanicVisuals] optimizer: " + e);
         }
     }
 
@@ -306,7 +302,8 @@ public final class Optimizer extends Module {
 
             Map<String, Slot> slots = slots();
             if (before.containsKey("_modules")) {
-                Set<String> ids = new HashSet(Arrays.asList(((String) before.get("_modules")).split(",")));
+                Set<String> ids =
+                        new HashSet(Arrays.asList(before.get("_modules").split(",")));
 
                 for (Module m : Modules.ALL) {
                     if (ids.contains(m.id) && !m.enabled()) {
@@ -319,13 +316,11 @@ public final class Optimizer extends Module {
 
             for (Map.Entry<String, String> e : before.entrySet()) {
                 Slot s = (Slot) slots.get(e.getKey());
-                if (s != null && !((String) e.getValue()).equals(s.get())) {
+                if (s != null && !e.getValue().equals(s.get())) {
                     try {
-                        s.set((String) e.getValue());
+                        s.set(e.getValue());
                     } catch (RuntimeException ex) {
-                        PrintStream var10000 = System.err;
-                        String var10001 = (String) e.getKey();
-                        var10000.println("[ArcanicVisuals] optimizer " + var10001 + ": " + String.valueOf(ex));
+                        System.err.println("[ArcanicVisuals] optimizer " + e.getKey() + ": " + ex);
                     }
                 }
             }
@@ -333,7 +328,7 @@ public final class Optimizer extends Module {
             Files.deleteIfExists(backupFile().toPath());
             mc.options.save();
         } catch (Exception e) {
-            System.err.println("[ArcanicVisuals] optimizer: " + String.valueOf(e));
+            System.err.println("[ArcanicVisuals] optimizer: " + e);
         }
     }
 
@@ -348,11 +343,11 @@ public final class Optimizer extends Module {
                 Map<String, String> m = new LinkedHashMap<>();
 
                 for (Map.Entry<String, JsonElement> e : o.entrySet()) {
-                    m.put((String) e.getKey(), ((JsonElement) e.getValue()).getAsString());
+                    m.put(e.getKey(), ((JsonElement) e.getValue()).getAsString());
                 }
 
                 return m;
-            } catch (Exception var5) {
+            } catch (Exception e) {
                 return null;
             }
         }
@@ -361,6 +356,6 @@ public final class Optimizer extends Module {
     private interface Slot {
         String get();
 
-        void set(String var1);
+        void set(String value);
     }
 }

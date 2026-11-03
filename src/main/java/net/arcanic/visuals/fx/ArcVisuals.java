@@ -223,7 +223,7 @@ public final class ArcVisuals {
             Px.shadow(g, x, y, w, 25, 8, 1342177280);
             Px.round(g, x, y, w, 25, 9, 0xEC15121F);
             Px.outline(g, x, y, w, 25, 9, alpha(c, 0.6F));
-            Px.textCenter(g, text, (int) p[0], y + 6, Px.Weight.SEMIBOLD, 12, -658945);
+            Px.textCenter(g, text, (int) p[0], y + 6, Px.Weight.SEMIBOLD, 12, 0xFFF5F1FF);
         }
     }
 
@@ -243,9 +243,9 @@ public final class ArcVisuals {
     private static void quad(WorldRenderContext ctx, Vec3 cam, Vec3 a, Vec3 b, Vec3 c, Vec3 d, int col) {
         VertexConsumer vc = ctx.consumers().getBuffer(Fx.type(Fx.Tex.WHITE, false));
         PoseStack.Pose pose = ctx.matrices().last();
-        Vec3[] pts = new Vec3[] {a, b, c, d};
+        Vec3[] pts = {a, b, c, d};
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; i++) {
             Vec3 p = pts[i].subtract(cam);
             Fx.v(
                     vc,
@@ -273,8 +273,8 @@ public final class ArcVisuals {
     }
 
     public abstract static class Colored extends Module {
-        public final Setting.Mode palette = this.add(
-                new Setting.Mode("palette", "Окраска", "Градиент", new String[] {"Градиент", "Радуга", "Цвет"}));
+        public final Setting.Mode palette =
+                this.add(new Setting.Mode("palette", "Окраска", "Градиент", "Градиент", "Радуга", "Цвет"));
         public final Setting.Colour color =
                 (this.add(new Setting.Colour("color", "Цвет", true))).showIf(() -> this.palette.is("Цвет"));
 
@@ -283,15 +283,14 @@ public final class ArcVisuals {
         }
 
         public int color(float f) {
-            return VisualFx.colourFor((String) this.palette.get(), this.color, f);
+            return VisualFx.colourFor(this.palette.get(), this.color, f);
         }
     }
 
     static record Point(Vec3 at, long born) {}
 
     public static final class ProjectileTrails extends Colored {
-        final Setting.Num life =
-                (Setting.Num) this.add(new Setting.Num("life", "Длина следа", 1.0, 0.2, 3.0, 0.1, " с"));
+        final Setting.Num life = this.add(new Setting.Num("life", "Длина следа", 1.0, 0.2, 3.0, 0.1, " с"));
         final Setting.Num width = this.add(new Setting.Num("width", "Толщина", 0.06, 0.015, 0.2, 0.005, " бл"));
         final Map<Integer, ArrayDeque<Point>> trails = new HashMap<>();
         private Object level;
@@ -330,7 +329,7 @@ public final class ArcVisuals {
 
                 this.trails.values().forEach((pointsx) -> {
                     while (!pointsx.isEmpty()
-                            && (double) (now - ((Point) pointsx.getFirst()).born) > (Double) this.life.get() * 1000.0) {
+                            && (double) (now - ((Point) pointsx.getFirst()).born) > this.life.get() * 1000.0) {
                         pointsx.removeFirst();
                     }
                 });
@@ -349,7 +348,7 @@ public final class ArcVisuals {
                 Point last = null;
 
                 for (Point p : points) {
-                    float fade = 1.0F - (float) ((double) (now - p.born) / ((Double) this.life.get() * 1000.0));
+                    float fade = 1.0F - (float) ((double) (now - p.born) / (this.life.get() * 1000.0));
                     if (last != null) {
                         ArcVisuals.line(ctx, cam, last.at, p.at, ArcVisuals.alpha(this.color(fade), fade), (double)
                                 (this.width.f() * Math.max(0.1F, fade)));
@@ -376,16 +375,14 @@ public final class ArcVisuals {
                     && e instanceof Player
                     && e != ArcVisuals.mc().player
                     && !e.isInvisible()
-                    && e.distanceToSqr((Entity) ArcVisuals.mc().player)
-                            < (Double) this.range.get() * (Double) this.range.get();
+                    && e.distanceToSqr((Entity) ArcVisuals.mc().player) < this.range.get() * this.range.get();
         }
 
         void render(GuiGraphics g, float pt) {
             for (Player p : ArcVisuals.mc().level.players()) {
                 if (p != ArcVisuals.mc().player
                         && !p.isInvisible()
-                        && p.distanceToSqr(ArcVisuals.mc().player)
-                                < (Double) this.range.get() * (Double) this.range.get()) {
+                        && p.distanceToSqr(ArcVisuals.mc().player) < this.range.get() * this.range.get()) {
                     Vec3 at = ArcVisuals.lerp(p, pt).add(0.0, (double) p.getBbHeight() + 0.4, 0.0);
                     if (ArcVisuals.visible(at)) {
                         String label = p.getName().getString();
@@ -414,15 +411,18 @@ public final class ArcVisuals {
         void render(GuiGraphics g, float pt) {
             for (Entity e : ArcVisuals.mc().level.entitiesForRendering()) {
                 if (e instanceof PrimedTnt t) {
-                    if (e.distanceToSqr((Entity) ArcVisuals.mc().player)
-                            < (Double) this.range.get() * (Double) this.range.get()) {
+                    if (e.distanceToSqr((Entity) ArcVisuals.mc().player) < this.range.get() * this.range.get()) {
                         Vec3 at = ArcVisuals.lerp(t, pt).add(0.0, 1.35, 0.0);
                         if (ArcVisuals.visible(at)) {
                             int c = t.getFuse() < 20 ? -39809 : this.color(0.0F);
-                            Locale var10002 = Locale.ROOT;
-                            String var10003 = Lang.tr("%.1f с");
-                            Object[] var10004 = new Object[] {(double) Math.max(0.0F, (float) t.getFuse() - pt) / 20.0};
-                            ArcVisuals.pill(g, at, "TNT · " + String.format(var10002, var10003, var10004), c);
+                            ArcVisuals.pill(
+                                    g,
+                                    at,
+                                    "TNT · "
+                                            + String.format(Locale.ROOT, Lang.tr("%.1f с"), new Object[] {
+                                                (double) Math.max(0.0F, (float) t.getFuse() - pt) / 20.0
+                                            }),
+                                    c);
                             double[] screen = Projection.toScreen(at, Px.width(), Px.height());
                             if (screen != null) {
                                 int x = (int) screen[0] - 40;
@@ -454,7 +454,7 @@ public final class ArcVisuals {
                 if (e instanceof AbstractArrow a) {
                     if (((ArrowAccess) a).arcanicvisuals$inGround()
                             && !(e.distanceToSqr((Entity) ArcVisuals.mc().player)
-                                    > (Double) this.range.get() * (Double) this.range.get())) {
+                                    > this.range.get() * this.range.get())) {
                         ItemStack st = a.getPickupItemStackOrigin();
                         if (!st.isEmpty()) {
                             boolean tipped = st.has(DataComponents.POTION_CONTENTS) || st.is(Items.SPECTRAL_ARROW);
@@ -470,7 +470,7 @@ public final class ArcVisuals {
                                                         / 200.0F);
                                         double dist = Math.sqrt(e.distanceToSqr((Entity) ArcVisuals.mc().player));
                                         float u = (float) ((double) Px.height() / 540.0)
-                                                * (float) Math.max(0.7, 1.0 - dist / (Double) this.range.get() * 0.35);
+                                                * (float) Math.max(0.7, 1.0 - dist / this.range.get() * 0.35);
                                         TextColor tc = st.getStyledHoverName()
                                                 .getStyle()
                                                 .getColor();
@@ -509,7 +509,7 @@ public final class ArcVisuals {
                                                     y + (h - fs) / 2,
                                                     Px.Weight.SEMIBOLD,
                                                     fs,
-                                                    tipped ? Px.mix(c, -1, 0.35F) : -723720);
+                                                    tipped ? Px.mix(c, -1, 0.35F) : 0xFFF4F4F8);
                                         } finally {
                                             Px.fade = old;
                                         }
@@ -545,8 +545,7 @@ public final class ArcVisuals {
             for (Entity e : ArcVisuals.mc().level.entitiesForRendering()) {
                 if (e instanceof LivingEntity p) {
                     if (p.isUsingItem()
-                            && !(e.distanceToSqr((Entity) ArcVisuals.mc().player)
-                                    > (Double) this.range.get() * (Double) this.range.get())
+                            && !(e.distanceToSqr((Entity) ArcVisuals.mc().player) > this.range.get() * this.range.get())
                             && (p != ArcVisuals.mc().player
                                     || this.self.on()
                                             && !ArcVisuals.mc()
@@ -580,7 +579,7 @@ public final class ArcVisuals {
                                     st.progress = Math.min(1.0F, used / dur);
                                     st.left = Math.max(0.0F, (dur - used) / 20.0F);
                                     double dist = Math.sqrt(p.distanceToSqr(ArcVisuals.mc().player));
-                                    st.scale = (float) Math.max(0.75, 1.0 - dist / (Double) this.range.get() * 0.3);
+                                    st.scale = (float) Math.max(0.75, 1.0 - dist / this.range.get() * 0.3);
                                 }
                             }
                         }
@@ -623,7 +622,7 @@ public final class ArcVisuals {
                 float u = (float) ((double) Px.height() / 540.0) * st.scale;
                 boolean done = st.doneAt != 0L && st.progress > 0.9F;
                 float doneK = done ? Math.min(1.0F, (float) (now - st.doneAt) / 160.0F) : 0.0F;
-                int c = Px.mix(this.color(0.0F) | 0xFF000000, -11870592, doneK);
+                int c = Px.mix(this.color(0.0F) | 0xFF000000, 0xFF4ADE80, doneK);
                 int fs = Math.max(8, Math.round(5.5F * u));
                 int us = Math.max(7, Math.round(4.5F * u));
                 int h = Math.round(13.0F * u);
@@ -681,7 +680,7 @@ public final class ArcVisuals {
                     if (done) {
                         Px.icon(g, "check", tx, y + (h - fs) / 2, fs, c);
                     } else {
-                        Px.text(g, secs, tx, y + (h - fs) / 2, Px.Weight.BOLD, fs, -723720);
+                        Px.text(g, secs, tx, y + (h - fs) / 2, Px.Weight.BOLD, fs, 0xFFF4F4F8);
                         int sx = tx + Px.textWidth(secs, Px.Weight.BOLD, fs) + Math.round(1.2F * u);
                         Px.text(
                                 g,
@@ -704,7 +703,7 @@ public final class ArcVisuals {
                                 y - us - Math.round(2.0F * u),
                                 Px.Weight.SEMIBOLD,
                                 us,
-                                tc == null ? -723206 : 0xFF000000 | tc.getValue());
+                                tc == null ? 0xFFF4F6FA : 0xFF000000 | tc.getValue());
                     }
                 } finally {
                     g.pose().popMatrix();
@@ -734,8 +733,8 @@ public final class ArcVisuals {
 
     public static final class Zoom extends Module {
         public final Setting.Num factor = this.add(new Setting.Num("factor", "Приближение", 3.0, 1.5, 8.0, 0.25, "×"));
-        public final Setting.Mode key = (Setting.Mode)
-                this.add(new Setting.Mode("key", "Клавиша удержания", "C", new String[] {"C", "V", "Z", "Левый Alt"}));
+        public final Setting.Mode key =
+                this.add(new Setting.Mode("key", "Клавиша удержания", "C", "C", "V", "Z", "Левый Alt"));
         private float blend;
         private long last = System.nanoTime();
 
@@ -747,15 +746,13 @@ public final class ArcVisuals {
             long now = System.nanoTime();
             float dt = Math.min(0.1F, (float) (now - this.last) / 1.0E9F);
             this.last = now;
-            short var10000;
-            switch ((String) this.key.get()) {
-                case "V" -> var10000 = 86;
-                case "Z" -> var10000 = 90;
-                case "Левый Alt" -> var10000 = 342;
-                default -> var10000 = 67;
-            }
-
-            int code = var10000;
+            int code =
+                    switch (this.key.get()) {
+                        case "V" -> 86;
+                        case "Z" -> 90;
+                        case "Левый Alt" -> 342;
+                        default -> 67;
+                    };
             boolean held = this.enabled()
                     && ArcVisuals.mc().screen == null
                     && ArcVisuals.mc().player != null

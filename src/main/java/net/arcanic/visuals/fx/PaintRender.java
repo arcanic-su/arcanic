@@ -189,7 +189,7 @@ public final class PaintRender {
             if (vs.length == 4) {
                 pose.transformNormal(poly.normal(), N);
 
-                for (int i = 0; i < 4; ++i) {
+                for (int i = 0; i < 4; i++) {
                     VX[i] = vs[i].x();
                     VY[i] = vs[i].y();
                     VZ[i] = vs[i].z();
@@ -202,8 +202,8 @@ public final class PaintRender {
                 int nu = Math.max(1, Math.min(8, (int) Math.ceil((double) (du / 2.0F))));
                 int nv = Math.max(1, Math.min(8, (int) Math.ceil((double) (dv / 2.0F))));
 
-                for (int i = 0; i < nu; ++i) {
-                    for (int k = 0; k < nv; ++k) {
+                for (int i = 0; i < nu; i++) {
+                    for (int k = 0; k < nv; k++) {
                         float s0 = (float) i / (float) nu;
                         float s1 = (float) (i + 1) / (float) nu;
                         float t0 = (float) k / (float) nv;
@@ -258,7 +258,7 @@ public final class PaintRender {
                                 .createRenderSetup());
             } catch (Throwable e) {
                 outlineFailed = true;
-                System.err.println("[ArcanicVisuals] outline pipeline unavailable: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] outline pipeline unavailable: " + e);
             }
 
             return outlineType;
@@ -270,9 +270,9 @@ public final class PaintRender {
     public static void hull(Model model, LivingEntityRenderState state, PoseStack pose, SubmitNodeCollector c) {
         Outline o = Modules.OUTLINE;
         if (o.enabled() && !o.chams() && !irisShadowPass()) {
-            Entity var6 = Ducks.entityOf(state);
-            if (var6 instanceof LivingEntity) {
-                LivingEntity e = (LivingEntity) var6;
+            Entity entity2 = Ducks.entityOf(state);
+            if (entity2 instanceof LivingEntity) {
+                LivingEntity e = (LivingEntity) entity2;
                 if (o.wants(e)) {
                     RenderType rt = outlineType();
                     if (rt == null) {
@@ -370,7 +370,7 @@ public final class PaintRender {
                     N.negate();
                 }
 
-                for (int k = 0; k < 4; ++k) {
+                for (int k = 0; k < 4; k++) {
                     ModelPart.Vertex v = vs[shell ? 3 - k : k];
                     float x = v.x() + Math.signum(v.x() - cx) * t;
                     float y = v.y() + Math.signum(v.y() - cy) * t;
@@ -398,7 +398,7 @@ public final class PaintRender {
 
             try {
                 Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
-                iris = api.getMethod("getInstance").invoke((Object) null);
+                iris = api.getMethod("getInstance").invoke(null);
                 shadowPass = api.getMethod("isRenderingShadowPass");
             } catch (Throwable ignored) {
             }
@@ -409,14 +409,14 @@ public final class PaintRender {
         } else {
             try {
                 return (Boolean) shadowPass.invoke(iris);
-            } catch (Throwable var1) {
+            } catch (Throwable e) {
                 return false;
             }
         }
     }
 
     static {
-        for (int i = 0; i < JOBS.length; ++i) {
+        for (int i = 0; i < JOBS.length; i++) {
             JOBS[i] = new Job();
         }
 

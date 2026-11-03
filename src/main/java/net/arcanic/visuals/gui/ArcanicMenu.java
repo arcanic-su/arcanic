@@ -153,18 +153,15 @@ public final class ArcanicMenu extends Screen {
     private static final Map<String, ItemStack> ICONS;
 
     private static Module wardMaster(int i) {
-        Object var10000;
-        switch (i) {
-            case 0 -> var10000 = Modules.CAPES;
-            case 1 -> var10000 = Modules.KNIVES;
-            case 2 -> var10000 = Modules.GUNS;
-            case 3 -> var10000 = Modules.HEADWEAR;
-            case 4 -> var10000 = Modules.BACKPACKS;
-            case 5 -> var10000 = Modules.WINGS;
-            default -> var10000 = null;
-        }
-
-        return (Module) var10000;
+        return switch (i) {
+            case 0 -> Modules.CAPES;
+            case 1 -> Modules.KNIVES;
+            case 2 -> Modules.GUNS;
+            case 3 -> Modules.HEADWEAR;
+            case 4 -> Modules.BACKPACKS;
+            case 5 -> Modules.WINGS;
+            default -> null;
+        };
     }
 
     /** The kind of melee skin a wardrobe tab lists, or null for the other tabs. */
@@ -249,19 +246,19 @@ public final class ArcanicMenu extends Screen {
     }
 
     private void region(int x, int y, int w, int h, Runnable click) {
-        this.regions.add(new Region(x, y, w, h, click, (Runnable) null, (Drag) null, (String) null));
+        this.regions.add(new Region(x, y, w, h, click, null, null, null));
     }
 
     void clipped(int x, int y, int w, int h, float sc, int t, int b, Runnable click, Runnable alt) {
         int y0 = (int) Math.max((float) t, (float) y - sc);
         int y1 = (int) Math.min((float) b, (float) y - sc + (float) h);
         if (y1 > y0) {
-            this.regions.add(new Region(x, y0, w, y1 - y0, click, alt, (Drag) null, (String) null));
+            this.regions.add(new Region(x, y0, w, y1 - y0, click, alt, null, null));
         }
     }
 
     void dragRegion(int x, int y, int w, int h, Drag drag, String id) {
-        this.regions.add(new Region(x, y, w, h, (Runnable) null, (Runnable) null, drag, id));
+        this.regions.add(new Region(x, y, w, h, null, null, drag, id));
     }
 
     boolean dragging(String id) {
@@ -277,39 +274,39 @@ public final class ArcanicMenu extends Screen {
     }
 
     static int panelBg() {
-        return light() ? -723722 : -15461353;
+        return light() ? 0xFFF4F4F6 : 0xFF141417;
     }
 
     static int cardBg() {
-        return light() ? -1 : -15329767;
+        return light() ? -1 : 0xFF161619;
     }
 
     static int cardHi() {
-        return light() ? -1250065 : -14935008;
+        return light() ? 0xFFECECEF : 0xFF1C1C20;
     }
 
     static int field() {
-        return light() ? -1644822 : -15066594;
+        return light() ? 0xFFE6E6EA : 0xFF1A1A1E;
     }
 
     static int label() {
-        return light() ? -14013903 : -2565928;
+        return light() ? 0xFF2A2A31 : 0xFFD8D8D8;
     }
 
     static int sub() {
-        return light() ? -9803148 : -6908261;
+        return light() ? 0xFF6A6A74 : 0xFF96969B;
     }
 
     static int faint() {
-        return light() ? -6513498 : -10132111;
+        return light() ? 0xFF9C9CA6 : 0xFF656571;
     }
 
     static int edgeSmall() {
-        return light() ? -2039579 : -14803422;
+        return light() ? 0xFFE0E0E5 : 0xFF1E1E22;
     }
 
     static int edgeMedium() {
-        return light() ? -2697508 : -14474456;
+        return light() ? 0xFFD6D6DC : 0xFF232328;
     }
 
     static int textOff() {
@@ -321,7 +318,7 @@ public final class ArcanicMenu extends Screen {
     }
 
     float tween(String k, float target, float ms) {
-        double[] t = (double[]) this.tweens.get(k);
+        double[] t = this.tweens.get(k);
         if (t != null && Theme.animations) {
             double dur = (double) ms / Math.max(0.2, (double) Anim.speedMul);
             double p = Math.min(1.0, ((double) this.now - t[2]) / dur);
@@ -355,7 +352,7 @@ public final class ArcanicMenu extends Screen {
         int m = Math.max(2, this.S(2.5));
         int full = th - m * 2;
         int ks = Math.round((float) full - (float) this.S(2.0) * (1.0F - on)) / 2 * 2;
-        int off = Px.mix(light() ? -2302750 : -14474456, light() ? -3092266 : -13882318, hv);
+        int off = Px.mix(light() ? 0xFFDCDCE2 : 0xFF232328, light() ? 0xFFD0D0D6 : 0xFF2C2C32, hv);
         Px.round(g, tx, ty, tw, th, Math.round((float) th * 0.38F), Px.mix(off, acc(), on));
         int kcx = tx + m + full / 2 + Math.round((float) (tw - m * 2 - full) * on);
         int kcy = ty + th / 2;
@@ -367,7 +364,7 @@ public final class ArcanicMenu extends Screen {
         int bx = x + s - bs;
         int by = y + (s - bs) / 2;
         int r = this.S(5.0);
-        Px.round(g, bx, by, bs, bs, r, Px.mix(field(), light() ? -2565922 : -14277077, hv));
+        Px.round(g, bx, by, bs, bs, r, Px.mix(field(), light() ? 0xFFD8D8DE : 0xFF26262B, hv));
         if (on > 0.001F) {
             float k = Px.fade;
             Px.fade = k * on;
@@ -580,7 +577,7 @@ public final class ArcanicMenu extends Screen {
     }
 
     static int chrome() {
-        return light() ? -1315857 : -15000801;
+        return light() ? 0xFFEBEBEF : 0xFF1B1B1F;
     }
 
     static int hairline(int alpha) {
@@ -624,14 +621,15 @@ public final class ArcanicMenu extends Screen {
         g.pose().pushMatrix();
         g.pose().translate((float) Math.round((float) (this.contentDx * this.S(26.0)) * (1.0F - ct)), (float)
                 Math.round((float) (this.contentDy * this.S(16.0)) * (1.0F - ct)));
-        switch (page.ordinal()) {
-            case 0 -> this.rows(g, this.visible(), "c:" + String.valueOf(this.search.isEmpty() ? category : "search"));
-            case 1 -> this.wardrobePage.wardrobe(g);
-            case 2 -> this.presetsPage.presets(g);
-            case 3 -> this.studio(g);
-            case 4 -> this.helpers(g);
-            case 5 -> this.friendsPage.friends(g);
-            case 6 -> this.crosshairPage.studio(g);
+        switch (page) {
+            case MODULES ->
+                this.rows(g, this.visible(), "c:" + String.valueOf(this.search.isEmpty() ? category : "search"));
+            case WARDROBE -> this.wardrobePage.wardrobe(g);
+            case PRESETS -> this.presetsPage.presets(g);
+            case STUDIO -> this.studio(g);
+            case HELPERS -> this.helpers(g);
+            case FRIENDS -> this.friendsPage.friends(g);
+            case CROSSHAIR -> this.crosshairPage.studio(g);
         }
 
         g.pose().popMatrix();
@@ -740,7 +738,7 @@ public final class ArcanicMenu extends Screen {
         }
         int px = Math.round(this.tween("srvX", (float) xs[helperServer == 1 ? 1 : 0], 200.0F));
         int pw = Math.round(this.tween("srvW", (float) ws[helperServer == 1 ? 1 : 0], 200.0F));
-        Px.round(g, px, iy, pw, ih, this.S(6.0), light() ? -1 : -14013904);
+        Px.round(g, px, iy, pw, ih, this.S(6.0), light() ? -1 : 0xFF2A2A30);
         for (int i = 0; i < names.length; i++) {
             boolean on = (helperServer == 1 ? 1 : 0) == i;
             boolean hv = !this.under() && this.hover(xs[i], y, ws[i], h);
@@ -798,7 +796,7 @@ public final class ArcanicMenu extends Screen {
         int whereX = rightX - whereW;
         int rareX = whereX - rareW;
         long now = System.currentTimeMillis();
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             FtApi.Event e = list.get(i);
             int ry = Math.round((float) (t + this.S(2.0) + i * (rh + gap)) - sc);
             if (ry + rh < t - this.S(10.0) || ry > b + this.S(10.0)) continue;
@@ -906,7 +904,7 @@ public final class ArcanicMenu extends Screen {
                             UiSound.play("click");
                             FtApi.join(e);
                         },
-                        (Runnable) null);
+                        null);
             }
             Px.fade = kf;
         }
@@ -922,35 +920,15 @@ public final class ArcanicMenu extends Screen {
     }
 
     private static int rarityColour(String r) {
-        int var10000;
-        switch (r) {
-            case "Босс":
-                var10000 = -50373;
-                break;
-            case "Легендарный":
-            case "Мифический":
-            case "Роскошный":
-                var10000 = -19641;
-                break;
-            case "Эпический":
-            case "Зажиточный":
-                var10000 = -5141249;
-                break;
-            case "Редкий":
-                var10000 = -9518593;
-                break;
-            case "Взрывной":
-            case "Смертельный":
-                var10000 = -38037;
-                break;
-            case "Мирный":
-                var10000 = -8658784;
-                break;
-            default:
-                var10000 = -7696222;
-        }
-
-        return var10000;
+        return switch (r) {
+            case "Босс" -> -50373;
+            case "Легендарный", "Мифический", "Роскошный" -> -19641;
+            case "Эпический", "Зажиточный" -> 0xFFB18CFF;
+            case "Редкий" -> 0xFF6EC1FF;
+            case "Взрывной", "Смертельный" -> -38037;
+            case "Мирный" -> 0xFF7BE0A0;
+            default -> 0xFF8A90A2;
+        };
     }
 
     private void eventsList(GuiGraphics g, int x, int w, int t, int b) {
@@ -983,13 +961,12 @@ public final class ArcanicMenu extends Screen {
             int whereX = rightX - whereW;
             int rareX = whereX - rareW;
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 HolyEvents.Event e = (HolyEvents.Event) list.get(i);
                 int ry0 = t + this.S(2.0) + i * (rh + gap);
                 int ry = Math.round((float) ry0 - sc);
                 if (ry + rh >= t - this.S(10.0) && ry <= b + this.S(10.0)) {
-                    String var10000 = e.server();
-                    String k = var10000 + e.id();
+                    String k = e.server() + e.id();
                     float app = ease(Math.max(
                             0.0F, (float) (this.now - this.contentAt - (long) Math.min(i, 14) * 14L) / 240.0F));
                     float kf = Px.fade;
@@ -1103,7 +1080,7 @@ public final class ArcanicMenu extends Screen {
                                     ev.join(e);
                                     this.onClose();
                                 },
-                                (Runnable) null);
+                                null);
                     }
                 }
             }
@@ -1144,7 +1121,7 @@ public final class ArcanicMenu extends Screen {
                     UiSound.play("charge");
                     Toasts.module(turnOn, false);
                     Config.dirty();
-                    this.content((String) null);
+                    this.content(null);
                 });
             }
         }
@@ -1156,30 +1133,30 @@ public final class ArcanicMenu extends Screen {
         String[] labels = null;
         int active = -1;
         String title;
-        switch (page.ordinal()) {
-            case 0:
+        switch (page) {
+            case MODULES:
                 title = this.search.isEmpty() ? Lang.tr(category.title) : Lang.tr("Поиск");
                 break;
-            case 1:
+            case WARDROBE:
                 title = "Cosmetics";
                 labels = new String[WARD.length];
 
-                for (int i = 0; i < WARD.length; ++i) {
+                for (int i = 0; i < WARD.length; i++) {
                     labels[i] = Lang.tr(WARD[i]);
                 }
 
                 active = wardrobe;
                 break;
-            case 2:
+            case PRESETS:
                 // one flat page: no tabs, everything is on it
                 title = "Configs";
                 break;
-            case 3:
+            case STUDIO:
                 title = "Effects Studio";
                 labels = new String[] {"0.25×", "0.5×", "1×"};
                 active = Studio.speed < 0.3F ? 0 : (Studio.speed < 0.7F ? 1 : 2);
                 break;
-            case 4:
+            case HELPERS:
                 if (helperServer == 1) {
                     title = "FunTime";
                     int fn = Modules.FT_EVENTS.enabled() ? FtApi.events().size() : 0;
@@ -1191,18 +1168,17 @@ public final class ArcanicMenu extends Screen {
                 int n = Modules.HOLY_EVENTS.enabled()
                         ? Modules.HOLY_EVENTS.sorted().size()
                         : 0;
-                String[] var10000 = new String[] {"Helpers", null};
-                String var10003 = Lang.tr("Ивенты");
-                var10000[1] = var10003 + (n > 0 ? "  " + n : "");
-                labels = var10000;
+                String[] texts = {"Helpers", null};
+                texts[1] = Lang.tr("Ивенты") + (n > 0 ? "  " + n : "");
+                labels = texts;
                 active = helperTab;
                 break;
-            case 5:
+            case FRIENDS:
                 title = "Friends";
                 labels = this.friendsPage.labels();
                 active = this.friendsPage.tab;
                 break;
-            case 6:
+            case CROSSHAIR:
                 title = "Crosshair Studio";
                 break;
             default:
@@ -1220,8 +1196,7 @@ public final class ArcanicMenu extends Screen {
             right -= sw;
         } else if (page == ArcanicMenu.Page.WARDROBE && wardMaster(wardrobe) != null) {
             Module master = wardMaster(wardrobe);
-            String var10001 = master.id;
-            float on = this.tween("on:" + var10001, master.enabled() ? 1.0F : 0.0F, 200.0F);
+            float on = this.tween("on:" + master.id, master.enabled() ? 1.0F : 0.0F, 200.0F);
             int tw2 = this.S(30.0);
             int tgx = right - this.S(4.0) - tw2;
             boolean hv = !this.under() && this.hover(tgx - this.S(12.0), y, this.S(16.0) + tw2, h);
@@ -1321,7 +1296,7 @@ public final class ArcanicMenu extends Screen {
             int bw = this.S(12.0) + ds + this.S(8.0) + Px.textWidth(t, Px.Weight.MEDIUM, bfs) + this.S(12.0);
             int bx2 = right - bw;
             Px.round(g, bx2, byy, bw, bh, this.S(8.0), field());
-            Px.round(g, bx2 + this.S(12.0), byy + (bh - ds) / 2, ds, ds, ds / 2, onHw ? -9449586 : faint());
+            Px.round(g, bx2 + this.S(12.0), byy + (bh - ds) / 2, ds, ds, ds / 2, onHw ? 0xFF6FCF8E : faint());
             Px.text(
                     g,
                     t,
@@ -1374,7 +1349,7 @@ public final class ArcanicMenu extends Screen {
         if (labels != null) {
             ws = new int[labels.length];
 
-            for (int i = 0; i < labels.length; ++i) {
+            for (int i = 0; i < labels.length; i++) {
                 ws[i] = Px.textWidth(labels[i], Px.Weight.MEDIUM, fs) + ip * 2;
                 stripW += ws[i];
             }
@@ -1413,7 +1388,7 @@ public final class ArcanicMenu extends Screen {
             xs = new int[labels.length];
             int cx = tx + this.S(3.0);
 
-            for (int i = 0; i < labels.length; ++i) {
+            for (int i = 0; i < labels.length; i++) {
                 xs[i] = cx;
                 cx += ws[i];
             }
@@ -1421,25 +1396,20 @@ public final class ArcanicMenu extends Screen {
             int ih = sh2 - this.S(6.0);
             int iy = sy + this.S(3.0);
             if (active >= 0) {
-                String var90 = String.valueOf(page);
-                int plx = Math.round(this.tween("plateX:" + var90, (float) xs[active], 200.0F));
-                var90 = String.valueOf(page);
-                int plw = Math.round(this.tween("plateW:" + var90, (float) ws[active], 200.0F));
-                Px.round(g, plx, iy, plw, ih, this.S(6.0), light() ? -1 : -14013904);
+                int plx = Math.round(this.tween("plateX:" + page, (float) xs[active], 200.0F));
+                int plw = Math.round(this.tween("plateW:" + page, (float) ws[active], 200.0F));
+                Px.round(g, plx, iy, plw, ih, this.S(6.0), light() ? -1 : 0xFF2A2A30);
             }
 
-            for (int i = 0; i < labels.length; ++i) {
+            for (int i = 0; i < labels.length; i++) {
                 boolean on = i == active;
                 boolean hv = !this.under() && this.hover(xs[i], sy, ws[i], sh2);
                 if (hv && !on) {
-                    String var92 = String.valueOf(page);
-                    this.hot("tab:" + var92 + i);
+                    this.hot("tab:" + page + i);
                 }
 
-                String var93 = String.valueOf(page);
-                float hk = this.an("tab:" + var93 + i, hv ? 1.0F : 0.0F, 18.0F);
-                var93 = String.valueOf(page);
-                float ak = this.tween("tabA:" + var93 + i, on ? 1.0F : 0.0F, 180.0F);
+                float hk = this.an("tab:" + page + i, hv ? 1.0F : 0.0F, 18.0F);
+                float ak = this.tween("tabA:" + page + i, on ? 1.0F : 0.0F, 180.0F);
                 int c = Px.mix(Px.mix(faint(), label(), hk), T().text(), ak);
                 Px.textCenter(g, labels[i], xs[i] + ws[i] / 2, iy + (ih - fs) / 2, Px.Weight.MEDIUM, fs, c);
                 if (!this.under()) {
@@ -1453,7 +1423,7 @@ public final class ArcanicMenu extends Screen {
     private void tabClick(int i) {
         int from = -1;
         if (page == ArcanicMenu.Page.MODULES) {
-            for (int j = 0; j < TABS.length; ++j) {
+            for (int j = 0; j < TABS.length; j++) {
                 if (TABS[j] == category) {
                     from = j;
                 }
@@ -1628,7 +1598,7 @@ public final class ArcanicMenu extends Screen {
         int gs = this.S(19.0);
         int c = Px.mix(sub(), T().text(), hk);
 
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 2; i++) {
             float vis = i == 0 ? 1.0F - k : k;
             if (!(vis < 0.02F)) {
                 float kf = Px.fade;
@@ -1661,7 +1631,7 @@ public final class ArcanicMenu extends Screen {
         this.scrollMax.put(key, max);
         float want = Math.max(0.0F, Math.min(max, (Float) this.scroll.getOrDefault(key, 0.0F)));
         this.scroll.put(key, want);
-        Float was = (Float) this.scrollShown.get(key);
+        Float was = this.scrollShown.get(key);
         float v = was != null && Theme.animations ? was + (want - was) * this.anim.factor(13.0F) : want;
         if (Math.abs(want - v) < 0.25F) {
             v = want;
@@ -1720,15 +1690,15 @@ public final class ArcanicMenu extends Screen {
                     th,
                     tw / 2,
                     Px.mix(Px.mix(acc(), -1, 0.2F * hk), -1, 0.1F * dk));
-            float[] grab = new float[] {Float.NaN};
+            float[] grab = {Float.NaN};
             if (!this.blocked()) {
                 this.regions.add(new Region(
                         x - this.S(8.0),
                         t,
                         this.S(20.0),
                         view,
-                        (Runnable) null,
-                        (Runnable) null,
+                        null,
+                        null,
                         (ax, ay) -> {
                             if (Float.isNaN(grab[0])) {
                                 grab[0] = ay >= (double) ty && ay < (double) (ty + th)
@@ -1837,12 +1807,12 @@ public final class ArcanicMenu extends Screen {
             int[] ch = new int[count];
             List<List<Setting<?>>> ps = new ArrayList<>();
 
-            for (int i = 0; i < count; ++i) {
+            for (int i = 0; i < count; i++) {
                 List<Setting<?>> ls = params((Module) list.get(i));
                 ps.add(ls);
                 int c = 0;
 
-                for (int j = 1; j < cols; ++j) {
+                for (int j = 1; j < cols; j++) {
                     if (colY[j] < colY[c]) {
                         c = j;
                     }
@@ -1866,7 +1836,7 @@ public final class ArcanicMenu extends Screen {
             g.pose().pushMatrix();
             g.pose().translate(0.0F, (float) (-Math.round(sc)));
 
-            for (int i = 0; i < count; ++i) {
+            for (int i = 0; i < count; i++) {
                 g.nextStratum();
                 this.card(
                         g, (Module) list.get(i), (List) ps.get(i), cx[i], cy[i], cw, ch[i], (float) Math.round(sc), i);
@@ -1906,16 +1876,13 @@ public final class ArcanicMenu extends Screen {
                 this.tipNow = m;
             }
 
-            String var10001 = m.id;
-            float hk = this.an("ch:" + var10001, hv ? 1.0F : 0.0F, 18.0F);
-            var10001 = m.id;
-            float on = this.tween("on:" + var10001, m.enabled() ? 1.0F : 0.0F, 180.0F);
+            float hk = this.an("ch:" + m.id, hv ? 1.0F : 0.0F, 18.0F);
+            float on = this.tween("on:" + m.id, m.enabled() ? 1.0F : 0.0F, 180.0F);
             float k = Px.fade;
             Px.fade = k * app;
             g.pose().pushMatrix();
             g.pose().translate(0.0F, (float) Math.round((1.0F - app) * (float) this.S(6.0)));
-            var10001 = m.id;
-            float sel = this.tween("sel:" + var10001, this.popMod == m ? 1.0F : 0.0F, 200.0F);
+            float sel = this.tween("sel:" + m.id, this.popMod == m ? 1.0F : 0.0F, 200.0F);
             Px.round(g, x, y, w, h, R, Px.mix(cardBg(), cardHi(), hk));
             Px.outline(g, x, y, w, h, R, Px.mix(Px.mix(hairline(14), hairline(30), hk), Px.a(acc(), 170), sel));
             this.topLight(g, x, y, w, R);
@@ -1957,14 +1924,13 @@ public final class ArcanicMenu extends Screen {
                         ny + this.S(18.0),
                         Px.Weight.MEDIUM,
                         this.S(11.0),
-                        -2535330);
+                        0xFFD9505E);
             }
 
             boolean khv = hv && this.hover(kx, Math.round(sy + (float) (ky - y)), kw, kh);
             if (itemList) {
                 ItemZones iz = (ItemZones) m;
-                int var10000 = iz.shownCount();
-                String cnt = var10000 + " " + Lang.tr("из") + " " + iz.items.size();
+                String cnt = iz.shownCount() + " " + Lang.tr("из") + " " + iz.items.size();
                 Px.textRight(
                         g,
                         cnt,
@@ -1980,7 +1946,7 @@ public final class ArcanicMenu extends Screen {
             if (!itemList) {
                 if (lock) {
                     int xs = this.S(14.0);
-                    glyph(g, "x", ckX + ckS - xs - this.S(2.0), y + (head - xs) / 2, xs, -2535330);
+                    glyph(g, "x", ckX + ckS - xs - this.S(2.0), y + (head - xs) / 2, xs, 0xFFD9505E);
                 } else {
                     this.toggle(g, ckX, y, ckS, head, on, hk);
                 }
@@ -1992,8 +1958,7 @@ public final class ArcanicMenu extends Screen {
                     this.hot("gear:" + m.id);
                 }
 
-                var10001 = m.id;
-                float gk = this.an("gear:" + var10001, gh ? 1.0F : 0.0F, 18.0F);
+                float gk = this.an("gear:" + m.id, gh ? 1.0F : 0.0F, 18.0F);
                 Math.max(gk, sel);
                 if (gk > 0.01F) {
                     Px.round(g, gx, ky, kh, kh, this.S(6.0), Px.a(field(), (int) (255.0F * gk)));
@@ -2063,7 +2028,7 @@ public final class ArcanicMenu extends Screen {
                             this.top,
                             this.bottom,
                             flip,
-                            (Runnable) null);
+                            null);
                     this.clipped(
                             kx - this.S(3.0),
                             ky - this.S(3.0),
@@ -2177,34 +2142,15 @@ public final class ArcanicMenu extends Screen {
     }
 
     private boolean navOn(Nav n) {
-        boolean var10000;
-        switch (n.kind()) {
-            case 0:
-                var10000 = page == ArcanicMenu.Page.MODULES && this.search.isEmpty() && category == TABS[n.idx()];
-                break;
-            case 1:
-                var10000 = page == ArcanicMenu.Page.WARDROBE;
-                break;
-            case 2:
-                var10000 = page == ArcanicMenu.Page.PRESETS;
-                break;
-            case 3:
-            case 5:
-            case 6:
-            default:
-                var10000 = false;
-                break;
-            case 4:
-                var10000 = page == ArcanicMenu.Page.HELPERS;
-                break;
-            case 7:
-                var10000 = page == ArcanicMenu.Page.STUDIO;
-                break;
-            case 8:
-                var10000 = page == ArcanicMenu.Page.FRIENDS;
-        }
-
-        return var10000;
+        return switch (n.kind()) {
+            case 0 -> page == ArcanicMenu.Page.MODULES && this.search.isEmpty() && category == TABS[n.idx()];
+            case 1 -> page == ArcanicMenu.Page.WARDROBE;
+            case 2 -> page == ArcanicMenu.Page.PRESETS;
+            default -> false;
+            case 4 -> page == ArcanicMenu.Page.HELPERS;
+            case 7 -> page == ArcanicMenu.Page.STUDIO;
+            case 8 -> page == ArcanicMenu.Page.FRIENDS;
+        };
     }
 
     private void sidebar(GuiGraphics g, int x, int y, int w, int h) {
@@ -2232,7 +2178,7 @@ public final class ArcanicMenu extends Screen {
         int onY = -1;
         int scan = listTop;
 
-        for (int gi = 0; gi < NAV.length; ++gi) {
+        for (int gi = 0; gi < NAV.length; gi++) {
             scan += capH;
 
             for (Nav n : NAV[gi]) {
@@ -2262,7 +2208,7 @@ public final class ArcanicMenu extends Screen {
             Px.round(g, ix, pyy, iw, ih, ih / 2, Px.a(acc(), (int) (255.0F * pk)));
         }
 
-        for (int gi = 0; gi < NAV.length; ++gi) {
+        for (int gi = 0; gi < NAV.length; gi++) {
             this.caps(
                     g,
                     Lang.tr(GROUPS[gi]),
@@ -2306,7 +2252,7 @@ public final class ArcanicMenu extends Screen {
         String up = text.toUpperCase(Locale.ROOT);
         int track = Math.max(1, Math.round((float) fs * 0.12F));
 
-        for (int i = 0; i < up.length(); ++i) {
+        for (int i = 0; i < up.length(); i++) {
             String ch = up.substring(i, i + 1);
             Px.text(g, ch, x, y, Px.Weight.SEMIBOLD, fs, colour);
             x += Px.textWidth(ch, Px.Weight.SEMIBOLD, fs) + track;
@@ -2314,8 +2260,7 @@ public final class ArcanicMenu extends Screen {
     }
 
     private void navItem(GuiGraphics g, Nav n, int x, int y, int w, int h) {
-        int var10000 = n.kind();
-        String key = "nav:" + var10000 + ":" + n.idx();
+        String key = "nav:" + n.kind() + ":" + n.idx();
         boolean on = this.navOn(n);
         boolean hv = !this.under() && this.hover(x, y, w, h);
         if (hv && !on) {
@@ -2441,7 +2386,7 @@ public final class ArcanicMenu extends Screen {
                 Minecraft.getInstance()
                         .setScreen(PromptScreen.pick(
                                 this, "Язык интерфейса", languages, Lang.english() ? 1 : 0, "Применить", (picked) -> {
-                                    Modules.PREFS.language.set((String) languages.get(picked));
+                                    Modules.PREFS.language.set(languages.get(picked));
                                     Config.dirty();
                                     UiSound.play("select");
                                 }));
@@ -2512,8 +2457,7 @@ public final class ArcanicMenu extends Screen {
             }
 
             float hk = this.an("stH:" + m.id, hv && !on ? 1.0F : 0.0F, 18.0F);
-            String var10001 = m.id;
-            float sk = this.tween("stS:" + var10001, on ? 1.0F : 0.0F, 180.0F);
+            float sk = this.tween("stS:" + m.id, on ? 1.0F : 0.0F, 180.0F);
             if (sk > 0.01F) {
                 Px.round(g, lx, y, lw, ih, this.S(8.0), Px.a(cardHi(), (int) (255.0F * sk)));
             } else if (hk > 0.01F) {
@@ -2555,7 +2499,7 @@ public final class ArcanicMenu extends Screen {
         }
 
         int ph2 = b - t;
-        Px.round(g, pvx, t, pvw, ph2, this.S(12.0), light() ? -1644821 : -15921905);
+        Px.round(g, pvx, t, pvw, ph2, this.S(12.0), light() ? 0xFFE6E6EB : 0xFF0D0D0F);
         g.enableScissor(pvx, t, pvx + pvw, b);
         Px.glow(g, pvx + pvw / 10, t - ph2 / 10, pvw * 4 / 5, ph2, Px.a(acc(), light() ? 26 : 40));
         g.disableScissor();
@@ -2606,8 +2550,8 @@ public final class ArcanicMenu extends Screen {
                     t,
                     pvw,
                     ph2,
-                    (Runnable) null,
-                    (Runnable) null,
+                    null,
+                    null,
                     (ax, ay) -> {
                         long nowMs = System.currentTimeMillis();
                         if (nowMs - this.camDragAt > 120L) {
@@ -2659,8 +2603,7 @@ public final class ArcanicMenu extends Screen {
                 Px.Weight.MEDIUM,
                 this.S(13.0),
                 label());
-        String var53 = sel.id;
-        float onK = this.tween("on:" + var53, sel.enabled() ? 1.0F : 0.0F, 180.0F);
+        float onK = this.tween("on:" + sel.id, sel.enabled() ? 1.0F : 0.0F, 180.0F);
         boolean thv = !this.under() && this.hover(ix - this.S(4.0), ry, iw + this.S(8.0), rh);
         this.toggle(g, ix + iw - this.S(30.0) - this.S(4.0), ry, this.S(30.0), rh, onK, thv ? 1.0F : 0.0F);
         if (!this.under()) {
@@ -2687,8 +2630,7 @@ public final class ArcanicMenu extends Screen {
             inner += this.rowH(s, iw);
         }
 
-        var53 = sel.id;
-        float sc = (float) Math.round(this.scrolled("studio:" + var53, inner + this.S(8.0), st, sb));
+        float sc = (float) Math.round(this.scrolled("studio:" + sel.id, inner + this.S(8.0), st, sb));
         g.enableScissor(rx, st, rx + rw, sb);
         g.pose().pushMatrix();
         g.pose().translate(0.0F, -sc);
@@ -2717,7 +2659,7 @@ public final class ArcanicMenu extends Screen {
         int[] xs = new int[names.length];
         int total = inset * 2;
 
-        for (int i = 0; i < names.length; ++i) {
+        for (int i = 0; i < names.length; i++) {
             ws[i] = Px.textWidth(Lang.tr(names[i]), Px.Weight.MEDIUM, fs) + pad * 2;
             total += ws[i];
         }
@@ -2725,7 +2667,7 @@ public final class ArcanicMenu extends Screen {
         Px.round(g, x, y, total, h, h / 2, light() ? 0xD0FFFFFF : 0xB8101013);
         int cx = x + inset;
 
-        for (int i = 0; i < names.length; ++i) {
+        for (int i = 0; i < names.length; i++) {
             xs[i] = cx;
             cx += ws[i];
         }
@@ -2735,7 +2677,7 @@ public final class ArcanicMenu extends Screen {
         int plw = Math.round(this.tween("stagePlateW", (float) ws[chosen], 200.0F));
         Px.round(g, plx, y + inset, plw, h - inset * 2, (h - inset * 2) / 2, acc());
 
-        for (int i = 0; i < names.length; ++i) {
+        for (int i = 0; i < names.length; i++) {
             boolean on = i == chosen;
             boolean hv = !this.under() && this.hover(xs[i], y, ws[i], h);
             if (hv && !on) {
@@ -2794,7 +2736,7 @@ public final class ArcanicMenu extends Screen {
 
     int settings(
             GuiGraphics g, Module m, List<Setting<?>> list, int x, int y, int w, float sc, int t, int b, boolean live) {
-        for (int i = 0; i < list.size(); ++i) {
+        for (int i = 0; i < list.size(); i++) {
             Setting<?> s = (Setting) list.get(i);
             int h = this.rowH(s, w);
             g.nextStratum();
@@ -2850,7 +2792,7 @@ public final class ArcanicMenu extends Screen {
                                 UiSound.play(bo.on() ? "toggle_on" : "toggle_off");
                                 Config.dirty();
                             },
-                            (Runnable) null);
+                            null);
                 }
             } else if (s instanceof Setting.Num n) {
                 boolean drag = this.dragging != null && id.equals(this.dragging.id());
@@ -2902,15 +2844,15 @@ public final class ArcanicMenu extends Screen {
                                 y0,
                                 w + this.S(20.0),
                                 y1 - y0,
-                                (Runnable) null,
-                                (Runnable) null,
+                                null,
+                                null,
                                 (at, ay) -> {
                                     float raw = (float) Math.max(
                                             0.0,
                                             Math.min(1.0, (at - (double) x - (double) kr) / (double) (w - kr * 2)));
-                                    double before = (Double) n.get();
+                                    double before = n.get();
                                     n.set(n.min + (n.max - n.min) * (double) raw);
-                                    if ((Double) n.get() != before) {
+                                    if (n.get() != before) {
                                         UiSound.play("tick", 0.75F + (float) n.fraction() * 0.8F, 0.55F);
                                     }
 
@@ -2923,7 +2865,7 @@ public final class ArcanicMenu extends Screen {
                 }
             } else if (s instanceof Setting.Mode md) {
                 Px.text(g, name, x, y + (h - this.S(13.0)) / 2, Px.Weight.MEDIUM, this.S(13.0), label);
-                String cur = Lang.tr((String) md.get());
+                String cur = Lang.tr(md.get());
                 int fs = this.S(12.0);
                 int bh = this.S(24.0);
                 int aw = this.S(10.0);
@@ -2964,14 +2906,14 @@ public final class ArcanicMenu extends Screen {
                                         Math.max(bw, this.S(180.0)));
                                 UiSound.play("pop");
                             },
-                            (Runnable) null);
+                            null);
                 }
             } else if (s instanceof Setting.Text tx) {
                 Px.text(g, name, x, y + (h - this.S(13.0)) / 2, Px.Weight.MEDIUM, this.S(13.0), label);
                 int is = this.S(12.0);
                 int room =
                         Math.max(this.S(30.0), w - Px.textWidth(name, Px.Weight.MEDIUM, this.S(13.0)) - this.S(40.0));
-                String v = ((String) tx.get()).isEmpty() ? Lang.tr(tx.hint) : (String) tx.get();
+                String v = tx.get().isEmpty() ? Lang.tr(tx.hint) : tx.get();
                 v = Px.ellipsize(v, Px.Weight.MEDIUM, this.S(11.0), room);
                 glyph(g, "pen", x + w - is, y + (h - is) / 2, is, Px.mix(faint(), acc(), hk));
                 Px.textRight(
@@ -2998,10 +2940,10 @@ public final class ArcanicMenu extends Screen {
                                                     tx.set(v2);
                                                     Config.dirty();
                                                 })
-                                                .value((String) tx.get())
+                                                .value(tx.get())
                                                 .limit(tx.max));
                             },
-                            (Runnable) null);
+                            null);
                 }
             } else if (s instanceof Setting.Key key) {
                 Px.text(g, name, x, y + (h - S(13)) / 2, Px.Weight.MEDIUM, S(13), label);
@@ -3071,7 +3013,7 @@ public final class ArcanicMenu extends Screen {
                                 UiSound.play("click");
                                 ac.run.run();
                             },
-                            (Runnable) null);
+                            null);
                 }
             } else if (s instanceof Setting.Colour c) {
                 Px.text(g, name, x, y + (h - this.S(13.0)) / 2, Px.Weight.MEDIUM, this.S(13.0), label);
@@ -3105,7 +3047,7 @@ public final class ArcanicMenu extends Screen {
                                 this.picker = (new ColourPicker(s.name, c)).at(this.mx, this.my);
                                 UiSound.play("pop");
                             },
-                            (Runnable) null);
+                            null);
                 }
             }
         }
@@ -3133,7 +3075,7 @@ public final class ArcanicMenu extends Screen {
         int ch = this.S(54.0);
         int y0 = y + this.S(32.0);
 
-        for (int i = 0; i < it.entries.size(); ++i) {
+        for (int i = 0; i < it.entries.size(); i++) {
             Setting.Items.Entry e = (Setting.Items.Entry) it.entries.get(i);
             String k = id + ":" + e.key();
             int cx = x + i % 2 * (cw + gap);
@@ -3234,7 +3176,7 @@ public final class ArcanicMenu extends Screen {
                             UiSound.play(it.on(e.key()) ? "toggle_on" : "toggle_off");
                             Config.dirty();
                         },
-                        (Runnable) null);
+                        null);
                 if (col != null) {
                     this.clipped(
                             dx - this.S(4.0),
@@ -3248,7 +3190,7 @@ public final class ArcanicMenu extends Screen {
                                 this.picker = (new ColourPicker(e.name(), col)).at(this.mx, this.my);
                                 UiSound.play("pop");
                             },
-                            (Runnable) null);
+                            null);
                 }
             }
         }
@@ -3302,7 +3244,7 @@ public final class ArcanicMenu extends Screen {
         Px.outline(g, x, y, this.popW, h, this.S(8.0), edgeMedium());
         g.enableScissor(x, y + this.S(5.0), x + this.popW, y + h - this.S(5.0));
 
-        for (int i = 0; i < md.modes.size(); ++i) {
+        for (int i = 0; i < md.modes.size(); i++) {
             String mode = (String) md.modes.get(i);
             int iy = Math.round((float) (y + this.S(5.0) + i * ih) - msc);
             if (iy + ih >= y && iy <= y + h) {
@@ -3352,8 +3294,8 @@ public final class ArcanicMenu extends Screen {
                                 this.afterMode(md);
                                 UiSound.play("click");
                             },
-                            (Runnable) null,
-                            (Drag) null,
+                            null,
+                            null,
                             "pop"));
                 }
             }
@@ -3490,22 +3432,22 @@ public final class ArcanicMenu extends Screen {
                             "ks", (Float) this.scroll.getOrDefault("ks", 0.0F) - (float) sy * (float) this.S(60.0));
                     return true;
                 } else {
-                    String var10000;
-                    switch (page.ordinal()) {
-                        case 0 -> var10000 = "c:" + String.valueOf(this.search.isEmpty() ? category : "search");
-                        case 1 -> var10000 = "w:" + wardrobe;
-                        case 2 -> var10000 = "presets" + this.presetsPage.tab;
-                        case 3 -> var10000 = "studio:" + Studio.selected.id;
-                        case 4 ->
-                            var10000 = helperServer == 1
+                    String text2;
+                    switch (page) {
+                        case MODULES -> text2 = "c:" + String.valueOf(this.search.isEmpty() ? category : "search");
+                        case WARDROBE -> text2 = "w:" + wardrobe;
+                        case PRESETS -> text2 = "presets" + this.presetsPage.tab;
+                        case STUDIO -> text2 = "studio:" + Studio.selected.id;
+                        case HELPERS ->
+                            text2 = helperServer == 1
                                     ? (helperTab == 0 ? "c:ft" : "ftev")
                                     : (helperTab == 0 ? "c:hw" : "hwev");
-                        case 5 -> var10000 = this.friendsPage.scrollKey();
-                        case 6 -> var10000 = this.crosshairPage.scrollKey();
-                        default -> throw new MatchException((String) null, (Throwable) null);
+                        case FRIENDS -> text2 = this.friendsPage.scrollKey();
+                        case CROSSHAIR -> text2 = this.crosshairPage.scrollKey();
+                        default -> throw new MatchException(null, null);
                     }
 
-                    String k = var10000;
+                    String k = text2;
                     this.scroll.put(k, (Float) this.scroll.getOrDefault(k, 0.0F) - (float) sy * (float) this.S(76.0));
                     return true;
                 }
@@ -3560,7 +3502,7 @@ public final class ArcanicMenu extends Screen {
                 this.pop = null;
                 return true;
             } else if (this.popMod != null && this.popup.itemPage != null) {
-                this.popup.openItem((String) null);
+                this.popup.openItem(null);
                 UiSound.play("pop", 0.9F, 0.6F);
                 return true;
             } else if (this.popMod != null) {
@@ -3596,7 +3538,7 @@ public final class ArcanicMenu extends Screen {
                     && this.popMod == null) {
                 int i = 0;
 
-                for (int j = 0; j < TABS.length; ++j) {
+                for (int j = 0; j < TABS.length; j++) {
                     if (TABS[j] == category) {
                         i = j;
                     }
@@ -3644,7 +3586,7 @@ public final class ArcanicMenu extends Screen {
     private void toModules() {
         if (page != ArcanicMenu.Page.MODULES) {
             page = ArcanicMenu.Page.MODULES;
-            this.content((String) null);
+            this.content(null);
         }
     }
 
@@ -3720,11 +3662,7 @@ public final class ArcanicMenu extends Screen {
         page = ArcanicMenu.Page.MODULES;
         wardrobe = 0;
         NAV = new Nav[][] {
-            {
-                new Nav(0, 0, (String) null, (String) null),
-                new Nav(0, 1, (String) null, (String) null),
-                new Nav(0, 2, (String) null, (String) null)
-            },
+            {new Nav(0, 0, null, null), new Nav(0, 1, null, null), new Nav(0, 2, null, null)},
             {
                 new Nav(1, 0, "cosmetics-s", "Cosmetics"),
                 new Nav(7, 0, "w.wizard-hat", "Effects Studio"),
@@ -3760,6 +3698,6 @@ public final class ArcanicMenu extends Screen {
     private static record Nav(int kind, int idx, String icon, String label) {}
 
     interface Drag {
-        void to(double var1, double var3);
+        void to(double x, double y);
     }
 }

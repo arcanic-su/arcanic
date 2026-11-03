@@ -60,8 +60,7 @@ public final class Emotes extends Module {
     public static final Identifier LAYER = Identifier.fromNamespaceAndPath("arcanicvisuals", "emote");
     public final Setting.Bool camera = this.add(new Setting.Bool("camera", "Камера от 3-го лица", true));
     public final Setting.Bool cancelOnMove = this.add(new Setting.Bool("cancel_on_move", "Прерывать движением", true));
-    public final Setting.Num speed =
-            (Setting.Num) this.add(new Setting.Num("speed", "Скорость", 1.0, 0.5, 2.0, 0.1, "x"));
+    public final Setting.Num speed = this.add(new Setting.Num("speed", "Скорость", 1.0, 0.5, 2.0, 0.1, "x"));
     private volatile List<Emote> bundled;
     private Emote playing;
     private CameraType savedCamera;
@@ -120,20 +119,20 @@ public final class Emotes extends Module {
 
                                 for (Map.Entry<String, Animation> e : anims.entrySet()) {
                                     list.add(new Emote(
-                                            anims.size() == 1 ? stem : (String) e.getKey(),
+                                            anims.size() == 1 ? stem : e.getKey(),
                                             (Animation) e.getValue(),
                                             (Identifier) null));
                                 }
-                            } catch (Throwable var15) {
+                            } catch (Throwable e) {
                                 if (in != null) {
                                     try {
                                         in.close();
-                                    } catch (Throwable var13) {
-                                        var15.addSuppressed(var13);
+                                    } catch (Throwable e2) {
+                                        e.addSuppressed(e2);
                                     }
                                 }
 
-                                throw var15;
+                                throw e;
                             }
 
                             if (in != null) {
@@ -144,16 +143,16 @@ public final class Emotes extends Module {
                         }
                     }
                 }
-            } catch (Throwable var17) {
+            } catch (Throwable e) {
                 if (files != null) {
                     try {
                         files.close();
-                    } catch (Throwable var12) {
-                        var17.addSuppressed(var12);
+                    } catch (Throwable e3) {
+                        e.addSuppressed(e3);
                     }
                 }
 
-                throw var17;
+                throw e;
             }
 
             if (files != null) {
@@ -198,16 +197,16 @@ public final class Emotes extends Module {
                                                 Identifier.fromNamespaceAndPath(
                                                         "arcanicvisuals", "textures/emote/" + file + ".png")));
                                     }
-                                } catch (Throwable var14) {
+                                } catch (Throwable e) {
                                     if (r != null) {
                                         try {
                                             r.close();
-                                        } catch (Throwable var13) {
-                                            var14.addSuppressed(var13);
+                                        } catch (Throwable e4) {
+                                            e.addSuppressed(e4);
                                         }
                                     }
 
-                                    throw var14;
+                                    throw e;
                                 }
 
                                 if (r != null) {
@@ -218,16 +217,16 @@ public final class Emotes extends Module {
                             }
                         }
                     }
-                } catch (Throwable var16) {
+                } catch (Throwable e) {
                     if (in != null) {
                         try {
                             in.close();
-                        } catch (Throwable var12) {
-                            var16.addSuppressed(var12);
+                        } catch (Throwable e5) {
+                            e.addSuppressed(e5);
                         }
                     }
 
-                    throw var16;
+                    throw e;
                 }
 
                 if (in != null) {
@@ -258,21 +257,21 @@ public final class Emotes extends Module {
     }
 
     private static void warn(String file, Exception e) {
-        System.err.println("[ArcanicVisuals] emote " + file + " could not be read: " + String.valueOf(e));
+        System.err.println("[ArcanicVisuals] emote " + file + " could not be read: " + e);
     }
 
     private static PlayerAnimationController controller(LocalPlayer p) {
         try {
-            IAnimation var2 = PlayerAnimationAccess.getPlayerAnimationLayer(p, LAYER);
-            PlayerAnimationController var10000;
-            if (var2 instanceof PlayerAnimationController c) {
-                var10000 = c;
+            IAnimation iAnimation = PlayerAnimationAccess.getPlayerAnimationLayer(p, LAYER);
+            PlayerAnimationController playerAnimationController;
+            if (iAnimation instanceof PlayerAnimationController c) {
+                playerAnimationController = c;
             } else {
-                var10000 = null;
+                playerAnimationController = null;
             }
 
-            return var10000;
-        } catch (IllegalArgumentException var3) {
+            return playerAnimationController;
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
@@ -304,16 +303,16 @@ public final class Emotes extends Module {
     public static boolean playOn(AbstractClientPlayer p, String name) {
         PlayerAnimationController c;
         try {
-            IAnimation var4 = PlayerAnimationAccess.getPlayerAnimationLayer(p, LAYER);
-            PlayerAnimationController var10000;
-            if (var4 instanceof PlayerAnimationController x) {
-                var10000 = x;
+            IAnimation iAnimation2 = PlayerAnimationAccess.getPlayerAnimationLayer(p, LAYER);
+            PlayerAnimationController playerAnimationController2;
+            if (iAnimation2 instanceof PlayerAnimationController x) {
+                playerAnimationController2 = x;
             } else {
-                var10000 = null;
+                playerAnimationController2 = null;
             }
 
-            c = var10000;
-        } catch (IllegalArgumentException var5) {
+            c = playerAnimationController2;
+        } catch (IllegalArgumentException e) {
             return false;
         }
 

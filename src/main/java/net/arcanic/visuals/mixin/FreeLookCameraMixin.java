@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin({Camera.class})
 public abstract class FreeLookCameraMixin {
     @Shadow
-    protected abstract void setRotation(float var1, float var2);
+    protected abstract void setRotation(float yaw, float pitch);
 
     @Inject(
             method = {"setup"},

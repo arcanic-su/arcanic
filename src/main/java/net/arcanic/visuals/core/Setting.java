@@ -76,7 +76,7 @@ public abstract class Setting<T> {
 
     public abstract JsonElement save();
 
-    public abstract void load(JsonElement var1);
+    public abstract void load(JsonElement json);
 
     public static final class Bool extends Setting<Boolean> {
         public Bool(String key, String name, boolean def) {
@@ -236,7 +236,7 @@ public abstract class Setting<T> {
         }
 
         public void cycle(int dir) {
-            this.value = (String) this.modes.get(Math.floorMod(this.index() + dir, this.modes.size()));
+            this.value = this.modes.get(Math.floorMod(this.index() + dir, this.modes.size()));
         }
 
         public JsonElement save() {
@@ -252,10 +252,20 @@ public abstract class Setting<T> {
 
     public static final class Colour extends Setting<Integer> {
         public static final List<Integer> PRESETS =
-                new ArrayList(List.of(-16745729, -13318311, -13312, -50384, -6862849));
-        public static final int[] PALETTE = new int[] {
-            -7643914, -4160260, -757066, -770210, -290244, -340971, -11870592, -13315175, -14494738, -10443270, -1,
-            -7035976
+                new ArrayList(List.of(0xFF007AFF, 0xFF34C759, -13312, -50384, 0xFF9747FF));
+        public static final int[] PALETTE = {
+            0xFF8B5CF6,
+            0xFFC084FC,
+            0xFFF472B6,
+            0xFFF43F5E,
+            0xFFFB923C,
+            0xFFFACC15,
+            0xFF4ADE80,
+            0xFF34D399,
+            0xFF22D3EE,
+            0xFF60A5FA,
+            -1,
+            0xFF94A3B8
         };
         private boolean theme;
         private boolean defTheme;
@@ -373,7 +383,7 @@ public abstract class Setting<T> {
 
                 for (Map.Entry<String, JsonElement> en : e.getAsJsonObject().entrySet()) {
                     if (next.containsKey(en.getKey()) && ((JsonElement) en.getValue()).isJsonPrimitive()) {
-                        next.put((String) en.getKey(), ((JsonElement) en.getValue()).getAsBoolean());
+                        next.put(en.getKey(), ((JsonElement) en.getValue()).getAsBoolean());
                     }
                 }
 
@@ -422,7 +432,7 @@ public abstract class Setting<T> {
             JsonObject o = new JsonObject();
 
             for (Map.Entry<String, Double> e : new TreeMap<String, Double>(this.value).entrySet()) {
-                o.addProperty((String) e.getKey(), (Number) e.getValue());
+                o.addProperty(e.getKey(), (Number) e.getValue());
             }
 
             return o;
@@ -435,7 +445,7 @@ public abstract class Setting<T> {
                 for (Map.Entry<String, JsonElement> en : e.getAsJsonObject().entrySet()) {
                     JsonElement v = (JsonElement) en.getValue();
                     if (v.isJsonPrimitive() && v.getAsJsonPrimitive().isNumber() && Double.isFinite(v.getAsDouble())) {
-                        next.put((String) en.getKey(), Math.max(-10.0, Math.min(10.0, v.getAsDouble())));
+                        next.put(en.getKey(), Math.max(-10.0, Math.min(10.0, v.getAsDouble())));
                     }
                 }
 

@@ -111,17 +111,16 @@ public final class TargetEsp {
     }
 
     private static RenderType type(RenderPipeline pipeline, Identifier texture) {
-        return (RenderType)
-                TYPES.computeIfAbsent(String.valueOf(pipeline.getLocation()) + "|" + String.valueOf(texture), (k) -> {
-                    Fx.irisAssign(pipeline);
-                    return RenderTypeAccess.arcanicvisuals$create(
-                            "arcanicvisuals_target_esp",
-                            RenderSetup.builder(pipeline)
-                                    .withTexture("Sampler0", texture, () -> RenderSystem.getSamplerCache()
-                                            .getClampToEdge(FilterMode.LINEAR))
-                                    .sortOnUpload()
-                                    .createRenderSetup());
-                });
+        return (RenderType) TYPES.computeIfAbsent(pipeline.getLocation() + "|" + texture, (k) -> {
+            Fx.irisAssign(pipeline);
+            return RenderTypeAccess.arcanicvisuals$create(
+                    "arcanicvisuals_target_esp",
+                    RenderSetup.builder(pipeline)
+                            .withTexture("Sampler0", texture, () -> RenderSystem.getSamplerCache()
+                                    .getClampToEdge(FilterMode.LINEAR))
+                            .sortOnUpload()
+                            .createRenderSetup());
+        });
     }
 
     private static VertexConsumer shape(MultiBufferSource buffers, Identifier tex, boolean top) {
@@ -191,14 +190,14 @@ public final class TargetEsp {
     }
 
     private static void roll() {
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < 3; j++) {
             discSpin[j] = 0.75F + RANDOM.nextFloat() * 0.5F;
             discRock[j] = 0.8F + RANDOM.nextFloat() * 0.8F;
             discPhase[j] = RANDOM.nextFloat() * ((float) Math.PI * 2F);
         }
 
-        for (int tries = 0; tries < 64; ++tries) {
-            for (int j = 0; j < 3; ++j) {
+        for (int tries = 0; tries < 64; tries++) {
+            for (int j = 0; j < 3; j++) {
                 discLean[j] = -30.0F + RANDOM.nextFloat() * 60.0F;
             }
 
@@ -336,7 +335,7 @@ public final class TargetEsp {
         Matrix4f[] at = new Matrix4f[3];
         float[] bright = new float[3];
 
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < 3; j++) {
             bright[j] = 0.35F
                     + 0.65F * (sin((double) (clock * 3.4F + (float) j * ((float) Math.PI * 2F) / 3.0F)) + 1.0F) * 0.5F;
             float spin = -clock * 140.0F * discSpin[j] + discLean[j];
@@ -349,13 +348,13 @@ public final class TargetEsp {
 
         VertexConsumer vc = shape(k.buffers, tex, false);
 
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < 3; j++) {
             disc(vc, at[j], half, k.colour(j * 30, bright[j]));
         }
 
         vc = glow(k.buffers, tex, false);
 
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < 3; j++) {
             disc(vc, at[j], half, k.colour(j * 30, bright[j] * (0.85F + 0.8F * k.hit)));
         }
     }
@@ -371,7 +370,7 @@ public final class TargetEsp {
         float half = (2.2F - k.fade) * 0.24F * k.size * (1.0F - 0.12F * k.hit);
         float cy = k.y + k.height * 0.5F;
         float angle = (float) Math.toRadians((double) markerTurn);
-        int[] c = new int[] {k.colour(0, 1.0F), k.colour(0, 1.0F), k.colour(90, 1.0F), k.colour(180, 1.0F)};
+        int[] c = {k.colour(0, 1.0F), k.colour(0, 1.0F), k.colour(90, 1.0F), k.colour(180, 1.0F)};
         card(shape(k.buffers, tex, k.seen), k, k.x, cy, k.z, half, angle, c, 1.0F);
         card(glow(k.buffers, tex, k.seen), k, k.x, cy, k.z, half, angle, c, 0.45F + 0.8F * k.hit);
     }
@@ -400,7 +399,7 @@ public final class TargetEsp {
         float big = 0.2F * k.size * (1.0F + 0.5F * k.hit);
         VertexConsumer vc = glow(k.buffers, LIGHT, false);
 
-        for (int o = 0; o < ORBITS.length; ++o) {
+        for (int o = 0; o < ORBITS.length; o++) {
             float[] orbit = ORBITS[o];
             Matrix4f m = (new Matrix4f())
                     .rotateY((float) Math.toRadians((double) orbit[1]) + clock * 0.2F)

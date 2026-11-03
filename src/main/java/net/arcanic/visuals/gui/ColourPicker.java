@@ -195,7 +195,7 @@ final class ColourPicker {
 
     private void update(int c, boolean save) {
         this.colour = c;
-        float[] hsv = Color.RGBtoHSB(c >> 16 & 255, c >> 8 & 255, c & 255, (float[]) null);
+        float[] hsv = Color.RGBtoHSB(c >> 16 & 255, c >> 8 & 255, c & 255, null);
         if (hsv[1] > 0.001F && hsv[2] > 0.001F) {
             this.hue = hsv[0];
         }
@@ -225,8 +225,7 @@ final class ColourPicker {
     }
 
     private String rgb() {
-        int var10000 = this.colour >> 16 & 255;
-        return var10000 + " " + (this.colour >> 8 & 255) + " " + (this.colour & 255);
+        return (this.colour >> 16 & 255) + " " + (this.colour >> 8 & 255) + " " + (this.colour & 255);
     }
 
     void render(GuiGraphics g, double mx, double my) {
@@ -329,7 +328,7 @@ final class ColourPicker {
     private static void rounded(GuiGraphics g, int x0, int y0, int ww, int hh, int r, int bg, Row row) {
         r = Math.min(r, Math.min(ww, hh) / 2);
 
-        for (int i = 0; i < hh; ++i) {
+        for (int i = 0; i < hh; i++) {
             float dy = i < r ? (float) (r - i) - 0.5F : (i >= hh - r ? (float) (i - (hh - r)) + 0.5F : 0.0F);
             int in = dy > 0.0F
                     ? Math.round((float) r - (float) Math.sqrt((double) Math.max(0.0F, (float) (r * r) - dy * dy)))
@@ -346,7 +345,7 @@ final class ColourPicker {
     private void checkerRow(GuiGraphics g, int left, int top, int yy, int x0, int x1) {
         int c = Math.max(2, this.s(3.0F));
         boolean lt = ArcanicMenu.light();
-        Px.rect(g, x0, yy, x1 - x0, 1, lt ? -1 : -12961216);
+        Px.rect(g, x0, yy, x1 - x0, 1, lt ? -1 : 0xFF3A3A40);
         int odd = (yy - top) / c % 2;
 
         for (int cx = left + (x0 - left) / c * c; cx < x1; cx += c) {
@@ -354,7 +353,7 @@ final class ColourPicker {
                 int a = Math.max(cx, x0);
                 int b = Math.min(cx + c, x1);
                 if (b > a) {
-                    Px.rect(g, a, yy, b - a, 1, lt ? -2500130 : -14277077);
+                    Px.rect(g, a, yy, b - a, 1, lt ? 0xFFD9D9DE : 0xFF26262B);
                 }
             }
         }
@@ -504,7 +503,7 @@ final class ColourPicker {
 
     private static int ink(int c) {
         double l = 0.2126 * (double) (c >> 16 & 255) + 0.7152 * (double) (c >> 8 & 255) + 0.0722 * (double) (c & 255);
-        return l > 150.0 ? -15395558 : -1;
+        return l > 150.0 ? 0xFF15151A : -1;
     }
 
     private void fields(GuiGraphics g, double mx, double my, int text) {
@@ -632,7 +631,7 @@ final class ColourPicker {
     private void dots(GuiGraphics g, double mx, double my) {
         int[] pal = Setting.Colour.PALETTE;
 
-        for (int i = 0; i < pal.length; ++i) {
+        for (int i = 0; i < pal.length; i++) {
             this.dot(
                     g,
                     mx,
@@ -648,16 +647,8 @@ final class ColourPicker {
         int n = Math.min(recent.size(), 11);
         float step = this.dotStep(12);
 
-        for (int i = 0; i < n; ++i) {
-            this.dot(
-                    g,
-                    mx,
-                    my,
-                    "r" + i,
-                    8.0F + (float) i * step,
-                    this.recentY(),
-                    (Integer) recent.get(i) | 0xFF000000,
-                    false);
+        for (int i = 0; i < n; i++) {
+            this.dot(g, mx, my, "r" + i, 8.0F + (float) i * step, this.recentY(), recent.get(i) | 0xFF000000, false);
         }
 
         this.dot(g, mx, my, "add", 8.0F + (float) n * step, this.recentY(), 0, true);
@@ -725,8 +716,8 @@ final class ColourPicker {
             int sx = (int) (mx * (double) this.sample.getWidth() / (double) Px.width());
             int sy = (int) (my * (double) this.sample.getHeight() / (double) Px.height());
 
-            for (int j = 0; j < cells; ++j) {
-                for (int i = 0; i < cells; ++i) {
+            for (int j = 0; j < cells; j++) {
+                for (int i = 0; i < cells; i++) {
                     int px = Math.max(0, Math.min(this.sample.getWidth() - 1, sx + i - cells / 2));
                     int py = Math.max(0, Math.min(this.sample.getHeight() - 1, sy + j - cells / 2));
                     Px.rect(g, lx + pad + i * cs, ly + pad + j * cs, cs, cs, this.sample.getPixel(px, py) | 0xFF000000);
@@ -778,7 +769,7 @@ final class ColourPicker {
                 this.commitEdit();
                 int[] pal = Setting.Colour.PALETTE;
 
-                for (int i = 0; i < pal.length; ++i) {
+                for (int i = 0; i < pal.length; i++) {
                     if (this.hit(mx, my, 8.0F + (float) i * this.dotStep(pal.length), this.paletteY(), 10.0F, 10.0F)) {
                         if (button == 0) {
                             this.update(pal[i] | (this.enableAlpha ? this.colour & 0xFF000000 : 0xFF000000), true);
@@ -793,7 +784,7 @@ final class ColourPicker {
                 int n = Math.min(recent.size(), 11);
                 float step = this.dotStep(12);
 
-                for (int i = 0; i <= n; ++i) {
+                for (int i = 0; i <= n; i++) {
                     if (this.hit(mx, my, 8.0F + (float) i * step, this.recentY(), 10.0F, 10.0F)) {
                         if (i == n) {
                             if (button == 0 && !recent.contains(this.colour)) {
@@ -807,7 +798,7 @@ final class ColourPicker {
                                 UiSound.play("pop");
                             }
                         } else if (button == 0) {
-                            this.update((Integer) recent.get(i), true);
+                            this.update(recent.get(i), true);
                             UiSound.play("click", 1.1F, 0.6F);
                         } else {
                             recent.remove(i);
@@ -991,8 +982,7 @@ final class ColourPicker {
                 } else {
                     String hex = v.replaceFirst("^#", "");
                     if (hex.matches("[0-9a-fA-F]{3}")) {
-                        char var10000 = hex.charAt(0);
-                        hex = "" + var10000 + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2)
+                        hex = "" + hex.charAt(0) + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2)
                                 + hex.charAt(2);
                     }
 
@@ -1133,6 +1123,6 @@ final class ColourPicker {
     }
 
     private interface Row {
-        void at(int var1, int var2, int var3, float var4);
+        void at(int y, int x0, int x1, float t);
     }
 }

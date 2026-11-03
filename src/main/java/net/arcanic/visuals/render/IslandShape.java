@@ -148,7 +148,7 @@ public final class IslandShape {
                 }
             } catch (RuntimeException e) {
                 broken = true;
-                System.err.println("[ArcanicVisuals] island shader off: " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] island shader off: " + e);
                 return false;
             }
         } else {

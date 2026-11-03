@@ -181,7 +181,7 @@ final class FriendsPage {
         g.pose().pushMatrix();
         g.pose().translate(0.0F, -sc);
 
-        for (int i = 0; i < list.size(); ++i) {
+        for (int i = 0; i < list.size(); i++) {
             g.nextStratum();
             Social.Friend f = list.get(i);
             int cx = x + (i % cols) * (cw + gap);
@@ -269,7 +269,7 @@ final class FriendsPage {
                 f.inWorld() ? ArcanicMenu.sub() : ArcanicMenu.faint());
         Px.fade = old;
         if (this.open == null && !this.menu.under()) {
-            this.menu.clipped(x, y, w, h, sc, top, bottom, () -> this.show(f), (Runnable) null);
+            this.menu.clipped(x, y, w, h, sc, top, bottom, () -> this.show(f), null);
         }
     }
 
@@ -313,7 +313,7 @@ final class FriendsPage {
         Px.fade = old * k;
         Px.round(g, ax, at, aw, ab - at, this.S(12.0), Px.a(ArcanicMenu.panelBg(), 200));
         // a click beside the card closes it
-        this.menu.clipped(ax, at, aw, ab - at, 0.0F, at, ab, this::back, (Runnable) null);
+        this.menu.clipped(ax, at, aw, ab - at, 0.0F, at, ab, this::back, null);
 
         List<Action> actions = this.actions(f);
         int w = Math.min(this.S(460.0), aw - this.S(40.0));
@@ -335,7 +335,7 @@ final class FriendsPage {
         Px.shadow(g, x, y + this.S(8.0), w, h, this.S(24.0), 0x66000000);
         Px.round(g, x, y, w, h, r, ArcanicMenu.cardBg());
         Px.outline(g, x, y, w, h, r, ArcanicMenu.edgeMedium());
-        this.menu.clipped(x, y, w, h, 0.0F, at, ab, () -> {}, (Runnable) null);
+        this.menu.clipped(x, y, w, h, 0.0F, at, ab, () -> {}, null);
 
         int pad = this.S(22.0);
         int face = Math.max(8, this.S(72.0) / 8 * 8);
@@ -396,7 +396,7 @@ final class FriendsPage {
                 cy + (cs - xs) / 2,
                 xs,
                 Px.mix(ArcanicMenu.faint(), ArcanicMenu.T().text(), chk));
-        this.menu.clipped(cx, cy, cs, cs, 0.0F, at, ab, this::back, (Runnable) null);
+        this.menu.clipped(cx, cy, cs, cs, 0.0F, at, ab, this::back, null);
 
         int iy = fy + face + this.S(22.0);
         int iw = w - pad * 2;
@@ -426,7 +426,7 @@ final class FriendsPage {
 
         int by = iy + infoH + this.S(16.0);
         int bw = (iw - bgap) / 2;
-        for (int i = 0; i < actions.size(); ++i) {
+        for (int i = 0; i < actions.size(); i++) {
             Action a = actions.get(i);
             int bx = x + pad + (i % 2) * (bw + bgap);
             int byy = by + (i / 2) * (bh + bgap);
@@ -541,7 +541,7 @@ final class FriendsPage {
                 Px.Weight.SEMIBOLD,
                 fs,
                 tc);
-        if (!this.menu.under()) this.menu.clipped(x, y, w, h, 0.0F, top, bottom, a.run, (Runnable) null);
+        if (!this.menu.under()) this.menu.clipped(x, y, w, h, 0.0F, top, bottom, a.run, null);
     }
 
     // ------------------------------------------------------------------ requests
@@ -686,8 +686,7 @@ final class FriendsPage {
         int tc = accent ? -1 : Px.mix(ArcanicMenu.label(), ArcanicMenu.T().text(), hk);
         ArcanicMenu.glyph(g, icon, x + this.S(12.0), y + (h - is) / 2, is, tc);
         Px.text(g, text, x + this.S(12.0) + is + this.S(7.0), y + (h - fs) / 2, Px.Weight.SEMIBOLD, fs, tc);
-        if (this.open == null && !this.menu.under())
-            this.menu.clipped(x, y, w, h, sc, top, bottom, run, (Runnable) null);
+        if (this.open == null && !this.menu.under()) this.menu.clipped(x, y, w, h, sc, top, bottom, run, null);
         return w;
     }
 
@@ -780,7 +779,7 @@ final class FriendsPage {
                         flip.run();
                         UiSound.play(on ? "toggle_off" : "toggle_on");
                     },
-                    (Runnable) null);
+                    null);
         }
     }
 
@@ -824,7 +823,7 @@ final class FriendsPage {
             Px.round(g, bx, by, bw, bh, this.S(8.0), Px.mix(ArcanicMenu.acc(), -1, 0.1F * hk));
             Px.textCenter(g, t, cx, by + (bh - bfs) / 2, Px.Weight.SEMIBOLD, bfs, -1);
             if (!this.menu.under())
-                this.menu.clipped(bx, by, bw, bh, 0.0F, this.menu.top, this.menu.bottom, click, (Runnable) null);
+                this.menu.clipped(bx, by, bw, bh, 0.0F, this.menu.top, this.menu.bottom, click, null);
         }
     }
 }

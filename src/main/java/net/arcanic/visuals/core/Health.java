@@ -34,14 +34,14 @@ public final class Health {
     public static Reading of(LivingEntity e) {
         float hp = e.getHealth();
         float abs = Math.max(0.0F, e.getAbsorptionAmount());
-        Integer var10000;
+        Integer integer;
         if (e instanceof Player p) {
-            var10000 = belowName(p);
+            integer = belowName(p);
         } else {
-            var10000 = null;
+            integer = null;
         }
 
-        Integer score = var10000;
+        Integer score = integer;
         if (score != null) {
             hp = (float) score;
         }

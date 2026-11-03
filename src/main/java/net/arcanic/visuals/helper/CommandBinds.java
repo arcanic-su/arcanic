@@ -25,7 +25,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +44,7 @@ public final class CommandBinds extends Module {
     public final List<Bind> binds = new ArrayList<>();
     private boolean loaded;
     private long lastSent;
-    final Setting.Action editor = (Setting.Action)
+    final Setting.Action editor =
             this.add(new Setting.Action("editor", "Список биндов", "Открыть", () -> Minecraft.getInstance()
                     .setScreen(new CommandBindsScreen(Minecraft.getInstance().screen))));
 
@@ -68,7 +67,7 @@ public final class CommandBinds extends Module {
             this.loaded = true;
 
             try {
-                if (!Files.exists(FILE, new LinkOption[0])) {
+                if (!Files.exists(FILE)) {
                     return;
                 }
 

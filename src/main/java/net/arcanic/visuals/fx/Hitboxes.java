@@ -71,44 +71,34 @@ public final class Hitboxes extends Module {
                 "Чёткие рамки сущностей: углы, градиент, свечение и заливка",
                 Category.PLAYERS,
                 false);
-        Setting.Mode var10001 = (Setting.Mode)
-                this.add(new Setting.Mode("style", "Вид обводки", "Полная", new String[] {"Полная", "Углы"}));
-        Setting.Bool var10002 = this.outline;
-        this.style = (Setting.Mode) var10001.showIf(var10002::on);
-        this.corner = (Setting.Num) (this.add(new Setting.Num("corner", "Длина углов", 0.25, 0.05, 0.45, 0.05, "")))
+        Setting.Mode mode = this.add(new Setting.Mode("style", "Вид обводки", "Полная", "Полная", "Углы"));
+        this.style = (Setting.Mode) mode.showIf(this.outline::on);
+        this.corner = (this.add(new Setting.Num("corner", "Длина углов", 0.25, 0.05, 0.45, 0.05, "")))
                 .showIf(() -> this.outline.on() && this.style.is("Углы"));
-        Setting.Num var1 = this.add(new Setting.Num("width2", "Толщина", 2.0, 0.5, 5.0, 0.5, " px"));
-        var10002 = this.outline;
-        this.width = (Setting.Num) var1.showIf(var10002::on);
-        this.colourMode = this.add(new Setting.Mode(
-                "colour_mode", "Окраска", "Тема", new String[] {"Тема", "Свой", "Здоровье", "Радуга"}));
-        this.colourA = (this.add(new Setting.Colour("colour_a", "Цвет", false, -4160260)))
+        this.width = this.add(new Setting.Num("width2", "Толщина", 2.0, 0.5, 5.0, 0.5, " px"))
+                .showIf(this.outline::on);
+        this.colourMode =
+                this.add(new Setting.Mode("colour_mode", "Окраска", "Тема", "Тема", "Свой", "Здоровье", "Радуга"));
+        this.colourA = (this.add(new Setting.Colour("colour_a", "Цвет", false, 0xFFC084FC)))
                 .showIf(() -> this.colourMode.is("Свой"));
         this.gradient = (this.add(new Setting.Bool("gradient", "Градиент", true)))
                 .showIf(() -> !this.colourMode.is("Здоровье"));
-        this.colourB = (Setting.Colour) (this.add(new Setting.Colour("colour_b", "Цвет градиента", false, -14494738)))
+        this.colourB = (this.add(new Setting.Colour("colour_b", "Цвет градиента", false, 0xFF22D3EE)))
                 .showIf(() -> this.gradient.on() && this.colourMode.is("Свой"));
         this.hover = this.add(new Setting.Bool("hover", "Цвет при наведении", true));
-        Setting.Colour var2 = this.add(new Setting.Colour("hover_colour", "Цвет наведения", false, -50354));
-        var10002 = this.hover;
-        this.hoverColour = (Setting.Colour) var2.showIf(var10002::on);
+        this.hoverColour = this.add(new Setting.Colour("hover_colour", "Цвет наведения", false, -50354))
+                .showIf(this.hover::on);
         this.flash = this.add(new Setting.Bool("flash", "Вспышка при ударе", true));
-        var2 = this.add(new Setting.Colour("flash_colour", "Цвет вспышки", false, -1));
-        var10002 = this.flash;
-        this.flashColour = (Setting.Colour) var2.showIf(var10002::on);
+        this.flashColour = this.add(new Setting.Colour("flash_colour", "Цвет вспышки", false, -1))
+                .showIf(this.flash::on);
         this.glow = this.add(new Setting.Bool("glow", "Свечение", true));
-        Setting.Mode var4 = this.add(
-                new Setting.Mode("glow_mode", "Сила свечения", "Обычное", new String[] {"Обычное", "Сильное"}));
-        var10002 = this.glow;
-        this.glowMode = (Setting.Mode) var4.showIf(var10002::on);
+        Setting.Mode mode2 = this.add(new Setting.Mode("glow_mode", "Сила свечения", "Обычное", "Обычное", "Сильное"));
+        this.glowMode = (Setting.Mode) mode2.showIf(this.glow::on);
         this.fill = this.add(new Setting.Bool("fill", "Заливка", false));
-        var4 = this.add(
-                new Setting.Mode("fill_type", "Тип заливки", "Прозрачная", new String[] {"Прозрачная", "Переливание"}));
-        var10002 = this.fill;
-        this.fillType = (Setting.Mode) var4.showIf(var10002::on);
-        Setting.Num var6 = this.add(new Setting.Num("fill_alpha", "Плотность заливки", 22.0, 5.0, 70.0, 1.0, "%"));
-        var10002 = this.fill;
-        this.fillAlpha = (Setting.Num) var6.showIf(var10002::on);
+        mode2 = this.add(new Setting.Mode("fill_type", "Тип заливки", "Прозрачная", "Прозрачная", "Переливание"));
+        this.fillType = (Setting.Mode) mode2.showIf(this.fill::on);
+        this.fillAlpha = this.add(new Setting.Num("fill_alpha", "Плотность заливки", 22.0, 5.0, 70.0, 1.0, "%"))
+                .showIf(this.fill::on);
     }
 
     private static Minecraft mc() {
@@ -135,7 +125,7 @@ public final class Hitboxes extends Module {
 
     private int colour(Entity e, float t, float time, int index) {
         int c;
-        switch ((String) this.colourMode.get()) {
+        switch (this.colourMode.get()) {
             case "Свой":
                 c = this.gradient.on()
                         ? Paint.lerp(this.colourA.argb() | 0xFF000000, this.colourB.argb() | 0xFF000000, t)
@@ -148,17 +138,17 @@ public final class Hitboxes extends Module {
                         1.0F);
                 break;
             case "Здоровье":
-                float var10000;
+                float f2;
                 if (e instanceof LivingEntity l) {
-                    var10000 = Health.of(l).fraction();
+                    f2 = Health.of(l).fraction();
                 } else {
-                    var10000 = 1.0F;
+                    f2 = 1.0F;
                 }
 
-                float hp = var10000;
+                float hp = f2;
                 c = hp > 0.5F
-                        ? Paint.lerp(-340971, -11870592, (hp - 0.5F) * 2.0F)
-                        : Paint.lerp(-770210, -340971, hp * 2.0F);
+                        ? Paint.lerp(0xFFFACC15, 0xFF4ADE80, (hp - 0.5F) * 2.0F)
+                        : Paint.lerp(0xFFF43F5E, 0xFFFACC15, hp * 2.0F);
                 break;
             default:
                 c = this.gradient.on()
@@ -181,7 +171,7 @@ public final class Hitboxes extends Module {
 
     public void render(WorldRenderContext ctx, Vec3 cam, float pt) {
         if (mc().level != null && mc().player != null) {
-            double r2 = (Double) this.range.get() * (Double) this.range.get();
+            double r2 = this.range.get() * this.range.get();
             List<Box> boxes = new ArrayList<>();
             int index = 0;
 
@@ -276,7 +266,7 @@ public final class Hitboxes extends Module {
             if (!corners) {
                 this.segment(vc, pose, cam, box, a, b, h, time, perPx, px, strength, glowPass);
             } else {
-                double k = (Double) this.corner.get();
+                double k = this.corner.get();
                 this.segment(vc, pose, cam, box, a, a.lerp(b, k), h, time, perPx, px, strength, glowPass);
                 this.segment(vc, pose, cam, box, b.lerp(a, k), b, h, time, perPx, px, strength, glowPass);
             }
@@ -338,7 +328,7 @@ public final class Hitboxes extends Module {
         int[][] sides = new int[][] {{0, 1, 5, 4}, {1, 2, 6, 5}, {2, 3, 7, 6}, {3, 0, 4, 7}};
 
         for (int[] f : sides) {
-            for (int i = 0; i < bands; ++i) {
+            for (int i = 0; i < bands; i++) {
                 float t0 = (float) i / (float) bands;
                 float t1 = (float) (i + 1) / (float) bands;
                 Vec3 a = p[f[0]].lerp(p[f[3]], (double) t0);
@@ -382,10 +372,10 @@ public final class Hitboxes extends Module {
             int cb,
             int cc,
             int cd) {
-        Vec3[] q = new Vec3[] {a, b, c, d};
-        int[] col = new int[] {ca, cb, cc, cd};
+        Vec3[] q = {a, b, c, d};
+        int[] col = {ca, cb, cc, cd};
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; i++) {
             Vec3 r = q[i].subtract(cam);
             Fx.v(
                     vc,

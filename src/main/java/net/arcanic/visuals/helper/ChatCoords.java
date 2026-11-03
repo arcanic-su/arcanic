@@ -35,7 +35,7 @@ import net.minecraft.network.chat.Style;
 
 public final class ChatCoords extends Module {
     private final Setting.Bool paint = this.add(new Setting.Bool("paint", "Красить координаты", true));
-    private final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет", true, -6587393));
+    private final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет", true, 0xFF9B7BFF));
     private final Setting.Bool underline = this.add(new Setting.Bool("underline", "Подчёркивание", true));
     private final Setting.Bool hint = this.add(new Setting.Bool("hint", "Подсказка при наведении", true));
     private final Setting.Bool flat = this.add(new Setting.Bool("flat", "Без высоты тоже (x … z …)", true));

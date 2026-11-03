@@ -46,7 +46,7 @@ final class KillFx {
     static final int CONFETTI = 5;
     static final int METEOR = 6;
     static final int THUNDER = 7;
-    private static final float[] LIFE = new float[] {3.2F, 2.3F, 3.1F, 2.4F, 2.6F, 3.4F, 3.3F, 3.0F};
+    private static final float[] LIFE = {3.2F, 2.3F, 3.1F, 2.4F, 2.6F, 3.4F, 3.3F, 3.0F};
     private static final float TAU = ((float) Math.PI * 2F);
     private static final List<Death> WORLD = new ArrayList<>();
     private static final List<Death> STUDIO = new ArrayList<>();
@@ -57,26 +57,23 @@ final class KillFx {
     private static final float GLITCH_DOT = 1.18F;
     private static final float GLITCH_OFF = 1.4F;
     private static final float SHEATH = 0.7F;
-    private static final int[] PARTY = new int[] {-45683, -11713, -12654849, -8585365, -4883457, -30147, -1};
+    private static final int[] PARTY = {-45683, -11713, 0xFF3EE6FF, 0xFF7CFF6B, 0xFFB57BFF, -30147, -1};
     private static final float METEOR_HIT = 0.62F;
-    private static final float[] STRIKES = new float[] {0.5F, 0.78F, 1.02F, 1.32F};
+    private static final float[] STRIKES = {0.5F, 0.78F, 1.02F, 1.32F};
 
     private KillFx() {}
 
     static Show.Pal own(int style) {
-        Show.Pal var10000;
-        switch (style) {
-            case 1 -> var10000 = new Show.Pal(-1, -11138, -38083);
-            case 2 -> var10000 = new Show.Pal(-792321, -4948993, -11854434);
-            case 3 -> var10000 = new Show.Pal(-1, -14486529, -54319);
-            case 4 -> var10000 = new Show.Pal(-1, -52392, -6418640);
-            case 5 -> var10000 = new Show.Pal(-3152, -41054, -10777345);
-            case 6 -> var10000 = new Show.Pal(-1378561, -8600321, -10863617);
-            case 7 -> var10000 = new Show.Pal(-724481, -5993473, -11913729);
-            default -> var10000 = new Show.Pal(-7264, -30166, -3001314);
-        }
-
-        return var10000;
+        return switch (style) {
+            case 1 -> new Show.Pal(-1, -11138, -38083);
+            case 2 -> new Show.Pal(0xFFF3E8FF, 0xFFB47BFF, 0xFF4B1D9E);
+            case 3 -> new Show.Pal(-1, 0xFF22F3FF, -54319);
+            case 4 -> new Show.Pal(-1, -52392, 0xFF9E0F30);
+            case 5 -> new Show.Pal(-3152, -41054, 0xFF5B8CFF);
+            case 6 -> new Show.Pal(0xFFEAF6FF, 0xFF7CC4FF, 0xFF5A3BFF);
+            case 7 -> new Show.Pal(0xFFF4F1FF, 0xFFA48BFF, 0xFF4A35FF);
+            default -> new Show.Pal(-7264, -30166, 0xFFD2341E);
+        };
     }
 
     private static long now(boolean studio) {
@@ -292,7 +289,7 @@ final class KillFx {
     private static void ash(Death d) {
         int n = Math.round(950.0F * Mth.clamp(d.width * d.height / 1.08F, 0.4F, 2.0F));
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             float yn = d.rnd.nextFloat();
             float profile = yn > 0.78F ? 0.55F : (yn > 0.42F ? 1.0F : 0.72F);
             double a = d.rnd.nextDouble() * Math.PI * 2.0;
@@ -366,7 +363,7 @@ final class KillFx {
                         Vector3f b = q.transform(new Vector3f(f.b)).add(at);
                         Vector3f cc = q.transform(new Vector3f(f.c)).add(at);
                         float cool = Show.smooth(age / 0.35F);
-                        dark.add(new Show.Tri(a, b, cc, Show.alpha(Fx.lerp(c.main(), -14869991, cool), 0.9F * life)));
+                        dark.add(new Show.Tri(a, b, cc, Show.alpha(Fx.lerp(c.main(), 0xFF1D1A19, cool), 0.9F * life)));
                         if (cool < 1.0F) {
                             hot.add(new Show.Tri(a, b, cc, Show.alpha(c.light(), (1.0F - cool) * life)));
                         }
@@ -413,7 +410,7 @@ final class KillFx {
             sound(d, SoundEvents.WARDEN_SONIC_BOOM, 0.25F, 2.0F);
             jolt(d, 3.4F * s);
 
-            for (int i = 0; i < 90; ++i) {
+            for (int i = 0; i < 90; i++) {
                 float dir = i % 2 == 0 ? 1.0F : -1.0F;
                 float sp = (5.0F + d.rnd.nextFloat() * 7.0F) * s;
                 Fx.spawn()
@@ -447,7 +444,7 @@ final class KillFx {
             int[] core = new int[n];
             float lean = Mth.sin((double) d.lean);
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 float f = (float) i / (float) (n - 1);
                 float h = f * top;
                 xs[i] = x + v.left().x * lean * (h - chest);
@@ -474,7 +471,7 @@ final class KillFx {
 
             float grow = Show.easeOut(te / 0.12F);
             float glowing = 1.0F - Show.smooth((te - 0.4F) / 1.5F);
-            Show.flat(v, Show.DISC, x, y + 0.006F, z, 1.1F * s / 0.9F, 0.0F, -15594744, 0.45F * glowing, 0.0F);
+            Show.flat(v, Show.DISC, x, y + 0.006F, z, 1.1F * s / 0.9F, 0.0F, 0xFF120B08, 0.45F * glowing, 0.0F);
             Random jag = new Random(d.seed);
 
             for (int dir = -1; dir <= 1; dir += 2) {
@@ -483,7 +480,7 @@ final class KillFx {
                 float[] gz = new float[m];
                 float len = 3.6F * s * grow;
 
-                for (int i = 0; i < m; ++i) {
+                for (int i = 0; i < m; i++) {
                     float f = (float) i / (float) (m - 1);
                     float off = i == 0 ? 0.0F : (jag.nextFloat() - 0.5F) * 0.18F * s;
                     gx[i] = x + side.x * (float) dir * len * f - side.z * off;
@@ -514,7 +511,7 @@ final class KillFx {
         Vec3 hole = d.at.add(0.0, (double) d.height * 0.55, 0.0);
         int i = 0;
 
-        for (int n = count(d, 380); i < n; ++i) {
+        for (int n = count(d, 380); i < n; i++) {
             double[] p = inBody(d);
             Bit b = new Bit();
             b.ox = (float) (p[0] - hole.x);
@@ -568,7 +565,7 @@ final class KillFx {
             List<Dot> front = new ArrayList<>();
             float whirl = t > 2.2F ? (t - 2.2F) * 14.0F : 0.0F;
 
-            for (int i = 0; i < 160; ++i) {
+            for (int i = 0; i < 160; i++) {
                 float f = hash(d.seed, i);
                 float ring = 1.5F + 2.4F * f * f;
                 float a = hash(d.seed, i + 977) * ((float) Math.PI * 2F)
@@ -615,7 +612,7 @@ final class KillFx {
                             q.transform(new Vector3f(-sz * 0.5F, sz, 0.0F)).add(p);
                     Vector3f tip =
                             (new Vector3f(in)).mul(sz * (1.5F + 9.0F * u)).add(p);
-                    scraps.add(new Show.Tri(a1, a2, tip, Show.alpha(Fx.lerp(-14542292, c.main(), u), 0.9F)));
+                    scraps.add(new Show.Tri(a1, a2, tip, Show.alpha(Fx.lerp(0xFF221A2C, c.main(), u), 0.9F)));
                     if (u > 0.4F) {
                         lit.add(new Show.Tri(a1, a2, tip, Show.alpha(c.light(), (u - 0.4F) / 0.6F * 0.8F)));
                     }
@@ -637,7 +634,7 @@ final class KillFx {
                 jolt(d, 3.0F * s);
                 Vec3 at = d.at.add(0.0, (double) d.height * 0.55, 0.0);
 
-                for (int i = 0; i < 70; ++i) {
+                for (int i = 0; i < 70; i++) {
                     Vec3 dv = (new Vec3(d.rnd.nextGaussian(), d.rnd.nextGaussian(), d.rnd.nextGaussian()))
                             .normalize()
                             .scale((3.0 + d.rnd.nextDouble() * 6.0) * (double) s);
@@ -691,7 +688,7 @@ final class KillFx {
         float cell = 0.1F * d.scale;
         int i = 0;
 
-        for (int n = count(d, 320); i < n; ++i) {
+        for (int n = count(d, 320); i < n; i++) {
             double[] p = inBody(d);
             Bit b = new Bit();
             b.x = d.at.x + (double) ((float) Math.round((p[0] - d.at.x) / (double) cell) * cell);
@@ -752,7 +749,7 @@ final class KillFx {
             float fade = 1.0F - Show.smooth((t - LIFE[3] + 0.4F) / 0.4F);
             List<Dot> dead = new ArrayList<>();
 
-            for (int i = 0; i < Math.min(18, d.bits.size()); ++i) {
+            for (int i = 0; i < Math.min(18, d.bits.size()); i++) {
                 Bit b = (Bit) d.bits.get(i);
                 if (!(hash(d.seed + (long) frame, i) < 0.3F)) {
                     float rise = te * (0.3F + b.phase * 0.5F);
@@ -774,7 +771,7 @@ final class KillFx {
 
             float[] shove = new float[9];
 
-            for (int i = 0; i < shove.length; ++i) {
+            for (int i = 0; i < shove.length; i++) {
                 shove[i] = jit.nextFloat() < 0.4F * grow * squash ? (jit.nextFloat() - 0.5F) * 0.7F * s * grow : 0.0F;
             }
 
@@ -790,7 +787,7 @@ final class KillFx {
                 int bars = jit.nextInt(4);
                 float[][] bar = new float[bars][];
 
-                for (int i = 0; i < bars; ++i) {
+                for (int i = 0; i < bars; i++) {
                     bar[i] = new float[] {
                         (jit.nextFloat() - 0.5F) * 1.6F * s,
                         (jit.nextFloat() - 0.1F) * d.height,
@@ -856,7 +853,7 @@ final class KillFx {
     private static void slice(Death d) {
         d.cuts = new float[4][];
 
-        for (int k = 0; k < 4; ++k) {
+        for (int k = 0; k < 4; k++) {
             float side = k % 2 == 0 ? 1.0F : -1.0F;
             d.cuts[k] = new float[] {
                 side * (float) Math.toRadians((double) (16.0F + d.rnd.nextFloat() * 52.0F)),
@@ -889,7 +886,7 @@ final class KillFx {
         float fade = t < 0.7F ? 1.0F : 1.0F - Show.smooth((t - 0.7F) / 0.25F);
         float flare = t < 0.7F ? 0.0F : 1.0F - Show.smooth((t - 0.7F) / 0.18F);
 
-        for (int k = 0; k < d.cuts.length; ++k) {
+        for (int k = 0; k < d.cuts.length; k++) {
             float[] cut = d.cuts[k];
             float te = t - cut[2];
             if (!(te < 0.0F)) {
@@ -909,7 +906,7 @@ final class KillFx {
                 if (d.once(1 + k)) {
                     sound(d, SoundEvents.PLAYER_ATTACK_SWEEP, 0.8F, 1.3F + (float) k * 0.15F);
 
-                    for (int i = 0; i < 16; ++i) {
+                    for (int i = 0; i < 16; i++) {
                         float f = d.rnd.nextFloat() - 0.5F;
                         float side = d.rnd.nextBoolean() ? 1.0F : -1.0F;
                         float sp = (1.5F + d.rnd.nextFloat() * 3.0F) * s;
@@ -937,7 +934,7 @@ final class KillFx {
                     int[] cg = new int[n];
                     int[] cc = new int[n];
 
-                    for (int i = 0; i < n; ++i) {
+                    for (int i = 0; i < n; i++) {
                         float along = ((float) i / (float) (n - 1) * draw - 0.5F) * len;
                         xs[i] = ox + dx * along;
                         ys[i] = oy + dy * along;
@@ -975,7 +972,7 @@ final class KillFx {
                 float oy = mid + cut[3] * d.height * 0.5F + ny * off;
                 float oz = z + nz * off;
 
-                for (int i = 0; i < 40; ++i) {
+                for (int i = 0; i < 40; i++) {
                     float f = d.rnd.nextFloat() - 0.5F;
                     float side = d.rnd.nextBoolean() ? 1.0F : -1.0F;
                     float sp = (1.0F + d.rnd.nextFloat() * 2.6F) * s;
@@ -1029,7 +1026,7 @@ final class KillFx {
         float[] gx = new float[6];
         float[] gz = new float[6];
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 6; i++) {
             float f = ((float) i / 5.0F - 0.5F) * 2.6F * s * Show.easeOut((t - 0.1F) / 0.1F);
             gx[i] = x + side.x * f;
             gz[i] = z + side.z * f;
@@ -1043,7 +1040,7 @@ final class KillFx {
         if (d.pal.equals(own(5))) {
             return PARTY[Math.floorMod(i, PARTY.length)];
         } else {
-            int[] mine = new int[] {d.pal.light(), d.pal.main(), d.pal.deep(), -1};
+            int[] mine = {d.pal.light(), d.pal.main(), d.pal.deep(), -1};
             return mine[Math.floorMod(i, mine.length)];
         }
     }
@@ -1052,7 +1049,7 @@ final class KillFx {
         Vec3 o = d.at.add(0.0, (double) d.height * 0.6, 0.0);
         float s = d.scale;
 
-        for (int i = 0; i < 260; ++i) {
+        for (int i = 0; i < 260; i++) {
             Bit b = new Bit();
             b.x = o.x + (d.rnd.nextDouble() - 0.5) * (double) d.width;
             b.y = o.y + (d.rnd.nextDouble() - 0.5) * 0.6;
@@ -1086,10 +1083,10 @@ final class KillFx {
             jolt(d, 1.2F * s);
         }
 
-        float[] at = new float[] {0.0F, 0.1F, 0.2F, 0.34F};
-        float[] pitch = new float[] {1.0F, 1.26F, 1.5F, 2.0F};
+        float[] at = {0.0F, 0.1F, 0.2F, 0.34F};
+        float[] pitch = {1.0F, 1.26F, 1.5F, 2.0F};
 
-        for (int i = 0; i < at.length; ++i) {
+        for (int i = 0; i < at.length; i++) {
             if (t >= at[i] && d.once(1 + i)) {
                 sound(d, SoundEvents.NOTE_BLOCK_PLING.value(), 0.6F, pitch[i]);
             }
@@ -1161,7 +1158,7 @@ final class KillFx {
         Show.triangles(v, paper, false);
         Vector3f l = v.left();
 
-        for (int r = 0; r < 7; ++r) {
+        for (int r = 0; r < 7; r++) {
             float a = hash(d.seed, r) * ((float) Math.PI * 2F);
             float up = 0.7F + 0.3F * hash(d.seed, r + 50);
             float sp = (5.0F + 3.0F * hash(d.seed, r + 90)) * s;
@@ -1174,7 +1171,7 @@ final class KillFx {
             float[] w = new float[n];
             int[] cs = new int[n];
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 float tau = Math.max(0.0F, t - (float) i * 0.045F);
                 float k = (1.0F - (float) Math.exp((double) (-2.2F * tau))) / 2.2F;
                 float curl = Mth.sin((double) ((float) i * 0.9F + t * 5.0F + (float) r)) * 0.1F * s;
@@ -1188,9 +1185,9 @@ final class KillFx {
             Show.line(v, Fx.Tex.LINE_SOFT.id, xs, ys, zs, w, cs, 0.95F * fade, 0.25F * fade);
         }
 
-        float[] when = new float[] {0.4F, 0.65F, 0.95F};
+        float[] when = {0.4F, 0.65F, 0.95F};
 
-        for (int f = 0; f < when.length; ++f) {
+        for (int f = 0; f < when.length; f++) {
             if (t >= when[f] && d.once(5 + f)) {
                 Vec3 burst = d.at.add(
                         (double) ((hash(d.seed, 200 + f) - 0.5F) * 2.4F * s),
@@ -1199,7 +1196,7 @@ final class KillFx {
                 int col = partyColour(d, f * 2);
                 sound(d, f == 1 ? SoundEvents.FIREWORK_ROCKET_TWINKLE : SoundEvents.FIREWORK_ROCKET_BLAST, 0.7F, 1.3F);
 
-                for (int i = 0; i < 48; ++i) {
+                for (int i = 0; i < 48; i++) {
                     Vec3 dv = (new Vec3(d.rnd.nextGaussian(), d.rnd.nextGaussian(), d.rnd.nextGaussian()))
                             .normalize()
                             .scale((2.5 + d.rnd.nextDouble() * 1.5) * (double) s);
@@ -1242,7 +1239,7 @@ final class KillFx {
             int[] cs = new int[n];
             int[] cc = new int[n];
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 float tt = Math.max(0.0F, t - (float) i * 0.018F);
                 Vector3f p = (new Vector3f(from)).lerp(to, Show.easeIn(tt / 0.62F));
                 float f = (float) i / (float) (n - 1);
@@ -1283,7 +1280,7 @@ final class KillFx {
                 sound(d, SoundEvents.WARDEN_SONIC_BOOM, 0.3F, 1.8F);
                 jolt(d, 4.5F * s);
 
-                for (int i = 0; i < 46; ++i) {
+                for (int i = 0; i < 46; i++) {
                     Bit b = new Bit();
                     b.x = d.at.x;
                     b.y = d.at.y + 0.2;
@@ -1299,7 +1296,7 @@ final class KillFx {
                     d.bits.add(b);
                 }
 
-                for (int i = 0; i < 22; ++i) {
+                for (int i = 0; i < 22; i++) {
                     Fx.spawn()
                             .at(d.at.add((d.rnd.nextDouble() - 0.5) * 1.2, 0.2, (d.rnd.nextDouble() - 0.5) * 1.2))
                             .vel(d.rnd.nextGaussian() * 0.8, 0.6 + d.rnd.nextDouble() * 1.2, d.rnd.nextGaussian() * 0.8)
@@ -1312,7 +1309,7 @@ final class KillFx {
                             .colour(0xA0707078, 5263448);
                 }
 
-                for (int i = 0; i < 70; ++i) {
+                for (int i = 0; i < 70; i++) {
                     double a = d.rnd.nextDouble() * Math.PI * 2.0;
                     double sp = (3.0 + d.rnd.nextDouble() * 7.0) * (double) s;
                     Fx.spawn()
@@ -1337,17 +1334,17 @@ final class KillFx {
             Show.groundRing(v, x, y, z, te, 0.08F, 0.9F, 3.0F * s, c.main(), 0.7F);
             float glowing = 1.0F - Show.smooth((te - 0.5F) / 1.8F);
             float end = 1.0F - Show.smooth((te - 2.0F) / 0.6F);
-            Show.flat(v, Show.DISC, x, y + 0.006F, z, 1.5F * s / 0.9F, 0.0F, -16053744, 0.55F * end, 0.0F);
+            Show.flat(v, Show.DISC, x, y + 0.006F, z, 1.5F * s / 0.9F, 0.0F, 0xFF0B0A10, 0.55F * end, 0.0F);
             Random jag = new Random(d.seed);
 
-            for (int k = 0; k < 8; ++k) {
+            for (int k = 0; k < 8; k++) {
                 float a = (float) k * ((float) Math.PI * 2F) / 8.0F + jag.nextFloat() * 0.5F;
                 float len = (1.4F + jag.nextFloat() * 1.2F) * s * Show.easeOut(te / 0.15F);
                 int m = 7;
                 float[] gx = new float[m];
                 float[] gz = new float[m];
 
-                for (int i = 0; i < m; ++i) {
+                for (int i = 0; i < m; i++) {
                     float f = (float) i / (float) (m - 1);
                     float wob = i == 0 ? 0.0F : (jag.nextFloat() - 0.5F) * 0.5F;
                     gx[i] = x + Mth.cos((double) (a + wob * 0.4F)) * len * f;
@@ -1370,7 +1367,7 @@ final class KillFx {
                     Fx.lerp(c.light(), c.deep(), cool),
                     0.0F,
                     (0.8F * glowing + 0.1F) * end);
-            Show.sprite(v, Show.ORB, x, y + 0.2F * s, z, 0.22F * s, 0.0F, -15461864, 0.9F * end, 0.0F);
+            Show.sprite(v, Show.ORB, x, y + 0.2F * s, z, 0.22F * s, 0.0F, 0xFF141218, 0.9F * end, 0.0F);
             emit(d, dt, te < 2.0F ? 10.0F : 0.0F, () -> Fx.spawn()
                     .at(d.at.add((d.rnd.nextDouble() - 0.5) * 0.5, 0.25, (d.rnd.nextDouble() - 0.5) * 0.5))
                     .vel(d.rnd.nextGaussian() * 0.1, 0.5 + d.rnd.nextDouble() * 0.4, d.rnd.nextGaussian() * 0.1)
@@ -1416,7 +1413,7 @@ final class KillFx {
                 Vector3f a3 = q.transform(new Vector3f(h * 0.8F, h, 0.0F)).add(p);
                 Vector3f a4 =
                         q.transform(new Vector3f(-h * 0.6F, h * 0.9F, 0.0F)).add(p);
-                int stone = Show.alpha(-14014672, end);
+                int stone = Show.alpha(0xFF2A2730, end);
                 rock.add(new Show.Tri(a1, a2, a3, stone));
                 rock.add(new Show.Tri(a1, a3, a4, stone));
                 int glow = Show.alpha(Fx.lerp(c.light(), c.deep(), cool), (1.0F - cool) * end);
@@ -1460,7 +1457,7 @@ final class KillFx {
         float lit = 0.0F;
         int last = -1;
 
-        for (int k = 0; k < STRIKES.length; ++k) {
+        for (int k = 0; k < STRIKES.length; k++) {
             float te = t - STRIKES[k];
             if (te >= 0.0F) {
                 last = k;
@@ -1475,7 +1472,7 @@ final class KillFx {
         List<Dot> dark = new ArrayList<>();
         List<Dot> glow = new ArrayList<>();
 
-        for (int i = 0; i < 18; ++i) {
+        for (int i = 0; i < 18; i++) {
             float a = r.nextFloat() * ((float) Math.PI * 2F)
                     + t * (0.15F + r.nextFloat() * 0.2F) * (float) (i % 2 == 0 ? 1 : -1);
             float rr = (0.3F + r.nextFloat() * 1.6F) * s;
@@ -1483,7 +1480,7 @@ final class KillFx {
             float pz = z + Mth.sin((double) a) * rr;
             float py = cloudY + (r.nextFloat() - 0.5F) * 0.7F * s;
             float half = (0.6F + r.nextFloat() * 0.6F) * s * (0.6F + 0.4F * cloud);
-            dark.add(new Dot(px, py, pz, half, Show.alpha(-15396067, 0.85F * cloud)));
+            dark.add(new Dot(px, py, pz, half, Show.alpha(0xFF15131D, 0.85F * cloud)));
             float inner = 0.5F + r.nextFloat() * 0.5F;
             if (lit > 0.0F) {
                 glow.add(new Dot(px, py, pz, half * 0.9F, Show.alpha(c.main(), lit * 0.7F * cloud * inner)));
@@ -1493,7 +1490,7 @@ final class KillFx {
         dots(v, Fx.Tex.SMOKE.id, dark, 1.0F, 0.0F);
         dots(v, Show.ORB, glow, 0.0F, 1.0F);
 
-        for (int k = 0; k < STRIKES.length; ++k) {
+        for (int k = 0; k < STRIKES.length; k++) {
             float te = t - STRIKES[k];
             if (!(te < 0.0F)) {
                 Random br = new Random(d.seed + (long) k * 977L);
@@ -1516,7 +1513,7 @@ final class KillFx {
                     jolt(d, 1.8F * s);
                     Vec3 at = v.world(hit);
 
-                    for (int i = 0; i < 34; ++i) {
+                    for (int i = 0; i < 34; i++) {
                         Vec3 dv = (new Vec3(d.rnd.nextGaussian(), d.rnd.nextGaussian() + 0.6, d.rnd.nextGaussian()))
                                 .normalize()
                                 .scale((2.0 + d.rnd.nextDouble() * 4.0) * (double) s);
@@ -1538,7 +1535,7 @@ final class KillFx {
                     float[][] main = jag(br, top, hit, 5, 0.32F);
                     strip(v, main, 0.34F * s, 0.07F * s, c, a);
 
-                    for (int f = 0; f < 2; ++f) {
+                    for (int f = 0; f < 2; f++) {
                         int from = 6 + br.nextInt(14);
                         Vector3f start = new Vector3f(main[0][from], main[1][from], main[2][from]);
                         Vector3f end = (new Vector3f(hit))
@@ -1556,7 +1553,7 @@ final class KillFx {
             Random ar = new Random(d.seed ^ (long) (t * 30.0F));
             float a = 1.0F - Show.smooth((t - 1.4F) / 0.8F);
 
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < 3; i++) {
                 float a1 = ar.nextFloat() * ((float) Math.PI * 2F);
                 float a2 = a1 + (ar.nextFloat() - 0.5F) * 2.0F;
                 float rr = d.width * 0.55F;
@@ -1569,7 +1566,7 @@ final class KillFx {
         }
 
         float burn = last < 0 ? 0.0F : 1.0F - Show.smooth((t - 2.2F) / 0.8F);
-        Show.flat(v, Show.DISC, x, y + 0.006F, z, s / 0.9F, 0.0F, -15922414, 0.5F * burn, 0.0F);
+        Show.flat(v, Show.DISC, x, y + 0.006F, z, s / 0.9F, 0.0F, 0xFF0D0B12, 0.5F * burn, 0.0F);
         if (lit > 0.0F) {
             Show.flat(v, Show.RING, x, y + 0.03F, z, 1.4F * s / 0.86F, t, c.main(), 0.2F * lit, lit);
             if (reach > 0.0F) {

@@ -72,7 +72,7 @@ public final class EnchantPickerScreen extends Screen {
     private static final int ANY = 7;
     private static final int OTHER = 8;
     private static final int CURSE = 9;
-    private static final String[] KINDS = new String[] {
+    private static final String[] KINDS = {
         "HolyWorld",
         "Броня",
         "Оружие",
@@ -84,7 +84,7 @@ public final class EnchantPickerScreen extends Screen {
         "Прочее",
         "Проклятия"
     };
-    private static final int[] ORDER = new int[] {1, 3, 2, 4, 5, 6};
+    private static final int[] ORDER = {1, 3, 2, 4, 5, 6};
     private static final Item[][] ITEMS;
     private final List<Ench> all = new ArrayList<>();
     private static final ItemStack BOOK;
@@ -160,41 +160,17 @@ public final class EnchantPickerScreen extends Screen {
     }
 
     private static Item holyItem(String type) {
-        Item var10000;
-        switch (type) {
-            case "lumberjack":
-                var10000 = Items.NETHERITE_AXE;
-                break;
-            case "ft-sword":
-                var10000 = Items.NETHERITE_SWORD;
-                break;
-            case "ft-armor":
-                var10000 = Items.NETHERITE_HELMET;
-                break;
-            case "farmer":
-            case "replant":
-                var10000 = Items.NETHERITE_HOE;
-                break;
-            case "impenetrable":
-                var10000 = Items.NETHERITE_CHESTPLATE;
-                break;
-            case "lava":
-                var10000 = Items.NETHERITE_BOOTS;
-                break;
-            case "homing":
-                var10000 = Items.BOW;
-                break;
-            case "critical":
-            case "rich":
-            case "stun":
-            case "mob-farmer":
-                var10000 = Items.NETHERITE_SWORD;
-                break;
-            default:
-                var10000 = Items.NETHERITE_PICKAXE;
-        }
-
-        return var10000;
+        return switch (type) {
+            case "lumberjack" -> Items.NETHERITE_AXE;
+            case "ft-sword" -> Items.NETHERITE_SWORD;
+            case "ft-armor" -> Items.NETHERITE_HELMET;
+            case "farmer", "replant" -> Items.NETHERITE_HOE;
+            case "impenetrable" -> Items.NETHERITE_CHESTPLATE;
+            case "lava" -> Items.NETHERITE_BOOTS;
+            case "homing" -> Items.BOW;
+            case "critical", "rich", "stun", "mob-farmer" -> Items.NETHERITE_SWORD;
+            default -> Items.NETHERITE_PICKAXE;
+        };
     }
 
     protected void init() {
@@ -262,7 +238,7 @@ public final class EnchantPickerScreen extends Screen {
             names.add("Выбрано");
         }
 
-        for (int kd = 0; kd < KINDS.length; ++kd) {
+        for (int kd = 0; kd < KINDS.length; kd++) {
             List<Ench> in = new ArrayList<>();
 
             for (Ench e : this.all) {
@@ -276,20 +252,20 @@ public final class EnchantPickerScreen extends Screen {
             names.add(KINDS[kd]);
         }
 
-        for (int gi = 0; gi < groups.size(); ++gi) {
+        for (int gi = 0; gi < groups.size(); gi++) {
             List<Ench> in = (List) groups.get(gi);
             if (!in.isEmpty()) {
                 if (y > 0) {
                     y += this.k.S(10.0);
                 }
 
-                out.add(new Line(Lang.tr((String) names.get(gi)), in.size(), (Ench) null, x0, y, w, (String) null));
+                out.add(new Line(Lang.tr(names.get(gi)), in.size(), (Ench) null, x0, y, w, null));
                 y += headH;
 
-                for (int i = 0; i < in.size(); ++i) {
+                for (int i = 0; i < in.size(); i++) {
                     int col = i % 2;
                     out.add(new Line(
-                            (String) null,
+                            null,
                             0,
                             (Ench) in.get(i),
                             x0 + col * (colW + gap),
@@ -521,7 +497,7 @@ public final class EnchantPickerScreen extends Screen {
     }
 
     private void list(GuiGraphics g, int mx, int my) {
-        int[] height = new int[] {0};
+        int[] height = {0};
         List<Line> lines = this.layout(height);
         int view = this.listBottom - this.listTop;
         float max = (float) Math.max(0, height[0] - view);
@@ -560,7 +536,7 @@ public final class EnchantPickerScreen extends Screen {
             }
 
             g.disableScissor();
-            int bg = PromptScreen.Kit.light() ? -1 : -15856111;
+            int bg = PromptScreen.Kit.light() ? -1 : 0xFF0E0E11;
             int fh = this.k.S(16.0);
             if (this.shown > 0.5F) {
                 Px.vgrad(g, this.cx + this.k.S(2.0), this.listTop, this.cw - this.k.S(4.0), fh, bg, Px.a(bg, 0));
@@ -605,12 +581,8 @@ public final class EnchantPickerScreen extends Screen {
         boolean inList = my >= this.listTop && my < this.listBottom;
         boolean hv =
                 inList && PromptScreen.Kit.in((double) mx, (double) my, x - this.k.S(6.0), y, w + this.k.S(12.0), h);
-        Anim var10000 = this.anim;
-        String var10001 = l.key();
-        float hk = var10000.to("h:" + var10001, hv ? 1.0F : 0.0F, 20.0F);
-        var10000 = this.anim;
-        var10001 = l.key();
-        float ok = var10000.to("o:" + var10001, on ? 1.0F : 0.0F, 18.0F);
+        float hk = this.anim.to("h:" + l.key(), hv ? 1.0F : 0.0F, 20.0F);
+        float ok = this.anim.to("o:" + l.key(), on ? 1.0F : 0.0F, 18.0F);
         int acc = ArcanicMenu.acc();
         int dim = PromptScreen.Kit.dim();
         int text = PromptScreen.Kit.T().text();
@@ -632,7 +604,7 @@ public final class EnchantPickerScreen extends Screen {
             if (fits) {
                 int x0 = right - span;
 
-                for (int i = 1; i <= e.max(); ++i) {
+                for (int i = 1; i <= e.max(); i++) {
                     int lx = x0 + (i - 1) * (chw + cg);
                     boolean lit = on && i >= lv;
                     boolean pick = i == lv;
@@ -672,7 +644,7 @@ public final class EnchantPickerScreen extends Screen {
                         this.k.S(11.0),
                         on ? text : dim);
 
-                for (int s = 0; s < 2; ++s) {
+                for (int s = 0; s < 2; s++) {
                     int bx = s == 0 ? x0 : x0 + sw + vw;
                     boolean bh = inList && PromptScreen.Kit.in((double) mx, (double) my, bx, cyy, sw, chh);
                     if (bh) {

@@ -56,14 +56,14 @@ public final class ShulkerPreview extends Module {
 
     public static void register() {
         TooltipComponentCallback.EVENT.register((TooltipComponentCallback) (data) -> {
-            Client var10000;
+            Client client2;
             if (data instanceof Data d) {
-                var10000 = new Client(d);
+                client2 = new Client(d);
             } else {
-                var10000 = null;
+                client2 = null;
             }
 
-            return var10000;
+            return client2;
         });
     }
 
@@ -76,14 +76,14 @@ public final class ShulkerPreview extends Module {
                 c.copyInto(items);
                 int colour = 0;
                 if (m.tint.on()) {
-                    Item var7 = stack.getItem();
-                    if (var7 instanceof BlockItem) {
-                        BlockItem bi = (BlockItem) var7;
-                        Block var10 = bi.getBlock();
-                        if (var10 instanceof ShulkerBoxBlock) {
-                            ShulkerBoxBlock sb = (ShulkerBoxBlock) var10;
+                    Item item2 = stack.getItem();
+                    if (item2 instanceof BlockItem) {
+                        BlockItem bi = (BlockItem) item2;
+                        Block block2 = bi.getBlock();
+                        if (block2 instanceof ShulkerBoxBlock) {
+                            ShulkerBoxBlock sb = (ShulkerBoxBlock) block2;
                             DyeColor d = sb.getColor();
-                            colour = d == null ? -7574616 : 0xFF000000 | d.getTextureDiffuseColor();
+                            colour = d == null ? 0xFF8C6BA8 : 0xFF000000 | d.getTextureDiffuseColor();
                         }
                     }
                 }
@@ -92,7 +92,7 @@ public final class ShulkerPreview extends Module {
                 if (m.compact.on()) {
                     rows = 0;
 
-                    for (int i = 0; i < 27; ++i) {
+                    for (int i = 0; i < 27; i++) {
                         if (!((ItemStack) items.get(i)).isEmpty()) {
                             rows = i / 9 + 1;
                         }
@@ -141,7 +141,7 @@ public final class ShulkerPreview extends Module {
                 Px.round(g, px, py, pw, ph, r, tint == 0 ? 822083583 : Px.a(tint, 46));
                 Px.outline(g, px, py, pw, ph, r, tint == 0 ? 587202559 : Px.a(tint, 120));
 
-                for (int i = 0; i < rows * 9; ++i) {
+                for (int i = 0; i < rows * 9; i++) {
                     int cx = Math.round((float) (x + 4 + i % 9 * 18 + 1) * s);
                     int cy = Math.round((float) (y + 4 + i / 9 * 18 + 1) * s);
                     int cs = Math.round(16.0F * s);
@@ -152,7 +152,7 @@ public final class ShulkerPreview extends Module {
                 Px.end(g);
             }
 
-            for (int i = 0; i < rows * 9; ++i) {
+            for (int i = 0; i < rows * 9; i++) {
                 ItemStack st = (ItemStack) this.d.items().get(i);
                 if (!st.isEmpty()) {
                     int ix = x + 4 + i % 9 * 18 + 1;

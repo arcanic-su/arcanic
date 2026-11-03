@@ -40,9 +40,9 @@ import net.minecraft.util.Util;
  * A click on a row loads it; on hover a row shows its few actions in words; deleting asks again in place.
  */
 final class PresetsPage {
-    static final String[] TAB_ICONS = new String[] {"w.stack", "w.folder", "w.cloud"};
-    private static final int AMBER = -673466;
-    private static final int GREEN = -11870592;
+    static final String[] TAB_ICONS = {"w.stack", "w.folder", "w.cloud"};
+    private static final int AMBER = 0xFFF5B946;
+    private static final int GREEN = 0xFF4ADE80;
     private static final int RED = -41620;
     private static final long CONFIRM_MS = 2600L;
     private final ArcanicMenu menu;
@@ -245,7 +245,7 @@ final class PresetsPage {
         g.enableScissor(x - this.S(12.0), listTop, x + w + this.S(12.0), this.menu.bottom);
         g.pose().pushMatrix();
         g.pose().translate(0.0F, -sc);
-        for (int i = 0; i < list.size(); ++i) {
+        for (int i = 0; i < list.size(); i++) {
             g.nextStratum();
             this.row(g, list.get(i), i, x, listTop + i * rh, w, rh, sc, listTop, i == list.size() - 1);
         }

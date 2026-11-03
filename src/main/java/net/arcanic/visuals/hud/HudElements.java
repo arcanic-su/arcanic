@@ -156,8 +156,7 @@ public final class HudElements {
         final Setting.Bool notice = this.add(new Setting.Bool("notice", "Сообщение об окончании", true));
         private final Map<String, Integer> full = new HashMap<>();
         private final Map<String, Row> rows = new LinkedHashMap<>();
-        private static final String[] ROMAN =
-                new String[] {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+        private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
 
         public Potions() {
             super("potions", "Зелья", "Активные эффекты: иконка, уровень и таймер", false, 0.865, 0.24);
@@ -320,7 +319,7 @@ public final class HudElements {
             ItemCooldownsAccess acc = (ItemCooldownsAccess) cd;
             Map<Identifier, Object> running = acc.arcanicvisuals$cooldowns();
             Inventory inv = p.getInventory();
-            for (int i = 0; i < inv.getContainerSize(); ++i) {
+            for (int i = 0; i < inv.getContainerSize(); i++) {
                 ItemStack st = inv.getItem(i);
                 if (!st.isEmpty() && cd.isOnCooldown(st)) this.icons.put(cd.getCooldownGroup(st), still(st));
             }
@@ -409,7 +408,7 @@ public final class HudElements {
             this.panel(g, 0.0F, 0.0F, width, height, RADIUS);
             LocalPlayer p = HudElements.mc().player;
             EquipmentSlot[] slots = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < 4; i++) {
                 ItemStack it = p == null ? ItemStack.EMPTY : p.getItemBySlot(slots[i]);
                 if (it.isEmpty() && editing) it = preview(3 - i);
                 if (it.isEmpty()) continue;
@@ -468,7 +467,7 @@ public final class HudElements {
             long now = System.nanoTime();
             float dt = Math.min(0.1F, (float) (now - this.last) / 1.0E9F);
             this.last = now;
-            boolean[] down = new boolean[] {
+            boolean[] down = {
                 o.keyUp.isDown(),
                 o.keyLeft.isDown(),
                 o.keyDown.isDown(),
@@ -493,8 +492,7 @@ public final class HudElements {
         }
 
         private void key(GuiGraphics g, int i, int x, int y, int kw, int kh, String label, boolean down, float dt) {
-            float[] var10000 = this.glow;
-            var10000[i] += ((float) (down ? 1 : 0) - this.glow[i]) * (1.0F - (float) Math.exp((double) (-dt * 18.0F)));
+            this.glow[i] += ((float) (down ? 1 : 0) - this.glow[i]) * (1.0F - (float) Math.exp((double) (-dt * 18.0F)));
             float v = this.glow[i];
             // a key is a tile of the kit; a pressed one fills with the accent
             this.tile(g, x, y, kw, kh, this.S(7.0), Px.mix(fillHead(), Px.a(Theme.accent(), 230), v));

@@ -156,7 +156,7 @@ public final class Crosshair extends Module {
         DOT(
                 "Точка",
                 "Маленькая бирюзовая точка",
-                new Spec(Style.DOT, -16711681, 4, 2, 0, true, 1.0F, 1, 1.0F, false, false, 2, 10)),
+                new Spec(Style.DOT, 0xFF00FFFF, 4, 2, 0, true, 1.0F, 1, 1.0F, false, false, 2, 10)),
         CIRCLE(
                 "Круг",
                 "Тонкое кольцо с точкой",
@@ -164,11 +164,11 @@ public final class Crosshair extends Module {
         VALORANT(
                 "Valorant",
                 "Бирюзовый крест с короткими внешними линиями",
-                new Spec(Style.CROSS, -16711681, 5, 2, 3, true, 0.8F, 1, 1.0F, false, true, 2, 10)),
+                new Spec(Style.CROSS, 0xFF00FFFF, 5, 2, 3, true, 0.8F, 1, 1.0F, false, true, 2, 10)),
         CS(
                 "CS",
                 "Тонкий зелёный крест с маленьким зазором",
-                new Spec(Style.CROSS, -16711936, 5, 1, 2, true, 1.0F, 1, 1.0F, false, false, 2, 10)),
+                new Spec(Style.CROSS, 0xFF00FF00, 5, 1, 2, true, 1.0F, 1, 1.0F, false, false, 2, 10)),
         SNIPER(
                 "Снайпер",
                 "Длинный тонкий крест с точкой",
@@ -186,7 +186,7 @@ public final class Crosshair extends Module {
     }
 
     /** One-click high-contrast colours. */
-    public static final int[] SWATCHES = {-1, -16711936, -5374161, -256, -24576, -49088, -65281, -16711681};
+    public static final int[] SWATCHES = {-1, 0xFF00FF00, 0xFFADFF2F, -256, -24576, -49088, -65281, 0xFF00FFFF};
 
     static final String[] COOLDOWNS = {"Полоса", "Кольцо", "Разлёт", "Нет"};
     static final String[] SCALES = {"Авто", "1x", "2x", "3x", "4x"};
@@ -789,7 +789,9 @@ public final class Crosshair extends Module {
     public static final String PREFIX = "ARC>";
     private static final String EVO = "EVO2>";
     private static final Pattern VALORANT = Pattern.compile("^\\d+;.*");
-    private static final int[] VALORANT_COLOURS = {-1, -16711936, -5374161, -3473617, -256, -16711681, -65281, -65536};
+    private static final int[] VALORANT_COLOURS = {
+        -1, 0xFF00FF00, 0xFFADFF2F, 0xFFCAFF2F, -256, 0xFF00FFFF, -65281, -65536
+    };
 
     public static String encode(Spec s, String name) {
         String code = PREFIX + "S:" + s.style.name()

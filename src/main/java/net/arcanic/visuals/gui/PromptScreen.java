@@ -274,9 +274,9 @@ public final class PromptScreen extends Screen {
                 this.switched = right;
                 return true;
             } else {
-                for (int i = 0; i < this.options.size(); ++i) {
+                for (int i = 0; i < this.options.size(); i++) {
                     if (PromptScreen.Kit.in(
-                            mx, my, x, this.cy + this.optionsY + i * this.k.S(34.0), w, this.k.S((double) 34.0F))) {
+                            mx, my, x, this.cy + this.optionsY + i * this.k.S(34.0), w, this.k.S(34.0))) {
                         if (this.picked != i) {
                             UiSound.play("click");
                         }
@@ -344,14 +344,14 @@ public final class PromptScreen extends Screen {
                     .translate(
                             (float) (-this.cx) - (float) this.cw / 2.0F, (float) (-this.cy) - (float) this.ch / 2.0F);
             this.k.card(g, this.cx, top, this.cw, this.ch);
-            this.k.header(g, x, top, w - this.k.S(36.0), this.getTitle().getString(), (String) null, this.head);
+            this.k.header(g, x, top, w - this.k.S(36.0), this.getTitle().getString(), null, this.head);
             this.k.close(
                     g, this.cx + this.cw - this.k.S(18.0) - this.k.S(28.0), top + this.k.S(14.0), px, py, this.anim);
 
-            for (int i = 0; i < this.lines.size(); ++i) {
+            for (int i = 0; i < this.lines.size(); i++) {
                 Px.text(
                         g,
-                        (String) this.lines.get(i),
+                        this.lines.get(i),
                         x,
                         top + this.k.S(42.0) + i * this.k.S(17.0),
                         Px.Weight.MEDIUM,
@@ -367,7 +367,7 @@ public final class PromptScreen extends Screen {
                         top + this.fieldY,
                         w,
                         Lang.tr(this.placeholder),
-                        (String) null,
+                        null,
                         PromptScreen.Kit.in((double) px, (double) py, x, this.cy + this.fieldY, w, this.k.S(32.0)),
                         this.anim,
                         "f");
@@ -386,7 +386,7 @@ public final class PromptScreen extends Screen {
                         py + (top - this.cy));
             }
 
-            for (int i = 0; i < this.options.size(); ++i) {
+            for (int i = 0; i < this.options.size(); i++) {
                 int oy = top + this.optionsY + i * this.k.S(34.0);
                 int oh = this.k.S(34.0);
                 boolean hv = PromptScreen.Kit.in(
@@ -416,7 +416,7 @@ public final class PromptScreen extends Screen {
 
                 Px.text(
                         g,
-                        (String) this.options.get(i),
+                        this.options.get(i),
                         x + this.k.S(34.0),
                         oy + (oh - this.k.S(13.0)) / 2,
                         i == this.picked ? Px.Weight.SEMIBOLD : Px.Weight.MEDIUM,
@@ -503,7 +503,7 @@ public final class PromptScreen extends Screen {
         }
 
         static int dim() {
-            return light() ? T().dim() : -9077366;
+            return light() ? T().dim() : 0xFF757D8A;
         }
 
         static int hair() {
@@ -617,14 +617,14 @@ public final class PromptScreen extends Screen {
         void segmented(GuiGraphics g, int x, int y, int w, String left, String right, float thumb, int mx, int my) {
             int h = this.S(28.0);
             int in = this.S(4.0);
-            Px.round(g, x, y, w, h, this.S(6.0), light() ? -1052684 : inset(false));
+            Px.round(g, x, y, w, h, this.S(6.0), light() ? 0xFFEFEFF4 : inset(false));
             Px.outline(g, x, y, w, h, this.S(6.0), Px.a(T().text(), light() ? 20 : 14));
             float seg = (float) (w - in * 2) / 2.0F;
             int t0 = x + in + Math.round(seg * thumb);
             int t1 = x + in + Math.round(seg * (thumb + 1.0F));
             Px.round(g, t0, y + in, t1 - t0, h - in * 2, this.S(4.0), ArcanicMenu.acc());
 
-            for (int i = 0; i < 2; ++i) {
+            for (int i = 0; i < 2; i++) {
                 float a = Math.max(0.0F, 1.0F - Math.abs(thumb - (float) i));
                 int s0 = x + in + Math.round(seg * (float) i);
                 int s1 = x + in + Math.round(seg * (float) (i + 1));
@@ -663,7 +663,7 @@ public final class PromptScreen extends Screen {
 
         void dangerButton(GuiGraphics g, String label, int x, int y, int w, boolean hv, Anim anim, String key) {
             int h = this.S(34.0);
-            int red = -1027492;
+            int red = 0xFFF0525C;
             float hk = anim.to(key, hv ? 1.0F : 0.0F, 20.0F);
             Px.round(g, x, y, w, h, this.S(7.0), inset(false));
             if (hk > 0.01F) {

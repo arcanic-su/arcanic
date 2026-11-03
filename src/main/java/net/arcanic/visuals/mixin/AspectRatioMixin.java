@@ -46,8 +46,8 @@ public abstract class AspectRatioMixin {
             })
     private void arcanicvisuals$handAspect(Args args) {
         if (Modules.ASPECT.hand.on()) {
-            int w = (Integer) args.get(0);
-            int h = (Integer) args.get(1);
+            int w = args.get(0);
+            int h = args.get(1);
             if (h > 0) {
                 args.set(0, Math.max(1, Math.round((float) h * Modules.ASPECT.now((float) w / (float) h))));
             }

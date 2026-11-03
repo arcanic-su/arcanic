@@ -55,7 +55,7 @@ public class ProjectileHit extends ImpactEffect {
     private static final int FLASH = 1;
     private static final int BLOOD = 2;
     private static final int CONE = 3;
-    private static final float[] LIFE = new float[] {1.2F, 0.25F, 2.4F, 0.75F};
+    private static final float[] LIFE = {1.2F, 0.25F, 2.4F, 0.75F};
     private static final int RAYS = 13;
     private static final int MAX_BURSTS = 12;
     private static final int TRACK_TICKS = 12;
@@ -83,9 +83,7 @@ public class ProjectileHit extends ImpactEffect {
 
     public ProjectileHit() {
         super("projectile_hit", "Projectile Hit", "Эффект при успешном попадании снарядом по сущности");
-        ImpactEffect.Slider var10001 = new ImpactEffect.Slider("Громкость", 0.4F, 0.1F, 1.0F, 0.1F);
-        ImpactEffect.Toggle var10002 = this.sound;
-        this.volume = var10001.showIf(var10002::on);
+        this.volume = new ImpactEffect.Slider("Громкость", 0.4F, 0.1F, 1.0F, 0.1F).showIf(this.sound::on);
         this.clientColour = (new ImpactEffect.Toggle("Цвет клиента", true)).showIf(() -> !this.style.is(2));
         this.colour = (new ImpactEffect.Paint("Кастомный цвет", new Color(158, 237, 237)))
                 .showIf(() -> !this.style.is(2) && !this.clientColour.on());
@@ -161,7 +159,7 @@ public class ProjectileHit extends ImpactEffect {
 
         for (Entity e : mc.level.entitiesForRendering()) {
             if (e instanceof LivingEntity l) {
-                Integer before = (Integer) this.hurt.get(e.getId());
+                Integer before = this.hurt.get(e.getId());
                 now.put(e.getId(), l.hurtTime);
                 if (e != mc.player && before != null && l.hurtTime > before && this.wanted(l)) {
                     this.struck(l);
@@ -277,15 +275,13 @@ public class ProjectileHit extends ImpactEffect {
 
     private void play(Vec3 at, int kind) {
         if (this.sound.on() && mc.level != null) {
-            SoundEvent var10000;
-            switch (kind) {
-                case 1 -> var10000 = SoundEvents.ARROW_HIT_PLAYER;
-                case 2 -> var10000 = SoundEvents.SLIME_SQUISH;
-                case 3 -> var10000 = SoundEvents.GENERIC_EXPLODE.value();
-                default -> var10000 = SoundEvents.GLASS_BREAK;
-            }
-
-            SoundEvent s = var10000;
+            SoundEvent s =
+                    switch (kind) {
+                        case 1 -> SoundEvents.ARROW_HIT_PLAYER;
+                        case 2 -> SoundEvents.SLIME_SQUISH;
+                        case 3 -> SoundEvents.GENERIC_EXPLODE.value();
+                        default -> SoundEvents.GLASS_BREAK;
+                    };
             float pitch = kind == 1 ? 1.0F : (kind == 2 ? 1.5F : (kind == 3 ? 1.9F : 1.6F));
             mc.level.playLocalSound(at.x, at.y, at.z, s, SoundSource.MASTER, this.volume.value(), pitch, false);
         }
@@ -297,7 +293,7 @@ public class ProjectileHit extends ImpactEffect {
         int dark = main & 0xFFFFFF;
         float s = this.size.value();
 
-        for (int i = 0; i < 34; ++i) {
+        for (int i = 0; i < 34; i++) {
             boolean back = i % 6 == 5;
             Vec3 way = (back ? dir.scale(-1.0) : dir)
                     .add(
@@ -326,7 +322,7 @@ public class ProjectileHit extends ImpactEffect {
         int c = this.burstColour();
         float s = this.size.value();
 
-        for (int i = 0; i < 24; ++i) {
+        for (int i = 0; i < 24; i++) {
             Vec3 way = dir.add(
                             ((double) this.random.nextFloat() - 0.5) * 0.9,
                             ((double) this.random.nextFloat() - 0.5) * 0.9 + 0.2,
@@ -392,11 +388,11 @@ public class ProjectileHit extends ImpactEffect {
         float fade = 1.0F - smooth((t - 0.6F) / 0.6F);
         BufferBuilder buf = quads();
 
-        for (int i = 0; i < 13; ++i) {
+        for (int i = 0; i < 13; i++) {
             float px = 0.0F;
             float py = 0.0F;
 
-            for (int k = 0; k < 4; ++k) {
+            for (int k = 0; k < 4; k++) {
                 float k1 = Math.min(1.0F, grow * 4.0F - (float) k);
                 if (k1 <= 0.0F) {
                     break;
@@ -416,7 +412,7 @@ public class ProjectileHit extends ImpactEffect {
         if (t < 0.3F) {
             BufferBuilder glass = quads();
 
-            for (int i = 0; i < 13; ++i) {
+            for (int i = 0; i < 13; i++) {
                 int j = (i + 1) % 13;
                 float ax = b.rays[i * 8 + 6] * s * grow;
                 float ay = b.rays[i * 8 + 7] * s * grow;
@@ -433,7 +429,7 @@ public class ProjectileHit extends ImpactEffect {
             float ft = t - 0.3F;
             BufferBuilder falling = quads();
 
-            for (int i = 0; i < 13; ++i) {
+            for (int i = 0; i < 13; i++) {
                 int j = (i + 1) % 13;
                 float ox = b.shards[i * 6] * ft * s;
                 float oy = b.shards[i * 6 + 1] * ft * s;
@@ -449,7 +445,7 @@ public class ProjectileHit extends ImpactEffect {
                     {b.rays[j * 8 + 6] * s, b.rays[j * 8 + 7] * s}
                 };
 
-                for (int k = 0; k < 4; ++k) {
+                for (int k = 0; k < 4; k++) {
                     float[] p = tri[Math.min(k, 2)];
                     float rx = p[0] - cx;
                     float ry = p[1] - cy;
@@ -477,7 +473,7 @@ public class ProjectileHit extends ImpactEffect {
     private static void star(Matrix4f m, Burst b, int points, float outer, float inner, int c, float a) {
         BufferBuilder buf = quads();
 
-        for (int i = 0; i < points; ++i) {
+        for (int i = 0; i < points; i++) {
             double a0 = (double) i * Math.PI * 2.0 / (double) points;
             double a1 = (double) (i + 1) * Math.PI * 2.0 / (double) points;
             float r0 = i % 2 == 0 ? outer : inner;
@@ -497,7 +493,7 @@ public class ProjectileHit extends ImpactEffect {
         BufferBuilder buf = quads();
         int n = 32;
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             double a0 = (double) i * Math.PI * 2.0 / (double) n;
             double a1 = (double) (i + 1) * Math.PI * 2.0 / (double) n;
             float c0 = (float) Math.cos(a0);
@@ -583,11 +579,11 @@ public class ProjectileHit extends ImpactEffect {
             this.side = helper.cross(dir).normalize();
             this.up = dir.cross(this.side).normalize();
 
-            for (int i = 0; i < 13; ++i) {
+            for (int i = 0; i < 13; i++) {
                 double a = (double) i * Math.PI * 2.0 / 13.0 + ((double) r.nextFloat() - 0.5) * 0.35;
                 float len = 0.55F + r.nextFloat() * 0.35F;
 
-                for (int k = 0; k < 4; ++k) {
+                for (int k = 0; k < 4; k++) {
                     float f = (float) (k + 1) / 4.0F * len;
                     double wobble = a + ((double) r.nextFloat() - 0.5) * 0.25;
                     this.rays[i * 8 + k * 2] = (float) Math.cos(wobble) * f;

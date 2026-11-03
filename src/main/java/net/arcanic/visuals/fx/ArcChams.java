@@ -23,7 +23,6 @@ import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.PoseStack;
 import java.io.InputStream;
@@ -44,6 +43,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
@@ -136,7 +137,7 @@ public final class ArcChams {
                     }
                 } catch (Throwable t) {
                     broken = true;
-                    System.err.println("[ArcanicVisuals] chams off: " + String.valueOf(t));
+                    System.err.println("[ArcanicVisuals] chams off: " + t);
                 }
             }
         }
@@ -202,7 +203,7 @@ public final class ArcChams {
                 buffers.outlineBufferSource().endOutlineBatch();
                 dispatcher.endFrame();
                 ok = true;
-            } catch (Throwable var23) {
+            } catch (Throwable t) {
                 try {
                     queue.clear();
                 } catch (Throwable ignored) {
@@ -227,13 +228,13 @@ public final class ArcChams {
             vao = GL30.glGenVertexArrays();
             vbo = GL15.glGenBuffers();
             GL30.glBindVertexArray(vao);
-            GL15.glBindBuffer(34962, vbo);
-            GL15.glBufferData(34962, 120L, 35048);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, 120L, GL15.GL_DYNAMIC_DRAW);
             GL20.glEnableVertexAttribArray(0);
-            GL20.glVertexAttribPointer(0, 3, 5126, false, 20, 0L);
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 20, 0L);
             GL20.glEnableVertexAttribArray(2);
-            GL20.glVertexAttribPointer(2, 2, 5126, false, 20, 12L);
-            GL15.glBindBuffer(34962, 0);
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, 20, 12L);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL30.glBindVertexArray(0);
             fbo = GL30.glGenFramebuffers();
         }
@@ -241,14 +242,14 @@ public final class ArcChams {
 
     private static int program(String frag) {
         int p = GL20.glCreateProgram();
-        int v = shader(35633, "chams_screen.vert");
-        int f = shader(35632, frag);
+        int v = shader(GL20.GL_VERTEX_SHADER, "chams_screen.vert");
+        int f = shader(GL20.GL_FRAGMENT_SHADER, frag);
         GL20.glAttachShader(p, v);
         GL20.glAttachShader(p, f);
         GL20.glLinkProgram(p);
         GL20.glDeleteShader(v);
         GL20.glDeleteShader(f);
-        if (GL20.glGetProgrami(p, 35714) == 0) {
+        if (GL20.glGetProgrami(p, GL20.GL_LINK_STATUS) == 0) {
             throw new IllegalStateException("chams link: " + GL20.glGetProgramInfoLog(p));
         } else {
             return p;
@@ -257,26 +258,8 @@ public final class ArcChams {
 
     private static int shader(int type, String name) {
         String src;
-        try {
-            InputStream in = ArcChams.class.getResourceAsStream("/assets/arcanicvisuals/shaders/chams/" + name);
-
-            try {
-                src = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (Throwable var7) {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (Throwable var6) {
-                        var7.addSuppressed(var6);
-                    }
-                }
-
-                throw var7;
-            }
-
-            if (in != null) {
-                in.close();
-            }
+        try (InputStream in = ArcChams.class.getResourceAsStream("/assets/arcanicvisuals/shaders/chams/" + name)) {
+            src = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (Exception e) {
             throw new IllegalStateException(name, e);
         }
@@ -284,7 +267,7 @@ public final class ArcChams {
         int s = GL20.glCreateShader(type);
         GL20.glShaderSource(s, src);
         GL20.glCompileShader(s);
-        if (GL20.glGetShaderi(s, 35713) == 0) {
+        if (GL20.glGetShaderi(s, GL20.GL_COMPILE_STATUS) == 0) {
             throw new IllegalStateException(name + ": " + GL20.glGetShaderInfoLog(s));
         } else {
             return s;
@@ -308,35 +291,25 @@ public final class ArcChams {
             }
 
             b.flip();
-            GL15.glBindBuffer(34962, vbo);
-            GL15.glBufferSubData(34962, 0L, b);
-            GL15.glBindBuffer(34962, 0);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0L, b);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             quadW = w;
             quadH = h;
         }
     }
 
     private static int id(GpuTextureView v) {
-        int var10000;
-        if (v != null && !v.isClosed()) {
-            GpuTexture var2 = v.texture();
-            if (var2 instanceof GlTexture) {
-                GlTexture t = (GlTexture) var2;
-                if (!t.isClosed()) {
-                    var10000 = t.glId();
-                    return var10000;
-                }
-            }
+        if (v != null && !v.isClosed() && v.texture() instanceof GlTexture t && !t.isClosed()) {
+            return t.glId();
         }
-
-        var10000 = 0;
-        return var10000;
+        return 0;
     }
 
     private static void target(int tex) {
-        GL30.glBindFramebuffer(36160, fbo);
-        GL33.glFramebufferTexture2D(36160, 36064, 3553, tex, 0);
-        GL33.glFramebufferTexture2D(36160, 36096, 3553, 0, 0);
+        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
+        GL33.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0);
+        GL33.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL11.GL_TEXTURE_2D, 0, 0);
     }
 
     private static void bind(int unit, int tex) {
@@ -428,46 +401,46 @@ public final class ArcChams {
     }
 
     private static final class Snapshot {
-        final int fb = GL11.glGetInteger(36006);
-        final int vaoB = GL11.glGetInteger(34229);
-        final int ab = GL11.glGetInteger(34964);
-        final int prog = GL11.glGetInteger(35725);
-        final int active = GL11.glGetInteger(34016);
-        final int srcRgb = GL11.glGetInteger(32969);
-        final int dstRgb = GL11.glGetInteger(32968);
-        final int srcA = GL11.glGetInteger(32971);
-        final int dstA = GL11.glGetInteger(32970);
+        final int fb = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+        final int vaoB = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
+        final int ab = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
+        final int prog = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        final int active = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
+        final int srcRgb = GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB);
+        final int dstRgb = GL11.glGetInteger(GL14.GL_BLEND_DST_RGB);
+        final int srcA = GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA);
+        final int dstA = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
         final int[] tex = new int[4];
         final int[] smp = new int[4];
         final int[] vp = new int[4];
         final int[] sc = new int[4];
-        final boolean depth = GL11.glIsEnabled(2929);
-        final boolean cull = GL11.glIsEnabled(2884);
-        final boolean scissor = GL11.glIsEnabled(3089);
-        final boolean blend = GL11.glIsEnabled(3042);
-        final boolean mask = GL11.glGetBoolean(2930);
+        final boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        final boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
+        final boolean scissor = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+        final boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+        final boolean mask = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
 
         Snapshot() {
-            GL11.glGetIntegerv(2978, this.vp);
-            GL11.glGetIntegerv(3088, this.sc);
-            int was = GL11.glGetInteger(34016);
+            GL11.glGetIntegerv(GL11.GL_VIEWPORT, this.vp);
+            GL11.glGetIntegerv(GL11.GL_SCISSOR_BOX, this.sc);
+            int was = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
 
-            for (int u = 0; u < 4; ++u) {
+            for (int u = 0; u < 4; u++) {
                 GL33.glActiveTexture('蓀' + u);
-                this.tex[u] = GL11.glGetInteger(32873);
-                this.smp[u] = GL11.glGetInteger(35097);
+                this.tex[u] = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+                this.smp[u] = GL11.glGetInteger(GL33.GL_SAMPLER_BINDING);
             }
 
             GL33.glActiveTexture(was);
         }
 
         void restore() {
-            GL30.glBindFramebuffer(36160, this.fb);
+            GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, this.fb);
             GL30.glBindVertexArray(this.vaoB);
-            GL15.glBindBuffer(34962, this.ab);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.ab);
             GL20.glUseProgram(this.prog);
 
-            for (int u = 0; u < 4; ++u) {
+            for (int u = 0; u < 4; u++) {
                 GlStateManager._activeTexture('蓀' + u);
                 GlStateManager._bindTexture(this.tex[u]);
                 GL33.glBindSampler(u, this.smp[u]);

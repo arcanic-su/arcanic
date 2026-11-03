@@ -85,7 +85,7 @@ final class Tween {
             } else {
                 float u = t;
 
-                for (int i = 0; i < 8; ++i) {
+                for (int i = 0; i < 8; i++) {
                     float x = curve(u, ax, bx) - t;
                     if (Math.abs(x) < 1.0E-5F) {
                         break;
@@ -116,6 +116,6 @@ final class Tween {
     }
 
     interface Easing {
-        float ease(float var1);
+        float ease(float t);
     }
 }

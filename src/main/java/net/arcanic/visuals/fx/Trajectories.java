@@ -66,18 +66,18 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3fc;
 
 public final class Trajectories extends Module {
-    private final Setting.Mode which = this.add(new Setting.Mode(
-            "which", "Что показывать", "Всё брошенное", new String[] {"Всё брошенное", "Только жемчуг"}));
-    private final Setting.Mode style = (Setting.Mode)
-            this.add(new Setting.Mode("style", "Стиль", "Arcanic", new String[] {"Arcanic", "Gamesense"}));
+    private final Setting.Mode which =
+            this.add(new Setting.Mode("which", "Что показывать", "Всё брошенное", "Всё брошенное", "Только жемчуг"));
+    private final Setting.Mode style = this.add(new Setting.Mode("style", "Стиль", "Arcanic", "Arcanic", "Gamesense"));
     private final Setting.Bool before = this.add(new Setting.Bool("before", "До броска", true));
     private final Setting.Bool rainbow =
             (this.add(new Setting.Bool("rainbow", "Радуга", false))).showIf(() -> this.style.is("Gamesense"));
     private final Setting.Bool mine = this.add(new Setting.Bool("mine", "Свои броски", true));
     private final Setting.Bool others = this.add(new Setting.Bool("others", "Чужие броски", true));
-    private final Setting.Colour pathColour = this.add(new Setting.Colour("path_color", "Цвет пути", false, -12774298));
+    private final Setting.Colour pathColour =
+            this.add(new Setting.Colour("path_color", "Цвет пути", false, 0xFF3D1466));
     private final Setting.Colour fillColour =
-            this.add(new Setting.Colour("fill_color", "Цвет заполнения", true, -4037377));
+            this.add(new Setting.Colour("fill_color", "Цвет заполнения", true, 0xFFC264FF));
     private final Setting.Colour hitColour = this.add(new Setting.Colour("hit_color", "Цвет попадания", false, -42386));
     private final Setting.Num width = this.add(new Setting.Num("width", "Толщина", 1.5, 0.5, 4.0, 0.25, " px"));
     private final Setting.Num glow = this.add(new Setting.Num("glow", "Свечение", 55.0, 0.0, 100.0, 5.0, "%"));
@@ -707,7 +707,7 @@ public final class Trajectories extends Module {
             Width wd = light ? (d) -> wpx * 3.4F + 7.0F : (d) -> wpx + 2.0F;
             int col = light ? alpha(c, a * 0.4F * this.glowK()) : alpha(Fx.lerp(c, -1, 0.2F), a * pulse);
 
-            for (int i = 0; i < 8; ++i) {
+            for (int i = 0; i < 8; i++) {
                 boolean bx = (i & 1) != 0;
                 boolean by = (i & 2) != 0;
                 boolean bz = (i & 4) != 0;
@@ -787,7 +787,7 @@ public final class Trajectories extends Module {
     private static double length(List<Vec3> pts) {
         double s = 0.0;
 
-        for (int i = 1; i < pts.size(); ++i) {
+        for (int i = 1; i < pts.size(); i++) {
             s += ((Vec3) pts.get(i)).distanceTo((Vec3) pts.get(i - 1));
         }
 
@@ -801,7 +801,7 @@ public final class Trajectories extends Module {
             List<Vec3> out = new ArrayList<>();
             out.add((Vec3) pts.get(0));
 
-            for (int i = 1; i < pts.size(); ++i) {
+            for (int i = 1; i < pts.size(); i++) {
                 Vec3 a = (Vec3) pts.get(i - 1);
                 Vec3 b = (Vec3) pts.get(i);
                 double seg = a.distanceTo(b);
@@ -835,14 +835,14 @@ public final class Trajectories extends Module {
             List<Vec3> out = new ArrayList<>();
             out.add((Vec3) pts.get(0));
 
-            for (int i = 0; i < pts.size() - 1; ++i) {
+            for (int i = 0; i < pts.size() - 1; i++) {
                 Vec3 p0 = (Vec3) pts.get(Math.max(0, i - 1));
                 Vec3 p1 = (Vec3) pts.get(i);
                 Vec3 p2 = (Vec3) pts.get(i + 1);
                 Vec3 p3 = (Vec3) pts.get(Math.min(pts.size() - 1, i + 2));
                 int n = Math.max(1, (int) Math.ceil(p1.distanceTo(p2) / 0.18));
 
-                for (int j = 1; j <= n; ++j) {
+                for (int j = 1; j <= n; j++) {
                     double t = (double) j / (double) n;
                     double t2 = t * t;
                     double t3 = t2 * t;
@@ -866,7 +866,7 @@ public final class Trajectories extends Module {
             float[] wid = new float[n];
             double run = 0.0;
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 rel[i] = ((Vec3) pts.get(i)).subtract(f.cam);
                 if (i > 0) {
                     run += ((Vec3) pts.get(i)).distanceTo((Vec3) pts.get(i - 1));
@@ -880,7 +880,7 @@ public final class Trajectories extends Module {
 
             Vec3 last = null;
 
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n; i++) {
                 Vec3 dir = rel[Math.min(n - 1, i + 1)].subtract(rel[Math.max(0, i - 1)]);
                 Vec3 side = dir.cross(rel[i]);
                 if (side.lengthSqr() < 1.0E-12) {
@@ -896,7 +896,7 @@ public final class Trajectories extends Module {
                 off[i] = side.scale(Math.max(0.0015, rel[i].length() * (double) f.perPx * (double) wid[i] / 2.0));
             }
 
-            for (int i = 0; i < n - 1; ++i) {
+            for (int i = 0; i < n - 1; i++) {
                 if (col[i] >>> 24 != 0 || col[i + 1] >>> 24 != 0) {
                     Vec3 a = rel[i];
                     Vec3 b = rel[i + 1];
@@ -957,7 +957,7 @@ public final class Trajectories extends Module {
         int steps = Math.max(2, Math.round(72.0F * (to - from)));
         List<Vec3> pts = new ArrayList<>();
 
-        for (int i = 0; i <= steps; ++i) {
+        for (int i = 0; i <= steps; i++) {
             double ang = (Math.PI / 2D)
                     - ((double) from + (double) ((to - from) * (float) i) / (double) steps) * Math.PI * 2.0;
             pts.add(c.add(u.scale(Math.cos(ang) * r)).add(w.scale(Math.sin(ang) * r)));
@@ -969,7 +969,7 @@ public final class Trajectories extends Module {
 
     private static void annulus(
             VertexConsumer vc, Frame f, Vec3 c, Vec3 u, Vec3 w, double r0, double r1, int inner, int outer, int n) {
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             double a0 = (double) i * Math.PI * 2.0 / (double) n;
             double a1 = (double) (i + 1) * Math.PI * 2.0 / (double) n;
             Vec3 d0 = u.scale(Math.cos(a0)).add(w.scale(Math.sin(a0)));
@@ -989,7 +989,7 @@ public final class Trajectories extends Module {
             VertexConsumer vc, Frame f, Vec3 c, Vec3 u, Vec3 w, double r, int centre, int edge, int n) {
         Vec3 rc = c.subtract(f.cam);
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i++) {
             double a0 = (double) i * Math.PI * 2.0 / (double) n;
             double a1 = (double) (i + 1) * Math.PI * 2.0 / (double) n;
             Vec3 ra = c.add(u.scale(Math.cos(a0) * r))
@@ -1023,7 +1023,7 @@ public final class Trajectories extends Module {
                 list.sort((xx, yx) -> Double.compare(xx.mark.distanceToSqr(me), yx.mark.distanceToSqr(me)));
                 int fs = Math.max(11, Math.round((float) Px.height() / 1080.0F * 13.0F));
 
-                for (int i = 0; i < Math.min(4, list.size()); ++i) {
+                for (int i = 0; i < Math.min(4, list.size()); i++) {
                     Track t = (Track) list.get(i);
                     float a = alphaOf(t, now);
                     double lift = t.target != null ? (double) t.target.getBbHeight() + 0.45 : 0.5;
@@ -1049,7 +1049,7 @@ public final class Trajectories extends Module {
                         Px.glow(g, x - fs, y - fs / 2, w + fs * 2, h + fs, accent & 0xFFFFFF | 805306368);
                         Px.round(g, x, y, w, h, h / 2, 0xE60C0B14);
                         Px.outline(g, x, y, w, h, h / 2, accent & 0xFFFFFF | 1879048192);
-                        Px.textCenter(g, text, x + w / 2, y + (h - fs) / 2, Px.Weight.SEMIBOLD, fs, -790536);
+                        Px.textCenter(g, text, x + w / 2, y + (h - fs) / 2, Px.Weight.SEMIBOLD, fs, 0xFFF3EFF8);
                         Px.fade = old;
                     }
                 }
@@ -1180,14 +1180,14 @@ public final class Trajectories extends Module {
     private static record Throw(Vec3 from, Vec3 v, double gravity, double air, double water, ItemStack item) {}
 
     private interface Around {
-        int at(float var1);
+        int at(float t);
     }
 
     private interface Shade {
-        int at(double var1);
+        int at(double t);
     }
 
     private interface Width {
-        float at(double var1);
+        float at(double t);
     }
 }

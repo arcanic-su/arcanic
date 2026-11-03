@@ -63,11 +63,12 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 public final class BlockHighlight extends Module {
-    private static final String[] SHADERS = new String[] {
+    private static final String[] SHADERS = {
         "Nebula", "Cosmos", "Web", "Plasma", "LiquidGlass", "Matrix", "LivingArmor", "AlienNebula", "Holy"
     };
-    private static final String[] FILES =
-            new String[] {"nebula", "cosmos", "web", "plasma", "glass", "matrix", "armor", "alien", "holy"};
+    private static final String[] FILES = {
+        "nebula", "cosmos", "web", "plasma", "glass", "matrix", "armor", "alien", "holy"
+    };
     public final Setting.Bool outline = this.add(new Setting.Bool("outline", "Обводка", true));
     public final Setting.Num width;
     public final Setting.Mode animation;
@@ -100,26 +101,19 @@ public final class BlockHighlight extends Module {
                 "Обводка и анимированная заливка блока, на который смотришь",
                 Category.WORLD,
                 false);
-        Setting.Num var10001 = this.add(new Setting.Num("line_width", "Толщина линий", 2.0, 1.0, 5.0, 0.5, " px"));
-        Setting.Bool var10002 = this.outline;
-        this.width = (Setting.Num) var10001.showIf(var10002::on);
-        Setting.Mode var1 = (Setting.Mode)
-                this.add(new Setting.Mode("animation2", "Анимация", "Нет", new String[] {"Нет", "Пульс", "Волна"}));
-        var10002 = this.outline;
-        this.animation = (Setting.Mode) var1.showIf(var10002::on);
+        this.width = this.add(new Setting.Num("line_width", "Толщина линий", 2.0, 1.0, 5.0, 0.5, " px"))
+                .showIf(this.outline::on);
+        Setting.Mode mode = this.add(new Setting.Mode("animation2", "Анимация", "Нет", "Нет", "Пульс", "Волна"));
+        this.animation = (Setting.Mode) mode.showIf(this.outline::on);
         this.glide = this.add(new Setting.Bool("glide", "Плавный переезд", true));
-        Setting.Num var2 =
-                (Setting.Num) this.add(new Setting.Num("glide_speed", "Скорость переезда", 0.35, 0.05, 1.0, 0.05, ""));
-        var10002 = this.glide;
-        this.glideSpeed = (Setting.Num) var2.showIf(var10002::on);
+        Setting.Num num = this.add(new Setting.Num("glide_speed", "Скорость переезда", 0.35, 0.05, 1.0, 0.05, ""));
+        this.glideSpeed = (Setting.Num) num.showIf(this.glide::on);
         this.clientColour = this.add(new Setting.Bool("client_colour", "Цвет клиента", true));
         this.colour =
                 (this.add(new Setting.Colour("colour2", "Цвет", false, -1))).showIf(() -> !this.clientColour.on());
         this.fill = this.add(new Setting.Bool("fill2", "Заливка", true));
-        Setting.Mode var3 = (Setting.Mode)
-                this.add(new Setting.Mode("fill_type", "Тип заливки", "Обычная", new String[] {"Обычная", "Шейдер"}));
-        var10002 = this.fill;
-        this.fillType = (Setting.Mode) var3.showIf(var10002::on);
+        Setting.Mode mode2 = this.add(new Setting.Mode("fill_type", "Тип заливки", "Обычная", "Обычная", "Шейдер"));
+        this.fillType = (Setting.Mode) mode2.showIf(this.fill::on);
         this.fillAlpha = (this.add(new Setting.Num("fill_alpha", "Прозрачность заливки", 0.3, 0.1, 1.0, 0.05, "")))
                 .showIf(() -> this.fill.on() && this.fillType.is("Обычная"));
         this.shader = (this.add(new Setting.Mode("shader", "Шейдер", "Nebula", SHADERS)))
@@ -128,12 +122,10 @@ public final class BlockHighlight extends Module {
                 .showIf(() -> this.fill.on() && this.fillType.is("Шейдер"));
         this.shaderAlpha = (this.add(new Setting.Num("shader_alpha", "Прозрачность шейдера", 1.0, 0.1, 1.0, 0.05, "")))
                 .showIf(() -> this.fill.on() && this.fillType.is("Шейдер"));
-        this.shaderClient =
-                (Setting.Bool) (this.add(new Setting.Bool("shader_client", "Цвет клиента для шейдера", true)))
-                        .showIf(() -> this.fill.on() && this.fillType.is("Шейдер"));
-        this.shaderColour =
-                (Setting.Colour) (this.add(new Setting.Colour("shader_colour", "Цвет шейдера", false, -16711816)))
-                        .showIf(() -> this.fill.on() && this.fillType.is("Шейдер") && !this.shaderClient.on());
+        this.shaderClient = (this.add(new Setting.Bool("shader_client", "Цвет клиента для шейдера", true)))
+                .showIf(() -> this.fill.on() && this.fillType.is("Шейдер"));
+        this.shaderColour = (this.add(new Setting.Colour("shader_colour", "Цвет шейдера", false, 0xFF00FF78)))
+                .showIf(() -> this.fill.on() && this.fillType.is("Шейдер") && !this.shaderClient.on());
     }
 
     private static Minecraft mc() {
@@ -231,9 +223,9 @@ public final class BlockHighlight extends Module {
 
     private AABB targetBox() {
         if (mc().level != null) {
-            HitResult var2 = mc().hitResult;
-            if (var2 instanceof BlockHitResult) {
-                BlockHitResult hit = (BlockHitResult) var2;
+            HitResult hitResult2 = mc().hitResult;
+            if (hitResult2 instanceof BlockHitResult) {
+                BlockHitResult hit = (BlockHitResult) hitResult2;
                 if (hit.getType() == Type.BLOCK) {
                     BlockPos pos = hit.getBlockPos();
                     VoxelShape shape = mc().level.getBlockState(pos).getShape(mc().level, pos);
@@ -267,7 +259,7 @@ public final class BlockHighlight extends Module {
         int c = a(this.base(), alpha);
 
         for (int[] f : FACES) {
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < 4; i++) {
                 Vec3 q = p[f[i]];
                 vc.addVertex(pose, (float) q.x, (float) q.y, (float) q.z).setColor(c);
             }
@@ -314,7 +306,7 @@ public final class BlockHighlight extends Module {
                 Matrix4f m = pose.pose();
 
                 for (int[] f : FACES) {
-                    for (int i = 0; i < 4; ++i) {
+                    for (int i = 0; i < 4; i++) {
                         Vec3 v = q[f[i]];
                         bb.addVertex(m, (float) v.x, (float) v.y, (float) v.z).setColor(c);
                     }
@@ -371,7 +363,7 @@ public final class BlockHighlight extends Module {
                 }
             } catch (RuntimeException e) {
                 BROKEN.put(file, true);
-                System.err.println("[ArcanicVisuals] block overlay shader " + file + ": " + String.valueOf(e));
+                System.err.println("[ArcanicVisuals] block overlay shader " + file + ": " + e);
             }
         }
     }

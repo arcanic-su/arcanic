@@ -90,16 +90,14 @@ public final class ShaderSky {
     public static boolean render(SkyShader w) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null && mc.player != null) {
-            String var10000;
-            switch ((String) w.mode.get()) {
-                case "Сияние" -> var10000 = "aurora";
-                case "Звёзды" -> var10000 = "stars";
-                case "Плазма" -> var10000 = "plasma";
-                case "Неон" -> var10000 = "neon";
-                default -> var10000 = "nebula";
-            }
-
-            String key = var10000;
+            String key =
+                    switch ((String) w.mode.get()) {
+                        case "Сияние" -> "aurora";
+                        case "Звёзды" -> "stars";
+                        case "Плазма" -> "plasma";
+                        case "Неон" -> "neon";
+                        default -> "nebula";
+                    };
 
             try {
                 GpuDevice device = RenderSystem.getDevice();
@@ -150,7 +148,7 @@ public final class ShaderSky {
                 }
             } catch (RuntimeException e) {
                 if (REPORTED.add(key)) {
-                    System.err.println("[ArcanicVisuals] Animated sky " + key + ": " + String.valueOf(e));
+                    System.err.println("[ArcanicVisuals] Animated sky " + key + ": " + e);
                 }
 
                 return false;

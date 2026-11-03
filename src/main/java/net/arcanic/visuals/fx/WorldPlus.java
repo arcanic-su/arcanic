@@ -142,8 +142,7 @@ public final class WorldPlus {
     }
 
     public static final class ChunkAnimator extends Module {
-        final Setting.Mode from =
-                this.add(new Setting.Mode("from", "Откуда", "Снизу", new String[] {"Снизу", "Сверху"}));
+        final Setting.Mode from = this.add(new Setting.Mode("from", "Откуда", "Снизу", "Снизу", "Сверху"));
         final Setting.Num time = this.add(new Setting.Num("time", "Длительность", 0.6, 0.2, 1.5, 0.05, " с"));
         final Setting.Num depth = this.add(new Setting.Num("depth", "Глубина", 14.0, 4.0, 40.0, 1.0, " бл"));
 
@@ -160,7 +159,7 @@ public final class WorldPlus {
             if (uploaded <= 0L) {
                 return mv;
             } else {
-                float t = (float) (Util.getMillis() - uploaded) / (float) ((Double) this.time.get() * 1000.0);
+                float t = (float) (Util.getMillis() - uploaded) / (float) (this.time.get() * 1000.0);
                 if (!(t >= 1.0F) && !(t < 0.0F)) {
                     Vec3 c = WorldPlus.mc().gameRenderer.getMainCamera().position();
                     if (Math.abs((double) (ox + 8) - c.x) < 24.0 && Math.abs((double) (oz + 8) - c.z) < 24.0) {
@@ -316,7 +315,7 @@ public final class WorldPlus {
                 side = side.normalize();
                 Vec3 up = side.cross(dir).normalize();
 
-                for (int i = 0; i < n && this.streaks.size() < 160; ++i) {
+                for (int i = 0; i < n && this.streaks.size() < 160; i++) {
                     double ang = this.rnd.nextDouble() * Math.PI * 2.0;
                     double rad = 1.2 + this.rnd.nextDouble() * 3.2;
                     Streak s = new Streak();
@@ -377,7 +376,7 @@ public final class WorldPlus {
     }
 
     public static final class Crystals extends Module {
-        final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет", false, -4616961));
+        final Setting.Colour colour = this.add(new Setting.Colour("color", "Цвет", false, 0xFFB98CFF));
         final Setting.Bool tint = this.add(new Setting.Bool("tint", "Перекрашивать", true));
         final Setting.Num size = this.add(new Setting.Num("size", "Размер", 100.0, 50.0, 150.0, 5.0, "%"));
         final Setting.Bool damage = this.add(new Setting.Bool("damage", "Урон по мне", true));
@@ -524,6 +523,6 @@ public final class WorldPlus {
 
         int arcanicvisuals$id();
 
-        void arcanicvisuals$set(boolean var1, int var2);
+        void arcanicvisuals$set(boolean ground, int id);
     }
 }

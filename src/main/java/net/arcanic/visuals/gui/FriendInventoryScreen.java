@@ -139,20 +139,20 @@ public final class FriendInventoryScreen extends Screen {
 
             int cell = this.cell();
             int y = top + this.k.S(66.0);
-            for (int i = 0; i < TOP.length; ++i) {
+            for (int i = 0; i < TOP.length; i++) {
                 if (TOP[i] < 0) continue;
                 ItemStack st = this.slot(g, v, TOP[i], x + i * cell, y, px, py);
                 if (!st.isEmpty()) hovered = st;
             }
             y += cell + this.k.S(12.0);
-            for (int row = 0; row < 3; ++row) {
-                for (int col = 0; col < 9; ++col) {
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 9; col++) {
                     ItemStack st = this.slot(g, v, 9 + row * 9 + col, x + col * cell, y + row * cell, px, py);
                     if (!st.isEmpty()) hovered = st;
                 }
             }
             y += cell * 3 + this.k.S(8.0);
-            for (int col = 0; col < 9; ++col) {
+            for (int col = 0; col < 9; col++) {
                 ItemStack st = this.slot(g, v, col, x + col * cell, y, px, py);
                 if (!st.isEmpty()) hovered = st;
             }

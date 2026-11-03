@@ -149,8 +149,8 @@ public final class AccountManagerScreen extends Screen {
         List<String> shown = new ArrayList<>();
         shown.add(null);
 
-        for (int i = 0; i < 9 && this.page * 9 + i < names.size(); ++i) {
-            shown.add((String) names.get(this.page * 9 + i));
+        for (int i = 0; i < 9 && this.page * 9 + i < names.size(); i++) {
+            shown.add(names.get(this.page * 9 + i));
         }
 
         int rows = (shown.size() + 5 - 1) / 5;
@@ -168,14 +168,14 @@ public final class AccountManagerScreen extends Screen {
         this.top = (Px.height() - blockH) / 2;
         int ty = this.top + this.s(30.0F) + this.s(36.0F);
 
-        for (int i = 0; i < shown.size(); ++i) {
+        for (int i = 0; i < shown.size(); i++) {
             int row = i / 5;
             int inRow = Math.min(5, shown.size() - row * 5);
             int col = i % 5;
             int rowW = inRow * this.tileW() + (inRow - 1) * gap;
             int tx = this.cx - rowW / 2 + col * (this.tileW() + gap);
             int tyy = ty + row * (this.tileH() + gap);
-            String name = (String) shown.get(i);
+            String name = shown.get(i);
             Tile t = new Tile(
                     name == null ? LocalAccounts.launcherName() : this.accountName(name),
                     name == null,
@@ -184,7 +184,7 @@ public final class AccountManagerScreen extends Screen {
                     this.tileW(),
                     this.tileH(),
                     i,
-                    name == null ? () -> this.select((String) null) : () -> this.select(name));
+                    name == null ? () -> this.select(null) : () -> this.select(name));
             t.accountKey = name;
             this.tiles.add(t);
             this.addRenderableWidget(t);
@@ -214,7 +214,7 @@ public final class AccountManagerScreen extends Screen {
                 Component.literal(Lang.tr("Ник профиля")));
         this.nickname.setMaxLength(16);
         this.nickname.setBordered(false);
-        this.nickname.setTextColor(-923137);
+        this.nickname.setTextColor(0xFFF1E9FF);
         this.nickname.setValue(this.draft);
         this.nickname.setVisible(this.offlineOpen);
         this.addWidget(this.nickname);
@@ -277,7 +277,7 @@ public final class AccountManagerScreen extends Screen {
     private void microsoft() {
         if (!MicrosoftAccounts.busy() && !this.cannotSwitch()) {
             UiSound.play("click");
-            this.notify((String) null, "Открываем вход Microsoft в браузере…");
+            this.notify(null, "Открываем вход Microsoft в браузере…");
             MicrosoftAccounts.login(this::accountDone);
             this.init();
         }
@@ -307,13 +307,14 @@ public final class AccountManagerScreen extends Screen {
     private void select(String name) {
         if (!MicrosoftAccounts.busy() && !this.cannotSwitch()) {
             if (name != null && name.startsWith("ms:")) {
-                this.notify((String) null, "Проверяем аккаунт Microsoft…");
+                this.notify(null, "Проверяем аккаунт Microsoft…");
                 MicrosoftAccounts.select(name.substring(3), this::accountDone);
                 this.init();
             } else {
                 String result = name == null ? LocalAccounts.restore() : LocalAccounts.select(name);
-                String var10002 = Minecraft.getInstance().getUser().getName();
-                this.notify(result, "Играешь как " + var10002);
+                this.notify(
+                        result,
+                        "Играешь как " + Minecraft.getInstance().getUser().getName());
                 UiSound.play(result == null ? "select" : "pop");
                 this.undo = null;
                 this.init();
@@ -403,7 +404,7 @@ public final class AccountManagerScreen extends Screen {
                     this.top + Math.round((float) this.s(8.0F) * (1.0F - e)),
                     Px.Weight.SEMIBOLD,
                     this.s(24.0F),
-                    -724488);
+                    0xFFF4F1F8);
             float ek = this.enter(0.12F);
             float ok = this.anim.to("offline", this.offlineOpen ? 1.0F : 0.0F, this.offlineOpen ? 12.0F : 16.0F);
             Px.fade = opacity * ek * ok;
@@ -428,9 +429,9 @@ public final class AccountManagerScreen extends Screen {
             int tfs = this.s(15.0F);
             int tyy = this.lineY + (fh - tfs) / 2;
             if (value.isEmpty()) {
-                Px.text(g, Lang.tr("Новый ник"), fx, tyy, Px.Weight.MEDIUM, tfs, -9475972);
+                Px.text(g, Lang.tr("Новый ник"), fx, tyy, Px.Weight.MEDIUM, tfs, 0xFF6F687C);
             } else {
-                Px.text(g, value, fx, tyy, Px.Weight.SEMIBOLD, tfs, -724488);
+                Px.text(g, value, fx, tyy, Px.Weight.SEMIBOLD, tfs, 0xFFF4F1F8);
             }
 
             if (focus && System.currentTimeMillis() / 530L % 2L == 0L) {
@@ -445,7 +446,8 @@ public final class AccountManagerScreen extends Screen {
                     ? (value.trim().length() < 3 ? "минимум 3 символа" : "латиница, цифры и _")
                     : (dup ? "такой уже есть" : "");
             if (!hint.isEmpty()) {
-                Px.textRight(g, Lang.tr(hint), fx + fw, tyy + this.s(2.0F), Px.Weight.MEDIUM, this.s(11.0F), -495247);
+                Px.textRight(
+                        g, Lang.tr(hint), fx + fw, tyy + this.s(2.0F), Px.Weight.MEDIUM, this.s(11.0F), 0xFFF87171);
             }
 
             g.pose().popMatrix();
@@ -462,7 +464,7 @@ public final class AccountManagerScreen extends Screen {
                         this.statusY(),
                         Px.Weight.MEDIUM,
                         this.s(12.0F),
-                        this.error ? -24401 : -7370596);
+                        this.error ? -24401 : 0xFF8F889C);
             }
         } finally {
             Px.fade = old;
@@ -528,7 +530,7 @@ public final class AccountManagerScreen extends Screen {
             return AccountManagerScreen.this.enter(0.12F);
         }
 
-        abstract void draw(GuiGraphics var1, float var2);
+        abstract void draw(GuiGraphics g, float alpha);
     }
 
     private final class Tile extends Styled {
@@ -591,7 +593,7 @@ public final class AccountManagerScreen extends Screen {
                     AccountManagerScreen.this.s(10.0F),
                     on ? Px.a(a1, 210) : Px.a(0xFFFFFF, (int) (10.0F + 22.0F * v)));
             float dim = on ? 1.0F : 0.72F + 0.28F * v;
-            int tint = Math.round(255.0F * Px.fade) << 24 | Px.mix(-6645853, -1, dim) & 0xFFFFFF;
+            int tint = Math.round(255.0F * Px.fade) << 24 | Px.mix(0xFF9A97A3, -1, dim) & 0xFFFFFF;
             PlayerFaceRenderer.draw(
                     g, DefaultPlayerSkin.get(UUIDUtil.createOfflinePlayerUUID(this.name)), hx, hy, hs, tint);
             int ny = hy + hs + fr + AccountManagerScreen.this.s(12.0F);
@@ -607,7 +609,7 @@ public final class AccountManagerScreen extends Screen {
                     ny,
                     Px.Weight.SEMIBOLD,
                     AccountManagerScreen.this.s(14.0F),
-                    on ? -1 : Px.mix(-5988944, -724488, v));
+                    on ? -1 : Px.mix(0xFFA49DB0, 0xFFF4F1F8, v));
             if (this.launcher) {
                 Px.textCenter(
                         g,
@@ -616,7 +618,7 @@ public final class AccountManagerScreen extends Screen {
                         ny + AccountManagerScreen.this.s(19.0F),
                         Px.Weight.MEDIUM,
                         AccountManagerScreen.this.s(11.0F),
-                        -9475972);
+                        0xFF6F687C);
             } else if (this.accountKey != null && this.accountKey.startsWith("ms:")) {
                 Px.textCenter(
                         g,
@@ -625,7 +627,7 @@ public final class AccountManagerScreen extends Screen {
                         ny + AccountManagerScreen.this.s(19.0F),
                         Px.Weight.MEDIUM,
                         AccountManagerScreen.this.s(11.0F),
-                        on ? a2 : -9475972);
+                        on ? a2 : 0xFF6F687C);
             } else if (on) {
                 int bw = AccountManagerScreen.this.s(18.0F);
                 Px.round(
@@ -672,9 +674,9 @@ public final class AccountManagerScreen extends Screen {
                 float old = Px.fade;
                 Px.fade = old * show;
                 int y = this.py - Math.round((float) AccountManagerScreen.this.s(3.0F) * Math.max(v, show));
-                Px.circle(g, this.px + this.pw / 2, y + this.ph / 2, this.pw / 2, Px.mix(0xF01A1724, -2075041, v));
+                Px.circle(g, this.px + this.pw / 2, y + this.ph / 2, this.pw / 2, Px.mix(0xF01A1724, 0xFFE0565F, v));
                 int is = AccountManagerScreen.this.s(12.0F);
-                Px.icon(g, "x", this.px + (this.pw - is) / 2, y + (this.ph - is) / 2, is, Px.mix(-4607290, -1, v));
+                Px.icon(g, "x", this.px + (this.pw - is) / 2, y + (this.ph - is) / 2, is, Px.mix(0xFFB9B2C6, -1, v));
                 Px.fade = old;
             }
         }
@@ -717,15 +719,15 @@ public final class AccountManagerScreen extends Screen {
                 int q = Math.max(3, (is - Math.max(1, AccountManagerScreen.this.s(1.5F))) / 2);
                 int sp = is - q * 2;
                 int y0 = cy - is / 2;
-                Px.rect(g, x0, y0, q, q, -896990);
-                Px.rect(g, x0 + q + sp, y0, q, q, -8406528);
-                Px.rect(g, x0, y0 + q + sp, q, q, -16734993);
+                Px.rect(g, x0, y0, q, q, 0xFFF25022);
+                Px.rect(g, x0 + q + sp, y0, q, q, 0xFF7FBA00);
+                Px.rect(g, x0, y0 + q + sp, q, q, 0xFF00A4EF);
                 Px.rect(g, x0 + q + sp, y0 + q + sp, q, q, -18176);
             } else {
-                Px.icon(g, "user", x0, cy - is / 2, is, on ? -1 : Px.mix(-7370596, a2, v));
+                Px.icon(g, "user", x0, cy - is / 2, is, on ? -1 : Px.mix(0xFF8F889C, a2, v));
             }
 
-            Px.text(g, t, x0 + is + gap, cy - fs / 2, Px.Weight.MEDIUM, fs, on ? -1 : Px.mix(-3159591, -1, v));
+            Px.text(g, t, x0 + is + gap, cy - fs / 2, Px.Weight.MEDIUM, fs, on ? -1 : Px.mix(0xFFCFC9D9, -1, v));
         }
     }
 
@@ -754,7 +756,7 @@ public final class AccountManagerScreen extends Screen {
                     this.py + (this.ph - AccountManagerScreen.this.s(13.0F)) / 2,
                     Px.Weight.SEMIBOLD,
                     AccountManagerScreen.this.s(13.0F),
-                    ok ? Px.mix(a2, -1, v * 0.5F) : -11580838);
+                    ok ? Px.mix(a2, -1, v * 0.5F) : 0xFF4F4A5A);
         }
     }
 
@@ -816,7 +818,7 @@ public final class AccountManagerScreen extends Screen {
                                         - (float) Math.round((float) AccountManagerScreen.this.s(3.0F) * v),
                                 (float) this.py + (float) this.ph / 2.0F);
                 g.pose().rotate((float) Math.PI);
-                Px.icon(g, "chevron-right", -is / 2, -is / 2, is, Px.mix(-7370596, -724488, v));
+                Px.icon(g, "chevron-right", -is / 2, -is / 2, is, Px.mix(0xFF8F889C, 0xFFF4F1F8, v));
                 g.pose().popMatrix();
                 Px.text(
                         g,
@@ -825,7 +827,7 @@ public final class AccountManagerScreen extends Screen {
                         this.py + (this.ph - fs) / 2,
                         Px.Weight.SEMIBOLD,
                         fs,
-                        Px.mix(-7370596, -724488, v));
+                        Px.mix(0xFF8F889C, 0xFFF4F1F8, v));
             }
         }
     }
@@ -862,7 +864,7 @@ public final class AccountManagerScreen extends Screen {
                 g.pose().rotate((float) Math.PI);
             }
 
-            Px.icon(g, "chevron-right", -is / 2, -is / 2, is, Px.mix(-7370596, -724488, v));
+            Px.icon(g, "chevron-right", -is / 2, -is / 2, is, Px.mix(0xFF8F889C, 0xFFF4F1F8, v));
             g.pose().popMatrix();
         }
     }

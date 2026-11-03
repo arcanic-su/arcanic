@@ -213,10 +213,10 @@ public final class FtApi {
         return switch (loot) {
             case "Проклятые сокровища" -> -50373;
             case "Легендарный" -> -19641;
-            case "Элитный" -> -5141249;
-            case "Богатый" -> -9518593;
-            case "Солидный" -> -8658784;
-            default -> -7696222;
+            case "Элитный" -> 0xFFB18CFF;
+            case "Богатый" -> 0xFF6EC1FF;
+            case "Солидный" -> 0xFF7BE0A0;
+            default -> 0xFF8A90A2;
         };
     }
 
