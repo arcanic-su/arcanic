@@ -81,6 +81,11 @@ public final class ArcanicAccount {
         return premium() ? "Premium" : "Free";
     }
 
+    /** Beta, Premium or Free. */
+    public static String tier() {
+        return plan.equals("beta") ? "Beta" : planName();
+    }
+
     public static String note() {
         return note;
     }
@@ -297,7 +302,13 @@ public final class ArcanicAccount {
      * account may not have it.
      */
     public static CompletableFuture<byte[]> premiumFile(String path) {
-        if (!premium() || !Sync.signedIn()) return CompletableFuture.completedFuture(null);
+        if (!premium()) return CompletableFuture.completedFuture(null);
+        return accountFile(path);
+    }
+
+    /** A file the API gives any signed-in account, such as the models of the Premium backpacks others wear. */
+    public static CompletableFuture<byte[]> accountFile(String path) {
+        if (!Sync.signedIn()) return CompletableFuture.completedFuture(null);
         HttpRequest request = HttpRequest.newBuilder(URI.create(Sync.api() + path))
                 .timeout(Duration.ofSeconds(30))
                 .header("Authorization", "Bearer " + Sync.token())

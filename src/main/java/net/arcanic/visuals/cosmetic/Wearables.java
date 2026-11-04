@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.arcanic.visuals.core.ArcanicAccount;
 import net.arcanic.visuals.core.Category;
 import net.arcanic.visuals.core.Module;
 import net.arcanic.visuals.core.Modules;
@@ -103,7 +104,7 @@ public final class Wearables extends Module {
     public Item current() {
         for (Item it : this.items) {
             if (this.design.is(it.name())) {
-                return it;
+                return it.premium() && !ArcanicAccount.premium() ? null : it;
             }
         }
 
@@ -140,7 +141,8 @@ public final class Wearables extends Module {
                                 num(o, "z", 0.0F),
                                 num(o, "yaw", 0.0F),
                                 num(o, "pitch", 0.0F),
-                                num(o, "roll", 0.0F)));
+                                num(o, "roll", 0.0F),
+                                o.has("premium") && o.get("premium").getAsBoolean()));
                     }
                 } catch (Throwable e) {
                     if (in != null) {
@@ -378,7 +380,8 @@ public final class Wearables extends Module {
             float z,
             float yaw,
             float pitch,
-            float roll) {}
+            float roll,
+            boolean premium) {}
 
     static final class Motion {
         float walk;
@@ -445,6 +448,8 @@ public final class Wearables extends Module {
         };
 
         static Geo get(int n) {
+            Item it = byNumber(String.valueOf(n));
+            if (it != null && it.premium()) return PremiumWear.geo(n);
             if (!CACHE.containsKey(n)) {
                 CACHE.put(n, load(n));
             }
@@ -706,9 +711,16 @@ public final class Wearables extends Module {
         }
 
         private static Geo load(int n) {
+            return load(
+                    n,
+                    Wearables.class.getResourceAsStream("/assets/arcanicvisuals/wear/cosmetic_" + n + ".json"),
+                    Identifier.fromNamespaceAndPath("arcanicvisuals", "textures/wear/cosmetic_" + n + ".png"));
+        }
+
+        /** A model read from the stream, painted with the texture given; null when it cannot be read. */
+        static Geo load(int n, InputStream source, Identifier texture) {
             try {
-                InputStream in =
-                        Wearables.class.getResourceAsStream("/assets/arcanicvisuals/wear/cosmetic_" + n + ".json");
+                InputStream in = source;
 
                 Object value3;
                 label139:
@@ -731,8 +743,7 @@ public final class Wearables extends Module {
                         float th = Wearables.num(d, "texture_height", 64.0F);
                         Geo geo = new Geo();
                         geo.textureHeight = th;
-                        geo.texture = Identifier.fromNamespaceAndPath(
-                                "arcanicvisuals", "textures/wear/cosmetic_" + n + ".png");
+                        geo.texture = texture;
                         Map<String, Bone> byName = new HashMap<>();
                         List<Bone> all = new ArrayList<>();
                         if (g.has("bones")) {

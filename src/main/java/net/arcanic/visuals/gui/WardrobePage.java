@@ -28,6 +28,7 @@ import net.arcanic.visuals.arc.MeleePreview;
 import net.arcanic.visuals.arc.MeleeSkins;
 import net.arcanic.visuals.arc.MeleeSlot;
 import net.arcanic.visuals.arc.PremiumSkins;
+import net.arcanic.visuals.core.ArcanicAccount;
 import net.arcanic.visuals.core.Config;
 import net.arcanic.visuals.core.Lang;
 import net.arcanic.visuals.core.Modules;
@@ -297,7 +298,8 @@ final class WardrobePage {
                 g.nextStratum();
                 Wearables.Item it = (Wearables.Item) items.get(i);
                 String name = it.name();
-                boolean worn = master.enabled() && master.design.is(name);
+                boolean locked = it.premium() && !ArcanicAccount.premium();
+                boolean worn = !locked && master.enabled() && master.design.is(name);
                 arcanicMenu3 = this.menu;
                 float app = ArcanicMenu.ease(
                         (float) (this.menu.now - this.menu.contentAt - (long) Math.min(i, 14) * 24L) / 320.0F);
@@ -309,6 +311,7 @@ final class WardrobePage {
                 int size = Math.min(cw - this.menu.S(20.0), art);
                 size = Math.round((float) size * (1.0F + 0.05F * hv));
                 Identifier icon = Wearables.icon(it);
+                if (locked) Px.fade = kf * app * 0.45F;
                 boolean live = WearPreview.draw(
                         g,
                         it,
@@ -336,6 +339,10 @@ final class WardrobePage {
                             Px.a(0xFFFFFF, Math.round(Px.fade * 255.0F)));
                 }
 
+                Px.fade = kf * app;
+                if (it.premium()) {
+                    this.premiumBadge(g, x + this.menu.S(8.0), y + this.menu.S(8.0) + lift, locked);
+                }
                 this.petLabel(g, x, y + ch - this.menu.S(30.0) + lift, cw, name, worn, hv);
                 Px.fade = kf;
                 if (!this.menu.under() && app > 0.3F) {
@@ -348,6 +355,11 @@ final class WardrobePage {
                             this.menu.top,
                             this.menu.bottom,
                             () -> {
+                                if (locked) {
+                                    UiSound.play("pop", 0.7F, 1.0F);
+                                    Toasts.setting("Этот рюкзак доступен с Premium", false);
+                                    return;
+                                }
                                 if (worn) {
                                     master.setEnabled(false);
                                     UiSound.play("drain");

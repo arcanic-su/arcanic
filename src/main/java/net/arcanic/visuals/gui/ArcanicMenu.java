@@ -28,6 +28,7 @@ import java.util.Map;
 import net.arcanic.visuals.arc.KnifeStudio;
 import net.arcanic.visuals.arc.MeleeDesign;
 import net.arcanic.visuals.arc.MeleeSlot;
+import net.arcanic.visuals.core.ArcanicAccount;
 import net.arcanic.visuals.core.Category;
 import net.arcanic.visuals.core.Config;
 import net.arcanic.visuals.core.Keys;
@@ -2201,28 +2202,64 @@ public final class ArcanicMenu extends Screen {
             }
         }
 
-        String nick = Minecraft.getInstance().getUser().getName();
-        int fy = y + h - foot + this.S(8.0);
-        Px.round(g, bx, fy, this.S(26.0), this.S(26.0), this.S(13.0), cardHi());
+        this.account(g, bx, y + h - foot + this.S(6.0), x + w - this.S(14.0));
+    }
+
+    private static final int BETA = 0xFFF5B946;
+    private static final int PREMIUM = 0xFF9B5CFF;
+
+    /** The Arcanic account at the foot of the sidebar: the nick in the accent gradient and the plan under it. */
+    private void account(GuiGraphics g, int x, int y, int right) {
+        boolean in = ArcanicAccount.state() == ArcanicAccount.State.SIGNED_IN
+                && !ArcanicAccount.name().isEmpty();
+        String nick =
+                in ? ArcanicAccount.name() : Minecraft.getInstance().getUser().getName();
+        int a1 = acc(), a2 = Theme.accent2() | 0xFF000000;
+        int as = this.S(30.0);
+        // avatar: the first letter on a plate in the accent gradient
+        Px.shadow(g, x, y + this.S(4.0), as, as, this.S(10.0), Px.a(a1, 70));
+        Px.round(g, x, y, as, as, as / 2, a1);
+        float old = Px.fade;
+        for (int i = 0; i < 6; i++) {
+            Px.fade = old * (i + 1) / 6.0F * 0.18F;
+            int inset = this.S(1.0) * i;
+            Px.round(g, x + inset, y + inset, as - inset * 2, as - inset * 2, as / 2 - inset, a2);
+        }
+        Px.fade = old;
         Px.textCenter(
                 g,
                 nick.isEmpty() ? "?" : nick.substring(0, 1).toUpperCase(Locale.ROOT),
-                bx + this.S(13.0),
-                fy + (this.S(26.0) - this.S(12.0)) / 2,
-                Px.Weight.SEMIBOLD,
-                this.S(12.0),
-                sub());
-        int nx = bx + this.S(26.0) + this.S(9.0);
-        int nw = x + w - this.S(14.0) - nx;
-        Px.text(
-                g,
-                Px.ellipsize(nick, Px.Weight.SEMIBOLD, this.S(12.0), nw),
-                nx,
-                fy + this.S(1.0),
-                Px.Weight.SEMIBOLD,
-                this.S(12.0),
-                label());
-        Px.text(g, "Arcanic Visuals", nx, fy + this.S(15.0), Px.Weight.MEDIUM, this.S(10.0), faint());
+                x + as / 2,
+                y + (as - this.S(13.0)) / 2,
+                Px.Weight.BOLD,
+                this.S(13.0),
+                -1);
+        int nx = x + as + this.S(10.0);
+        int nfs = this.S(13.0);
+        String shown = Px.ellipsize(nick, Px.Weight.BOLD, nfs, right - nx);
+        // the nick: each letter a step along the accent gradient
+        int cx = nx;
+        int n = Math.max(1, shown.length() - 1);
+        for (int i = 0; i < shown.length(); i++) {
+            String ch = shown.substring(i, i + 1);
+            Px.text(g, ch, cx, y + this.S(1.0), Px.Weight.BOLD, nfs, Px.mix(a1, a2, i / (float) n));
+            cx += Px.textWidth(ch, Px.Weight.BOLD, nfs);
+        }
+        // the plan
+        String tier = in ? ArcanicAccount.tier() : Lang.tr("Не вошёл");
+        int colour =
+                switch (tier) {
+                    case "Beta" -> BETA;
+                    case "Premium" -> PREMIUM;
+                    default -> faint();
+                };
+        int bfs = this.S(9.5);
+        int bh = this.S(14.0);
+        int bw = Px.textWidth(tier, Px.Weight.BOLD, bfs) + this.S(12.0);
+        int by = y + this.S(17.0);
+        Px.round(g, nx, by, bw, bh, bh / 2, Px.a(colour, 46));
+        Px.outline(g, nx, by, bw, bh, bh / 2, Px.a(colour, 140));
+        Px.textCenter(g, tier, nx + bw / 2, by + (bh - bfs) / 2, Px.Weight.BOLD, bfs, colour);
     }
 
     void caps(GuiGraphics g, String text, int x, int y, int fs, int colour) {
