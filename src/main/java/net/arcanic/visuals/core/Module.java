@@ -51,10 +51,19 @@ public abstract class Module {
     }
 
     public boolean enabled() {
+        return this.enabled && !Trust.blocks(this);
+    }
+
+    /** On or off as the player chose it, also while trust mode keeps the module off. */
+    public boolean chosen() {
         return this.enabled;
     }
 
     public void setEnabled(boolean on) {
+        if (Trust.blocks(this)) {
+            this.enabled = on; // kept for a normal start, never runs now
+            return;
+        }
         if (on != this.enabled) {
             this.enabled = on;
             if (on) {
@@ -71,6 +80,7 @@ public abstract class Module {
     }
 
     public void toggle() {
+        if (Trust.blocks(this)) return;
         this.setEnabled(!this.enabled());
     }
 

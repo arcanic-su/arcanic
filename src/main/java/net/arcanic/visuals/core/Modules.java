@@ -227,10 +227,12 @@ public final class Modules {
     /** Modules registered by Lua scripts while they run. */
     public static final List<Module> SCRIPTED = new ArrayList<>();
 
+    /** What the menu lists: ours and the scripts', without what trust mode switches off. */
     public static List<Module> everything() {
-        if (SCRIPTED.isEmpty()) return ALL;
+        if (SCRIPTED.isEmpty() && !Trust.ON) return ALL;
         List<Module> out = new ArrayList<>(ALL);
         out.addAll(SCRIPTED);
+        out.removeIf(Trust::blocks);
         return out;
     }
 

@@ -81,6 +81,32 @@ public final class Wearables extends Module {
         String[] names = (String[]) this.items.stream().map(Item::name).toArray((x$0) -> new String[x$0]);
         this.design = this.add(new Setting.Mode(
                 "design", "Модель", names.length > 0 ? names[0] : "—", names.length > 0 ? names : new String[] {"—"}));
+        this.size = this.add(new Setting.Num("fit_size", "Размер", 100.0, 30.0, 250.0, 5.0, "%"));
+        this.offX = this.add(new Setting.Num("fit_x", "Сдвиг X", 0.0, -16.0, 16.0, 0.5, " px"));
+        this.offY = this.add(new Setting.Num("fit_y", "Сдвиг Y", 0.0, -16.0, 16.0, 0.5, " px"));
+        this.offZ = this.add(new Setting.Num("fit_z", "Сдвиг Z", 0.0, -16.0, 16.0, 0.5, " px"));
+        this.tilt = this.add(new Setting.Num("fit_tilt", "Наклон", 0.0, -60.0, 60.0, 1.0, "°"));
+        this.turn = this.add(new Setting.Num("fit_turn", "Поворот", 0.0, -180.0, 180.0, 5.0, "°"));
+    }
+
+    // where it sits on you and how large: yours only, others see it as it comes
+    public final Setting.Num size, offX, offY, offZ, tilt, turn;
+
+    public List<Setting<?>> fit() {
+        return List.of(size, offX, offY, offZ, tilt, turn);
+    }
+
+    public void resetFit() {
+        for (Setting<?> s : fit()) s.reset();
+    }
+
+    private static Wearables owner(Item it) {
+        return switch (it.type()) {
+            case "wings" -> Modules.WINGS;
+            case "bodywear" -> Modules.BACKPACKS;
+            case "hat" -> Modules.HEADWEAR;
+            default -> null;
+        };
     }
 
     public List<Item> items() {
@@ -338,6 +364,16 @@ public final class Wearables extends Module {
 
             pose.mulPose((Quaternionfc) Axis.ZP.rotationDegrees(180.0F));
             pose.translate(it.x(), it.y() + lift, it.z() + push);
+            Minecraft mc = Minecraft.getInstance();
+            Wearables fit = a != null && mc.player != null && a.id == mc.player.getId() ? owner(it) : null;
+            float grow = 1.0F;
+            if (fit != null) {
+                // turned upside down above: x and y run the other way
+                pose.translate(-fit.offX.f() / 16.0F, -fit.offY.f() / 16.0F, fit.offZ.f() / 16.0F);
+                if (fit.turn.f() != 0.0F) pose.mulPose((Quaternionfc) Axis.YP.rotationDegrees(fit.turn.f()));
+                if (fit.tilt.f() != 0.0F) pose.mulPose((Quaternionfc) Axis.XP.rotationDegrees(fit.tilt.f()));
+                grow = fit.size.f() / 100.0F;
+            }
             if (it.yaw() != 0.0F) {
                 pose.mulPose((Quaternionfc) Axis.YP.rotationDegrees(it.yaw()));
             }
@@ -350,7 +386,7 @@ public final class Wearables extends Module {
                 pose.mulPose((Quaternionfc) Axis.ZP.rotationDegrees(it.roll()));
             }
 
-            pose.scale(it.scale(), it.scale(), it.scale());
+            pose.scale(it.scale() * grow, it.scale() * grow, it.scale() * grow);
             float[] quads = (float[]) posed.computeIfAbsent(it.n(), (k) -> new float[geo.quadCount * 32]);
             geo.pose(d, quads);
             long ms = d.millis();

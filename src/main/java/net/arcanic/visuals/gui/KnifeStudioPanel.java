@@ -30,8 +30,10 @@ import net.arcanic.visuals.arc.MeleeDesign;
 import net.arcanic.visuals.arc.MeleeSkins;
 import net.arcanic.visuals.core.Config;
 import net.arcanic.visuals.core.Lang;
+import net.arcanic.visuals.core.Modules;
 import net.arcanic.visuals.core.Setting;
 import net.arcanic.visuals.core.UiSound;
+import net.arcanic.visuals.fx.VisualFx;
 import net.arcanic.visuals.mixin.GuiGraphicsAccess;
 import net.arcanic.visuals.render.Px;
 import net.minecraft.client.Minecraft;
@@ -187,7 +189,8 @@ final class KnifeStudioPanel {
             g.enableScissor(this.x, t, this.x + this.w, b);
             g.pose().pushMatrix();
             g.pose().translate(0.0F, -sc);
-            this.inner = this.controls(g, d, this.x + pad, t, cw, sc, t, b, live) - t + this.menu.S(12.0);
+            int end = this.controls(g, d, this.x + pad, t, cw, sc, t, b, live);
+            this.inner = this.arms(g, this.x + pad, end + this.menu.S(8.0), cw, sc, t, b, live) - t + this.menu.S(12.0);
             g.pose().popMatrix();
             g.disableScissor();
             g.nextStratum();
@@ -545,6 +548,33 @@ final class KnifeStudioPanel {
             Config.dirty();
         }
 
+        return cy;
+    }
+
+    private int armsSeen;
+
+    /**
+     * The hands themselves (Вид рук): where both hands sit and how large they are, and the left hand on its own. Moving
+     * any of them switches the module on, so the change shows at once.
+     */
+    private int arms(GuiGraphics g, int cx, int cy, int cw, float sc, int t, int b, boolean live) {
+        VisualFx.HandView v = Modules.HANDS;
+        cy = this.caption(g, "Руки", Lang.tr(v.both.on() ? "обе одинаково" : "левая отдельно"), cx, cy, cw);
+        List<Setting<?>> rows = new ArrayList<>();
+        for (Setting<?> s : v.settings) {
+            if (s != v.preset && s.visible()) rows.add(s);
+        }
+        // values change between frames (a click, a drag): compare with what the last frame drew
+        int now = 17;
+        for (Setting<?> s : v.settings) now = now * 31 + s.get().hashCode();
+        if (this.armsSeen != 0 && now != this.armsSeen && !v.enabled()) {
+            v.setEnabled(true);
+            Config.dirty();
+        }
+        this.armsSeen = now;
+        this.menu.compact = true;
+        cy = this.menu.settings(g, v, rows, cx, cy, cw, sc, t, b, live);
+        this.menu.compact = false;
         return cy;
     }
 

@@ -373,7 +373,7 @@ final class WardrobePage {
 
                                 Config.dirty();
                             },
-                            null);
+                            () -> this.menu.openWearStudio(master));
                 }
             }
         }

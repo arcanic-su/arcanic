@@ -2071,5 +2071,20 @@
   "Spotify не принял sp_dc, скопируй куку ещё раз": "Spotify did not accept sp_dc, copy the cookie again",
   "Документация": "Docs",
   "???? ?????? ???????? ? Premium": "This backpack comes with Premium",
-  "?? ?????": "Not signed in"
+  "?? ?????": "Not signed in",
+  "обе одинаково": "both the same",
+  "левая отдельно": "left on its own",
+  "Обе руки одинаково": "Both hands the same",
+  "Левая: сдвиг X": "Left: offset X",
+  "Левая: сдвиг Y": "Left: offset Y",
+  "Левая: сдвиг Z": "Left: offset Z",
+  "Левая: поворот X": "Left: rotation X",
+  "Левая: поворот Y": "Left: rotation Y",
+  "Левая: поворот Z": "Left: rotation Z",
+  "Левая: размер": "Left: size",
+  "Как сидит на тебе: видно в виде от 3-го лица": "How it sits on you: see it in third person",
+  "Запоминается для этого вида косметики.": "Kept for this kind of cosmetic.",
+  "Другие видят её как есть.": "Others see it as it comes.",
+  "Наклон": "Tilt",
+  "Поворот": "Turn"
 }

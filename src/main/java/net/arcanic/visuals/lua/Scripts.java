@@ -97,7 +97,7 @@ public final class Scripts {
     }
 
     public static void start() {
-        if (started) return;
+        if (started || net.arcanic.visuals.core.Trust.ON) return; // trust mode runs no scripts
         started = true;
         try {
             Files.createDirectories(DIR);
@@ -203,6 +203,7 @@ public final class Scripts {
     // ---- events
 
     public static void tick() {
+        if (net.arcanic.visuals.core.Trust.ON) return;
         if (!started) start();
         Minecraft mc = Minecraft.getInstance();
         String now = mc.screen == null ? "" : mc.screen.getClass().getSimpleName();

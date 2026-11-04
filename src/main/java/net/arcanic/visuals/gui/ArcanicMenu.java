@@ -33,6 +33,7 @@ import net.arcanic.visuals.core.Category;
 import net.arcanic.visuals.core.Config;
 import net.arcanic.visuals.core.Keys;
 import net.arcanic.visuals.core.Lang;
+import net.arcanic.visuals.core.MenuPrefs;
 import net.arcanic.visuals.core.Module;
 import net.arcanic.visuals.core.Modules;
 import net.arcanic.visuals.core.Setting;
@@ -41,6 +42,7 @@ import net.arcanic.visuals.core.Sync;
 import net.arcanic.visuals.core.Theme;
 import net.arcanic.visuals.core.ThemeStudio;
 import net.arcanic.visuals.core.UiSound;
+import net.arcanic.visuals.cosmetic.Wearables;
 import net.arcanic.visuals.fx.ItemZones;
 import net.arcanic.visuals.fx.Studio;
 import net.arcanic.visuals.helper.FtApi;
@@ -123,6 +125,7 @@ public final class ArcanicMenu extends Screen {
     final PresetsPage presetsPage = new PresetsPage(this);
     final FriendsPage friendsPage = new FriendsPage(this);
     final CrosshairPage crosshairPage = new CrosshairPage(this);
+    final WearStudioPanel wearStudio = new WearStudioPanel(this);
     final ThemesPage themesPage = new ThemesPage(this);
     final LuaPage luaPage = new LuaPage(this);
     final ModulePopup popup = new ModulePopup(this);
@@ -189,6 +192,10 @@ public final class ArcanicMenu extends Screen {
         else if (HolyEvents.onHolyWorld() || helperServer < 0) helperServer = 0;
         UiSound.play("open");
         Toasts.menu(true);
+        if (!Modules.PREFS.remember.on()) {
+            MenuPrefs.posX = 0.0;
+            MenuPrefs.posY = 0.0;
+        }
         if (category == Category.COSMETICS || category == Category.COMBAT) {
             category = Category.VISUALS;
         }
@@ -477,11 +484,23 @@ public final class ArcanicMenu extends Screen {
                     && (page != ArcanicMenu.Page.WARDROBE || wardSlot(wardrobe) != KnifeStudio.design.getSlot())) {
                 KnifeStudio.close();
             }
+            if (this.wearStudio.open != null
+                    && (page != ArcanicMenu.Page.WARDROBE || wardMaster(wardrobe) != this.wearStudio.open)) {
+                this.wearStudio.open = null;
+            }
 
-            float ks = this.tween("knifeStudio", KnifeStudio.design != null ? 1.0F : 0.0F, 380.0F);
-            int pair = this.pw + this.S(12.0) + this.knifeStudio.width();
+            boolean wear = this.wearStudio.open != null;
+            float ks = this.tween("knifeStudio", KnifeStudio.design != null || wear ? 1.0F : 0.0F, 380.0F);
+            int pair = this.pw + this.S(12.0) + (wear ? this.wearStudio.width() : this.knifeStudio.width());
             if (ks > 0.001F && pair <= sw - this.S(20.0)) {
                 this.px = Math.round((float) (sw - this.pw) / 2.0F - ks * (float) (pair - this.pw) / 2.0F);
+            }
+            // moved by its top bar: kept as a share of the screen, and never off it
+            this.basePx = this.px;
+            this.basePy = this.py;
+            if (Modules.PREFS.drag.on()) {
+                this.px = Math.max(0, Math.min(sw - this.pw, this.px + (int) Math.round(MenuPrefs.posX * sw)));
+                this.py = Math.max(0, Math.min(sh - this.ph, this.py + (int) Math.round(MenuPrefs.posY * sh)));
             }
 
             float t = this.closing
@@ -508,6 +527,8 @@ public final class ArcanicMenu extends Screen {
             Px.fade = base;
             g.nextStratum();
             this.knifeStudio.draw(g);
+            g.nextStratum();
+            this.wearStudio.draw(g);
             g.nextStratum();
             this.popup.modulePopup(g);
             g.nextStratum();
@@ -629,7 +650,36 @@ public final class ArcanicMenu extends Screen {
         }
     }
 
+    private int basePx, basePy;
+    private double moveX, moveY;
+    private boolean moving;
+
+    /** The top bar of the panel picks the menu up; added first, so anything clickable on the bar still wins. */
+    private void moveBar() {
+        if (!this.dragging("menu:move")) this.moving = false;
+        if (!Modules.PREFS.drag.on() || this.closing || this.blocked()) return;
+        this.dragRegion(
+                this.px,
+                this.py,
+                this.pw,
+                this.S(56.0),
+                (x, y) -> {
+                    if (!this.moving) {
+                        this.moveX = x - this.px;
+                        this.moveY = y - this.py;
+                        this.moving = true;
+                    }
+                    int sw = Px.width();
+                    int sh = Px.height();
+                    MenuPrefs.posX = (x - this.moveX - this.basePx) / Math.max(1, sw);
+                    MenuPrefs.posY = (y - this.moveY - this.basePy) / Math.max(1, sh);
+                    Config.dirty();
+                },
+                "menu:move");
+    }
+
     private void panel(GuiGraphics g) {
+        this.moveBar();
         int R = this.S(14.0);
         int side = this.S(196.0);
         Px.shadow(g, this.px, this.py + this.S(12.0), this.pw, this.ph, this.S(40.0), Px.a(0, light() ? 30 : 150));
@@ -2432,7 +2482,20 @@ public final class ArcanicMenu extends Screen {
         }
     }
 
+    void openWearStudio(Wearables master) {
+        KnifeStudio.close();
+        if (this.wearStudio.open == master) {
+            this.wearStudio.open = null;
+            UiSound.play("pop", 0.8F, 0.6F);
+        } else {
+            this.wearStudio.open = master;
+            this.resetScroll("ws");
+            UiSound.play("pop");
+        }
+    }
+
     void openKnifeStudio(MeleeDesign skin) {
+        this.wearStudio.open = null;
         if (KnifeStudio.design == skin) {
             KnifeStudio.close();
             UiSound.play("pop", 0.8F, 0.6F);
@@ -3451,6 +3514,10 @@ public final class ArcanicMenu extends Screen {
                     this.scroll.put(
                             "ks", (Float) this.scroll.getOrDefault("ks", 0.0F) - (float) sy * (float) this.S(60.0));
                     return true;
+                } else if (this.wearStudio.over(this.mx, this.my)) {
+                    this.scroll.put(
+                            "ws", (Float) this.scroll.getOrDefault("ws", 0.0F) - (float) sy * (float) this.S(60.0));
+                    return true;
                 } else {
                     String text2;
                     switch (page) {
@@ -3691,11 +3758,13 @@ public final class ArcanicMenu extends Screen {
                 new Nav(2, 0, "presets-s", "Configs"),
                 new Nav(8, 0, "users", "Friends")
             },
-            {
-                new Nav(3, 0, "hud-s", "HUD Editor"),
-                new Nav(4, 0, "server-s", "Helpers"),
-                new Nav(11, 0, "w.scroll", "Lua")
-            },
+            net.arcanic.visuals.core.Trust.ON
+                    ? new Nav[] {new Nav(3, 0, "hud-s", "HUD Editor"), new Nav(4, 0, "server-s", "Helpers")}
+                    : new Nav[] {
+                        new Nav(3, 0, "hud-s", "HUD Editor"),
+                        new Nav(4, 0, "server-s", "Helpers"),
+                        new Nav(11, 0, "w.scroll", "Lua")
+                    },
             {new Nav(10, 0, "w.swatch", "Theme Studio"), new Nav(6, 0, "flag-s", "Language")}
         };
         GROUPS = new String[] {"Sections", "Content", "Tools", "Client"};

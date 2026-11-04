@@ -110,13 +110,15 @@ public abstract class ItemInHandRendererMixin {
             int light,
             CallbackInfo ci) {
         VisualFx.HandView v = Modules.HANDS;
-        if (v.enabled() && (v.both.on() || hand == InteractionHand.MAIN_HAND)) {
+        if (v.enabled()) {
             float side = side(player, hand);
-            pose.translate(v.x.f() * side, v.y.f(), v.z.f());
-            pose.mulPose((Quaternionfc) Axis.XP.rotationDegrees(v.rx.f()));
-            pose.mulPose((Quaternionfc) Axis.YP.rotationDegrees(v.ry.f() * side));
-            pose.mulPose((Quaternionfc) Axis.ZP.rotationDegrees(v.rz.f() * side));
-            float s = v.scale.f();
+            // set the same, both hands follow the first values; otherwise the left hand has its own
+            boolean left = !v.both.on() && side < 0;
+            pose.translate((left ? v.lx : v.x).f() * side, (left ? v.ly : v.y).f(), (left ? v.lz : v.z).f());
+            pose.mulPose((Quaternionfc) Axis.XP.rotationDegrees((left ? v.lrx : v.rx).f()));
+            pose.mulPose((Quaternionfc) Axis.YP.rotationDegrees((left ? v.lry : v.ry).f() * side));
+            pose.mulPose((Quaternionfc) Axis.ZP.rotationDegrees((left ? v.lrz : v.rz).f() * side));
+            float s = (left ? v.lscale : v.scale).f();
             pose.scale(s, s, s);
         }
     }

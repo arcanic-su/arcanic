@@ -2,6 +2,13 @@
 
 All notable changes to Arcanic Visuals are listed here, newest first.
 
+## 1.6
+
+- Studio for wings, backpacks and headwear (right click in the wardrobe): size, offsets, tilt and turn.
+- Hands in the knife and weapon studio: where the hands sit and how large they are, the left hand on its own.
+- The menu moves when dragged by its top bar and keeps its place.
+- Trust mode is started from the launcher: modules that act for the player and Lua are off for that game.
+
 ## 1.5
 
 - Lua: scripts add their own modules to the menu and HUD elements to the HUD editor, draw on screen and over the
