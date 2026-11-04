@@ -2,15 +2,23 @@
 
 All notable changes to Arcanic Visuals are listed here, newest first.
 
+## 1.5
+
+- Lua: scripts add their own modules to the menu and HUD elements to the HUD editor, draw on screen and over the
+  world, read the player, the world in sight, the inventory and chat, send chat messages and commands, bind keys,
+  play sounds, switch and set our modules, change the theme, load configs, keep data, use timers, JSON and HTTPS.
+  The reference is API.md next to the scripts; the Lua page is the list of scripts.
+- Premium backpacks with exclusive prints and a Labubu on each: Gucci Flora, Louis Vuitton Multicolore, Dior Oblique.
+  Their models come from the Arcanic API; only Premium accounts show them to others.
+- The sidebar shows the Arcanic account and its plan: Beta, Premium or Free.
+- Removed trust mode and the dark/light and wide-menu buttons in the header (themes are in Theme Studio).
+
 ## 1.4
 
 - The Arcanic A replaces the cauldron: the mod icon, the intro animation, the menu mark and the nametag badge.
 - Theme Studio (Client → Theme Studio): ten ready themes, every menu colour with the colour picker, menu opacity and
-  a code to share a theme. It replaces the dark/light and wide-menu buttons in the header.
-- Lua (Tools → Lua): scripts from config/arcanicvisuals/scripts in a sandbox. Scripts add their own modules to the
-  menu and HUD elements to the HUD editor, draw on screen and over the world, read the player, the world in sight,
-  the inventory and chat, send chat messages and commands, bind keys, play sounds, switch and set our modules, change
-  the theme, load configs, keep data, use timers, JSON and HTTPS. The reference is API.md next to the scripts.
+  a code to share a theme.
+- Lua (Tools → Lua): your own scripts from config/arcanicvisuals/scripts, run in a sandbox.
 - World Lyrics: sign in to Yandex Music or Spotify and take the lyrics straight from there, as the first or a second
   source next to lrclib, YouTube Music and NetEase.
 
