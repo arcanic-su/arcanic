@@ -28,52 +28,62 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Stream;
-import net.arcanic.visuals.core.Trust;
 import net.arcanic.visuals.render.Px;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** User scripts from config/arcanicvisuals/scripts. Each runs in its own sandbox, see {@link Script}. Paused in trust mode. */
+/** User scripts from config/arcanicvisuals/scripts. Each runs in its own sandbox, see {@link Script}. */
 public final class Scripts {
     private Scripts() {}
 
     public static final Path DIR =
             FabricLoader.getInstance().getConfigDir().resolve("arcanicvisuals").resolve("scripts");
     static final Path DATA = DIR.resolve("data");
+    public static final Path DOCS = DIR.resolve("API.md");
     private static final Path STATE = DIR.resolve("enabled.json");
+    private static final Path LOG_FILE = DIR.resolve("log.txt");
+    private static final Logger LOG = LoggerFactory.getLogger("ArcanicLua");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final int LOG_LINES = 300;
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ROOT);
+
+    static final Set<String> BUILT_IN = Set.of(
+            "tick", "render", "chat", "send", "key", "join", "leave", "screen", "damage", "death", "attack", "unload");
 
     private static final List<Script> SCRIPTS = new ArrayList<>();
     private static final Set<String> ENABLED = new LinkedHashSet<>();
-    private static final Deque<String> LOG = new ArrayDeque<>();
     private static boolean started;
-    private static long changedAt;
-    /** Set only while render handlers run. */
+    private static boolean logReset;
+    /** Set only while something of a script draws. */
     static GuiGraphics graphics;
 
+    private static String screen = "";
+    private static float health = -1;
+
     public static void register() {
-        ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-            if (!overlay) chat(message);
-        });
-        ClientReceiveMessageEvents.CHAT.register((message, signed, sender, params, time) -> chat(message));
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> overlay || received(message));
+        ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signed, sender, params, time) -> received(message));
+        ClientSendMessageEvents.ALLOW_CHAT.register(message -> LuaGame.sending || emit("send", message));
+        ClientSendMessageEvents.ALLOW_COMMAND.register(command -> LuaGame.sending || emit("send", "/" + command));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, mc) -> mc.execute(() -> {
             ServerData d = mc.getCurrentServer();
             emit("join", d == null ? "" : d.ip);
@@ -81,18 +91,25 @@ public final class Scripts {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, mc) -> mc.execute(() -> emit("leave")));
     }
 
+    /** A message is hidden when a "chat" handler returns false. */
+    private static boolean received(Component message) {
+        return !started || emit("chat", message.getString());
+    }
+
     public static void start() {
         if (started) return;
         started = true;
         try {
             Files.createDirectories(DIR);
+            Files.createDirectories(DIR.resolve("images"));
             if (!hasScripts()) example("hello.lua");
+            writeDocs();
             if (Files.isRegularFile(STATE)) {
                 JsonElement e = JsonParser.parseString(Files.readString(STATE, StandardCharsets.UTF_8));
                 if (e.isJsonArray()) for (JsonElement n : e.getAsJsonArray()) ENABLED.add(n.getAsString());
             }
         } catch (IOException | RuntimeException e) {
-            log("scripts", "Не удалось открыть папку скриптов: " + e.getMessage());
+            log("scripts", "не удалось открыть папку скриптов: " + e.getMessage());
         }
         reload();
     }
@@ -100,6 +117,13 @@ public final class Scripts {
     private static boolean hasScripts() throws IOException {
         try (Stream<Path> s = Files.list(DIR)) {
             return s.anyMatch(p -> p.getFileName().toString().endsWith(".lua"));
+        }
+    }
+
+    /** The API reference next to the scripts, rewritten each start so it matches this version. */
+    private static void writeDocs() throws IOException {
+        try (InputStream in = Scripts.class.getResourceAsStream("/assets/arcanicvisuals/lua/API.md")) {
+            if (in != null) Files.write(DOCS, in.readAllBytes());
         }
     }
 
@@ -125,7 +149,7 @@ public final class Scripts {
                 }
             }
         } catch (IOException e) {
-            log("scripts", "Не удалось создать скрипт: " + e.getMessage());
+            log("scripts", "не удалось создать скрипт: " + e.getMessage());
         }
         return null;
     }
@@ -133,16 +157,16 @@ public final class Scripts {
     public static void reload() {
         for (Script s : SCRIPTS) s.stop();
         SCRIPTS.clear();
+        LuaApi.forgetImages();
         try (Stream<Path> files = Files.list(DIR)) {
             files.filter(p -> p.getFileName().toString().endsWith(".lua") && Files.isRegularFile(p))
                     .sorted(Comparator.comparing(p -> p.getFileName().toString().toLowerCase(Locale.ROOT)))
                     .limit(64)
                     .forEach(p -> SCRIPTS.add(new Script(p)));
         } catch (IOException e) {
-            log("scripts", "Не удалось прочитать папку скриптов: " + e.getMessage());
+            log("scripts", "не удалось прочитать папку скриптов: " + e.getMessage());
         }
         for (Script s : SCRIPTS) if (ENABLED.contains(s.name())) s.start();
-        changedAt = System.currentTimeMillis();
     }
 
     public static List<Script> list() {
@@ -163,7 +187,6 @@ public final class Scripts {
             s.start();
         }
         save();
-        changedAt = System.currentTimeMillis();
     }
 
     private static void save() {
@@ -173,33 +196,34 @@ public final class Scripts {
             Files.createDirectories(DIR);
             Files.writeString(STATE, GSON.toJson(a), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            log("scripts", "Не удалось сохранить список скриптов: " + e.getMessage());
+            log("scripts", "не удалось сохранить список скриптов: " + e.getMessage());
         }
-    }
-
-    public static long changedAt() {
-        return changedAt;
-    }
-
-    public static boolean live() {
-        return !Trust.on();
     }
 
     // ---- events
 
     public static void tick() {
         if (!started) start();
-        if (!live()) return;
-        for (Script s : SCRIPTS) {
-            if (s.running()) {
-                s.emit("tick");
-                s.flush();
-            }
+        Minecraft mc = Minecraft.getInstance();
+        String now = mc.screen == null ? "" : mc.screen.getClass().getSimpleName();
+        if (!now.equals(screen)) {
+            screen = now;
+            emit("screen", now);
         }
+        LocalPlayer me = mc.player;
+        float hp = me == null ? -1 : me.getHealth();
+        if (me != null && health > 0 && hp < health) {
+            emit("damage", health - hp, hp);
+            if (hp <= 0) emit("death");
+        }
+        health = hp;
+        for (Script s : List.copyOf(SCRIPTS)) if (s.running()) s.tick();
+        LuaGame.pump();
+        ScriptModules.tick();
     }
 
     public static void render(GuiGraphics g) {
-        if (!started || !live() || SCRIPTS.isEmpty()) return;
+        if (!started || SCRIPTS.isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options.hideGui) return;
         boolean any = false;
@@ -207,46 +231,61 @@ public final class Scripts {
         if (!any) return;
         Px.begin(g);
         graphics = g;
+        float fade = Px.fade;
         try {
-            for (Script s : SCRIPTS) if (s.running()) s.emit("render");
+            for (Script s : SCRIPTS) {
+                if (!s.running()) continue;
+                g.pose().pushMatrix();
+                try {
+                    s.emit("render");
+                } finally {
+                    g.pose().popMatrix();
+                    Px.fade = fade;
+                }
+            }
         } finally {
+            Px.fade = fade;
             graphics = null;
             Px.end(g);
         }
     }
 
-    private static void chat(Component message) {
-        if (!started || !live()) return;
-        String text = message.getString();
-        Minecraft.getInstance().execute(() -> emit("chat", text));
+    public static void key(int code) {
+        if (!started) return;
+        emit("key", LuaKeys.name(code));
+        for (Script s : List.copyOf(SCRIPTS)) if (s.running()) s.key(code);
     }
 
-    private static void emit(String event, Object... args) {
-        if (!started || !live()) return;
-        for (Script s : SCRIPTS) if (s.running()) s.emit(event, args);
+    public static void attack(Entity target) {
+        if (started) emit("attack", LuaGame.entity(target));
     }
 
-    // ---- console
+    /** False when a handler returned false (for "chat" and "send": the message is cancelled). */
+    static boolean emit(String event, Object... args) {
+        if (!started) return true;
+        boolean allowed = true;
+        for (Script s : List.copyOf(SCRIPTS)) if (s.running() && !s.emit(event, args)) allowed = false;
+        return allowed;
+    }
+
+    // ---- log: scripts/log.txt and the game log
 
     static void log(String who, String text) {
         String line = LocalTime.now().format(STAMP) + "  " + who + ": " + text;
-        synchronized (LOG) {
-            for (String part : line.split("\\R")) {
-                LOG.addLast(part.length() > 300 ? part.substring(0, 300) : part);
-                while (LOG.size() > LOG_LINES) LOG.removeFirst();
+        LOG.info("{}: {}", who, text);
+        try {
+            Files.createDirectories(DIR);
+            if (!logReset) {
+                logReset = true;
+                Files.writeString(LOG_FILE, "", StandardCharsets.UTF_8);
             }
-        }
-    }
-
-    public static List<String> console() {
-        synchronized (LOG) {
-            return new ArrayList<>(LOG);
-        }
-    }
-
-    public static void clearConsole() {
-        synchronized (LOG) {
-            LOG.clear();
+            Files.writeString(
+                    LOG_FILE,
+                    (line.length() > 2000 ? line.substring(0, 2000) : line) + System.lineSeparator(),
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND);
+        } catch (IOException ignored) {
         }
     }
 }

@@ -50,22 +50,11 @@ public abstract class Module {
         return s;
     }
 
-    /** Whether the function works right now: switched on and not blocked by trust mode. */
     public boolean enabled() {
-        return this.enabled && !Trust.blocks(this);
-    }
-
-    /** The player's own switch, kept as it is while trust mode blocks the function; this is what the config saves. */
-    public boolean switchedOn() {
         return this.enabled;
     }
 
     public void setEnabled(boolean on) {
-        if (Trust.blocks(this)) {
-            // blocked until the restart: the switch stays where the player left it
-            if (on) Trust.deny(this);
-            return;
-        }
         if (on != this.enabled) {
             this.enabled = on;
             if (on) {

@@ -20,22 +20,20 @@ package net.arcanic.visuals.gui;
 
 import java.util.List;
 import net.arcanic.visuals.core.Lang;
-import net.arcanic.visuals.core.Trust;
 import net.arcanic.visuals.core.UiSound;
 import net.arcanic.visuals.hud.Toasts;
-import net.arcanic.visuals.lua.LuaApi;
 import net.arcanic.visuals.lua.Script;
 import net.arcanic.visuals.lua.Scripts;
 import net.arcanic.visuals.render.Px;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Util;
 
-/** Tools → Lua: script list, console, API reference. */
+/** Tools → Lua: the scripts with a switch each. The API reference is API.md in the scripts folder. */
 final class LuaPage {
     private static final int GREEN = 0xFF4ADE80;
     private static final int RED = 0xFFF43F5E;
+    private static final String SCROLL = "lua";
     private final ArcanicMenu menu;
-    int tab;
 
     LuaPage(ArcanicMenu menu) {
         this.menu = menu;
@@ -45,41 +43,39 @@ final class LuaPage {
         return this.menu.S(v);
     }
 
-    String[] labels() {
-        return new String[] {Lang.tr("Скрипты"), Lang.tr("Консоль"), "API"};
-    }
-
     String scrollKey() {
-        return "lua" + this.tab;
+        return SCROLL;
     }
 
     void draw(GuiGraphics g) {
         int x = this.menu.cx0;
         int w = this.menu.cw0;
-        int y = this.menu.top;
-        y = this.actions(g, x, y, w);
-        switch (this.tab) {
-            case 0 -> this.scripts(g, x, y, w);
-            case 1 -> this.console(g, x, y, w);
-            default -> this.reference(g, x, y, w);
-        }
+        int y = this.actions(g, x, this.menu.top, w);
+        this.scripts(g, x, y, w);
     }
 
     private int actions(GuiGraphics g, int x, int y, int w) {
         int bh = this.S(30.0);
+        int gap = this.S(6.0);
         int right = x + w;
         right -= this.button(g, "luaReload", "w.refresh", Lang.tr("Перезагрузить"), right, y, bh, false, () -> {
                     Scripts.reload();
                     UiSound.play("select");
                     Toasts.setting(Lang.tr("Скрипты перезагружены"), true);
                 })
-                + this.S(6.0);
-        right -= this.button(g, "luaFolder", "w.folder", Lang.tr("Открыть папку"), right, y, bh, false, () -> {
+                + gap;
+        right -= this.button(g, "luaFolder", "w.folder", Lang.tr("Папка"), right, y, bh, false, () -> {
                     Scripts.start();
                     Util.getPlatform().openPath(Scripts.DIR);
                     UiSound.play("click");
                 })
-                + this.S(6.0);
+                + gap;
+        right -= this.button(g, "luaDocs", "w.scroll", Lang.tr("Документация"), right, y, bh, false, () -> {
+                    Scripts.start();
+                    Util.getPlatform().openPath(Scripts.DOCS);
+                    UiSound.play("click");
+                })
+                + gap;
         this.button(g, "luaNew", "plus", Lang.tr("Новый скрипт"), right, y, bh, true, () -> {
             String made = Scripts.create();
             if (made != null) {
@@ -88,23 +84,8 @@ final class LuaPage {
                 Toasts.setting(Lang.tr("Создан") + " " + made, true);
             }
         });
-        int fs = this.S(11.5);
-        String what = Trust.on()
-                ? Lang.tr("Trust mode: скрипты остановлены до перезапуска игры")
-                : Lang.tr("Свои скрипты на Lua: HUD, подсказки, статистика");
-        Px.text(
-                g,
-                Px.ellipsize(
-                        what, Px.Weight.MEDIUM, fs, Math.max(this.S(40.0), right - x - this.S(16.0) - this.S(130.0))),
-                x,
-                y + (bh - fs) / 2,
-                Px.Weight.MEDIUM,
-                fs,
-                Trust.on() ? ArcanicMenu.TRUST : ArcanicMenu.faint());
         return y + bh + this.S(14.0);
     }
-
-    // ---- scripts
 
     private void scripts(GuiGraphics g, int x, int top, int w) {
         List<Script> list = Scripts.list();
@@ -132,7 +113,7 @@ final class LuaPage {
         int rh = this.S(54.0);
         int gap = this.S(8.0);
         int total = list.size() * (rh + gap);
-        float sc = (float) Math.round(this.menu.scrolled(this.scrollKey(), total, top, b));
+        float sc = (float) Math.round(this.menu.scrolled(SCROLL, total, top, b));
         g.enableScissor(x - this.S(12.0), top, x + w + this.S(12.0), b);
         g.pose().pushMatrix();
         g.pose().translate(0.0F, -sc);
@@ -146,7 +127,7 @@ final class LuaPage {
         g.disableScissor();
         g.nextStratum();
         this.menu.edges(g, x - this.S(12.0), w + this.S(24.0), top, b, sc, this.menu.baseColour());
-        this.menu.scrollbar(g, x + w + this.S(6.0), top, b, total, sc, this.scrollKey());
+        this.menu.scrollbar(g, x + w + this.S(6.0), top, b, total, sc, SCROLL);
     }
 
     private void row(GuiGraphics g, Script s, int x, int y, int w, int h, float sc, int t, int b) {
@@ -182,9 +163,6 @@ final class LuaPage {
         if (!s.error().isEmpty()) {
             state = Lang.tr("Ошибка") + ": " + s.error();
             colour = RED;
-        } else if (on && Trust.on()) {
-            state = Lang.tr("Остановлен Trust mode");
-            colour = ArcanicMenu.TRUST;
         } else if (s.running()) {
             state = Lang.tr("Работает");
             colour = GREEN;
@@ -217,115 +195,6 @@ final class LuaPage {
                     },
                     null);
         }
-    }
-
-    // ---- console
-
-    private void console(GuiGraphics g, int x, int top, int w) {
-        List<String> lines = Scripts.console();
-        int b = this.menu.bottom;
-        int lh = this.S(17.0);
-        int fs = this.S(11.5);
-        int pad = this.S(12.0);
-        Px.round(g, x, top, w, b - top, this.S(12.0), ArcanicMenu.cardBg());
-        if (lines.isEmpty()) {
-            Px.text(
-                    g,
-                    Lang.tr("Здесь появится то, что скрипты пишут через print(), и их ошибки"),
-                    x + pad,
-                    top + pad,
-                    Px.Weight.MEDIUM,
-                    fs,
-                    ArcanicMenu.faint());
-            return;
-        }
-        int total = lines.size() * lh + pad * 2;
-        String key = this.scrollKey();
-        float max = Math.max(0, total - (b - top));
-        float sc = (float) Math.round(this.menu.scrolled(key, total, top, b));
-        if (lines.size() != this.lastCount) {
-            // keep following the tail
-            if (this.followTail) {
-                this.menu.scrollTo(key, max);
-                sc = max;
-            }
-            this.lastCount = lines.size();
-        }
-        this.followTail = sc >= max - lh;
-        g.enableScissor(x, top, x + w, b);
-        int y = top + pad - Math.round(sc);
-        for (String line : lines) {
-            if (y + lh >= top && y <= b) {
-                boolean err = line.contains("остановлен:") || line.contains("Не удалось");
-                Px.text(
-                        g,
-                        Px.ellipsize(line, Px.Weight.MEDIUM, fs, w - pad * 2),
-                        x + pad,
-                        y,
-                        Px.Weight.MEDIUM,
-                        fs,
-                        err ? RED : ArcanicMenu.label());
-            }
-            y += lh;
-        }
-        g.disableScissor();
-        this.menu.scrollbar(g, x + w + this.S(6.0), top, b, total, sc, key);
-    }
-
-    private boolean followTail = true;
-    private int lastCount = -1;
-
-    // ---- reference
-
-    private void reference(GuiGraphics g, int x, int top, int w) {
-        List<String[]> ref = LuaApi.REFERENCE;
-        int b = this.menu.bottom;
-        int lh = this.S(22.0);
-        int hh = this.S(34.0);
-        int total = 0;
-        for (String[] r : ref) total += r[0].startsWith("#") ? hh : lh;
-        float sc = (float) Math.round(this.menu.scrolled(this.scrollKey(), total, top, b));
-        g.enableScissor(x - this.S(12.0), top, x + w + this.S(12.0), b);
-        int y = top - Math.round(sc);
-        int split = Math.min(this.S(420.0), w * 55 / 100);
-        for (String[] r : ref) {
-            boolean head = r[0].startsWith("#");
-            int h = head ? hh : lh;
-            if (y + h >= top && y <= b) {
-                if (head) {
-                    Px.text(
-                            g,
-                            Lang.tr(r[0].substring(2)),
-                            x,
-                            y + h - this.S(20.0),
-                            Px.Weight.SEMIBOLD,
-                            this.S(13.0),
-                            ArcanicMenu.T().text());
-                } else {
-                    Px.text(
-                            g,
-                            Px.ellipsize(r[0], Px.Weight.MEDIUM, this.S(12.0), split - this.S(12.0)),
-                            x,
-                            y + (h - this.S(12.0)) / 2,
-                            Px.Weight.MEDIUM,
-                            this.S(12.0),
-                            ArcanicMenu.acc());
-                    Px.text(
-                            g,
-                            Px.ellipsize(Lang.tr(r[1]), Px.Weight.MEDIUM, this.S(11.5), w - split),
-                            x + split,
-                            y + (h - this.S(11.5)) / 2,
-                            Px.Weight.MEDIUM,
-                            this.S(11.5),
-                            ArcanicMenu.sub());
-                }
-            }
-            y += h;
-        }
-        g.disableScissor();
-        g.nextStratum();
-        this.menu.edges(g, x - this.S(12.0), w + this.S(24.0), top, b, sc, this.menu.baseColour());
-        this.menu.scrollbar(g, x + w + this.S(6.0), top, b, total, sc, this.scrollKey());
     }
 
     /** Right-aligned at {@code right}, returns the width. */

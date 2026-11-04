@@ -22,20 +22,22 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import net.arcanic.visuals.core.Module;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LoadState;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaFunction;
-import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.compiler.LuaC;
@@ -44,7 +46,6 @@ import org.luaj.vm2.lib.DebugLib;
 import org.luaj.vm2.lib.PackageLib;
 import org.luaj.vm2.lib.StringLib;
 import org.luaj.vm2.lib.TableLib;
-import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.luaj.vm2.lib.jse.JseBaseLib;
@@ -59,20 +60,33 @@ public final class Script {
     private static final int HOOK_EVERY = 1000;
 
     private static final int LOAD_BUDGET = 5000; // 5M
-    private static final int EVENT_BUDGET = 400; // 400k
+    private static final int CALL_BUDGET = 400; // 400k
     private static final int MAX_SOURCE = 512 * 1024;
+    private static final int MAX_TIMERS = 256;
     private static final Gson GSON = new Gson();
 
     private final Path file;
     private final String name;
     private Globals globals;
     private final Map<String, List<LuaFunction>> handlers = new HashMap<>();
+    private final Map<Integer, List<LuaFunction>> binds = new HashMap<>();
+    private final List<Timer> timers = new ArrayList<>();
+    private final Queue<Runnable> later = new ConcurrentLinkedQueue<>();
+    final List<Module> modules = new ArrayList<>();
     private boolean running;
+    private boolean loading;
     private String error = "";
     private int used;
     private int budget;
+    private int depth;
+    private int nextTimer = 1;
+    int requests;
+    long minuteStart;
+    int minuteCount;
     private JsonObject storage;
     private boolean storageDirty;
+
+    private record Timer(int id, long every, LuaFunction fn, long[] at) {}
 
     Script(Path file) {
         this.file = file;
@@ -91,6 +105,10 @@ public final class Script {
         return error;
     }
 
+    boolean loading() {
+        return loading;
+    }
+
     boolean listens(String event) {
         List<LuaFunction> l = handlers.get(event);
         return l != null && !l.isEmpty();
@@ -100,14 +118,18 @@ public final class Script {
         stop();
         error = "";
         try {
-            long size = Files.size(file);
-            if (size > MAX_SOURCE) throw new IOException("файл больше 512 КБ");
+            if (Files.size(file) > MAX_SOURCE) throw new IOException("файл больше 512 КБ");
             String source = Files.readString(file, StandardCharsets.UTF_8);
             globals = sandbox();
             LuaValue chunk = globals.load(source, "@" + name);
             running = true;
-            run(LOAD_BUDGET, () -> chunk.call());
-            if (running) Scripts.log(name, "запущен");
+            loading = true;
+            run(LOAD_BUDGET, chunk::call);
+            loading = false;
+            if (running) {
+                for (Module m : List.copyOf(modules)) ScriptModules.resume(m);
+                Scripts.log(name, "запущен");
+            }
         } catch (LuaError e) {
             fail(e.getMessage());
         } catch (IOException | RuntimeException e) {
@@ -117,52 +139,137 @@ public final class Script {
 
     void stop() {
         if (running && listens("unload")) emit("unload");
+        // switched off while the script still runs, so their onDisable is called; the saved state stays as it was
+        for (Module m : List.copyOf(modules)) {
+            ScriptModules.unregister(m);
+            if (m.enabled()) m.setEnabled(false);
+        }
+        modules.clear();
         flush();
+        drop();
+    }
+
+    private void drop() {
         running = false;
+        loading = false;
+        for (Module m : modules) {
+            ScriptModules.unregister(m);
+            if (m.enabled()) m.setEnabled(false);
+        }
+        modules.clear();
         handlers.clear();
+        binds.clear();
+        timers.clear();
+        later.clear();
         globals = null;
     }
 
     private void fail(String why) {
         error = why == null || why.isBlank() ? "ошибка" : why;
         Scripts.log(name, "остановлен: " + error);
-        running = false;
-        handlers.clear();
-        globals = null;
+        flush();
+        drop();
     }
 
-    void emit(String event, Object... args) {
+    /**
+     * Calls every handler of the event. False when one of them returned false: for "chat" and "send" that cancels the
+     * message.
+     */
+    boolean emit(String event, Object... args) {
         List<LuaFunction> list = handlers.get(event);
-        if (list == null || list.isEmpty() || !running) return;
+        if (list == null || list.isEmpty() || !running) return true;
         LuaValue[] values = new LuaValue[args.length];
-        for (int i = 0; i < args.length; i++) values[i] = LuaApi.toLua(args[i]);
-        Varargs va = LuaValue.varargsOf(values);
+        for (int i = 0; i < args.length; i++) values[i] = LuaJson.toLua(args[i]);
+        boolean allowed = true;
         for (LuaFunction f : List.copyOf(list)) {
-            if (!running) return;
-            try {
-                run(EVENT_BUDGET, () -> f.invoke(va));
-            } catch (LuaError e) {
-                fail(e.getMessage());
-                return;
-            } catch (RuntimeException e) {
-                fail(e.getClass().getSimpleName() + ": " + e.getMessage());
-                return;
-            }
+            Varargs r = call(f, values);
+            if (r != null && r.arg1().isboolean() && !r.arg1().toboolean()) allowed = false;
+            if (!running) break;
         }
+        return allowed;
+    }
+
+    /** Runs a function of this script with the budget; null when it failed (the script is stopped then). */
+    Varargs call(LuaFunction f, LuaValue... args) {
+        if (!running) return null;
+        try {
+            Varargs[] out = new Varargs[1];
+            run(CALL_BUDGET, () -> out[0] = f.invoke(LuaValue.varargsOf(args)));
+            return out[0];
+        } catch (LuaError e) {
+            fail(e.getMessage());
+        } catch (RuntimeException e) {
+            fail(e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+        return null;
     }
 
     private void run(int hooks, Runnable code) {
-        used = 0;
-        budget = hooks;
+        // nested calls (a module switched from the script, a HUD element drawn from it) share the outer budget
+        if (depth == 0) {
+            used = 0;
+            budget = hooks;
+        }
+        depth++;
         try {
             code.run();
         } catch (StackOverflowError e) {
             throw new LuaError("слишком глубокая рекурсия");
+        } finally {
+            depth--;
         }
     }
 
     void on(String event, LuaFunction f) {
         handlers.computeIfAbsent(event, k -> new ArrayList<>()).add(f);
+    }
+
+    void off(String event, LuaFunction f) {
+        List<LuaFunction> l = handlers.get(event);
+        if (l != null) l.remove(f);
+    }
+
+    void bind(int code, LuaFunction f) {
+        binds.computeIfAbsent(code, k -> new ArrayList<>()).add(f);
+    }
+
+    void key(int code) {
+        List<LuaFunction> l = binds.get(code);
+        if (l != null) for (LuaFunction f : List.copyOf(l)) if (running) call(f);
+    }
+
+    // ---- timers and callbacks from other threads
+
+    int timer(long delay, boolean repeat, LuaFunction fn) {
+        if (timers.size() >= MAX_TIMERS) throw new LuaError("больше " + MAX_TIMERS + " таймеров");
+        long every = repeat ? Math.max(50, delay) : 0;
+        Timer t = new Timer(nextTimer++, every, fn, new long[] {System.currentTimeMillis() + Math.max(0, delay)});
+        timers.add(t);
+        return t.id();
+    }
+
+    void cancel(int id) {
+        timers.removeIf(t -> t.id() == id);
+    }
+
+    /** Runs a callback on the game thread at the next tick, if the script is still running then. */
+    void later(Runnable r) {
+        later.add(r);
+    }
+
+    void tick() {
+        Runnable r;
+        while (running && (r = later.poll()) != null) r.run();
+        long now = System.currentTimeMillis();
+        for (Iterator<Timer> it = List.copyOf(timers).iterator(); it.hasNext() && running; ) {
+            Timer t = it.next();
+            if (now < t.at()[0]) continue;
+            if (t.every() > 0) t.at()[0] = now + t.every();
+            else timers.remove(t);
+            call(t.fn());
+        }
+        if (running) emit("tick");
+        flush();
     }
 
     // ---- sandbox
@@ -206,17 +313,7 @@ public final class Script {
                 return NONE;
             }
         });
-        LuaTable events = new LuaTable();
-        events.set("on", new TwoArgFunction() {
-            @Override
-            public LuaValue call(LuaValue event, LuaValue fn) {
-                String e = event.checkjstring();
-                if (!LuaApi.EVENTS.contains(e)) throw new LuaError("нет события \"" + e + "\"");
-                on(e, fn.checkfunction());
-                return NONE;
-            }
-        });
-        g.set("events", events);
+        g.set("SCRIPT", name);
         LuaApi.install(g, this);
         return g;
     }
@@ -244,25 +341,25 @@ public final class Script {
 
     LuaValue load(String key) {
         JsonElement e = storage().get(key);
-        if (e == null || !e.isJsonPrimitive()) return LuaValue.NIL;
-        JsonPrimitive p = e.getAsJsonPrimitive();
-        if (p.isBoolean()) return LuaValue.valueOf(p.getAsBoolean());
-        if (p.isNumber()) return LuaValue.valueOf(p.getAsDouble());
-        return LuaValue.valueOf(p.getAsString());
+        return e == null ? LuaValue.NIL : LuaJson.toLua(e);
+    }
+
+    LuaValue keys() {
+        return LuaJson.toLua(new ArrayList<>(storage().keySet()));
     }
 
     void store(String key, LuaValue v) {
-        JsonObject s = storage();
         if (key.length() > 64) throw new LuaError("ключ длиннее 64 символов");
+        JsonObject s = storage();
         if (v.isnil()) s.remove(key);
-        else if (v.isboolean()) s.addProperty(key, v.toboolean());
-        else if (v.isnumber()) s.addProperty(key, v.todouble());
-        else if (v.isstring()) {
-            String str = v.tojstring();
-            if (str.length() > 4096) throw new LuaError("строка длиннее 4096 символов");
-            s.addProperty(key, str);
-        } else throw new LuaError("storage хранит только строки, числа и true/false");
-        if (s.size() > 256) throw new LuaError("в storage больше 256 ключей");
+        else s.add(key, LuaJson.toJson(v));
+        if (s.size() > 512) throw new LuaError("в storage больше 512 ключей");
+        if (GSON.toJson(s).length() > 1 << 20) throw new LuaError("storage больше 1 МБ");
+        storageDirty = true;
+    }
+
+    void clearStorage() {
+        storage().entrySet().clear();
         storageDirty = true;
     }
 

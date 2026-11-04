@@ -1,33 +1,42 @@
--- Пример скрипта Arcanic Lua.
--- Скрипты лежат в папке config/arcanicvisuals/scripts. Включай их в меню: Tools -> Lua.
--- Список всех функций есть на вкладке «API» той же страницы.
+-- Пример скрипта Arcanic Lua: свой HUD-элемент и свой модуль в меню.
+-- Всё API описано в API.md рядом со скриптами (Tools -> Lua -> Документация).
 
-local shown = storage.get("shown") or 0
-storage.set("shown", shown + 1)
-print("Привет! Этот скрипт запускали " .. (shown + 1) .. " раз")
+-- HUD-элемент: включи его в HUD-разделе меню и подвинь в HUD-редакторе
+local card
+card = hud.element({
+  id = "hello_card",
+  name = "Hello Card",
+  description = "Пример из hello.lua: FPS, скорость и здоровье",
+  size = {170, 62},
+  render = function(editing, w, h)
+    local tint = card:get("tint")
+    draw.round(0, 0, w, h, 10, color.rgb(12, 12, 18, 200))
+    draw.outline(0, 0, w, h, 10, color.alpha(tint, 120))
+    draw.text("Arcanic Lua", 12, 10, tint, 13, "semibold")
+    draw.text(client.fps() .. " FPS", 12, 30, color.text(), 12)
+    if card:get("speed") then
+      draw.text(math.floor(player.speed() * 10 + 0.5) / 10 .. " бл/с", 80, 30, color.text(), 12)
+    end
+    local hp = player.health() / math.max(1, player.maxHealth())
+    draw.round(12, h - 12, w - 24, 4, 2, color.rgb(255, 255, 255, 40))
+    draw.round(12, h - 12, math.floor((w - 24) * hp), 4, 2, color.mix(color.hex("#F43F5E"), tint, hp))
+  end,
+})
+card:bool("speed", "Показывать скорость", true)
+card:color("tint", "Цвет", color.accent())
 
-local fps = 0
-
-events.on("tick", function()
-  fps = client.fps()
-end)
-
-events.on("render", function()
-  if not world.loaded() then return end
-  local x, y = 16, draw.height() / 2 - 40
-  local w, h = 170, 62
-  draw.round(x, y, w, h, 10, color.rgb(12, 12, 18, 200))
-  draw.outline(x, y, w, h, 10, color.alpha(color.accent(), 120))
-  draw.text("Arcanic Lua", x + 12, y + 10, color.accent(), 13, "semibold")
-  draw.text(fps .. " FPS", x + 12, y + 30, color.text(), 12)
-  draw.text(math.floor(player.speed() * 10 + 0.5) / 10 .. " бл/с", x + 80, y + 30, color.text(), 12)
-  local hp = player.health() / math.max(1, player.maxHealth())
-  draw.round(x + 12, y + h - 12, w - 24, 4, 2, color.rgb(255, 255, 255, 40))
-  draw.round(x + 12, y + h - 12, math.floor((w - 24) * hp), 4, 2, color.mix(color.hex("#F43F5E"), color.accent(), hp))
-end)
+-- модуль: уведомление, когда твой ник пишут в чате
+local mentions = module.create({
+  id = "hello_mentions",
+  name = "Упоминания",
+  description = "Пример из hello.lua: уведомление и звук, когда тебя упоминают в чате",
+  category = "utility",
+})
+mentions:bool("sound", "Звук", true)
 
 events.on("chat", function(text)
-  if text:find(player.name(), 1, true) then
+  if mentions:enabled() and text:find(player.name(), 1, true) then
     client.notify("Тебя упомянули в чате")
+    if mentions:get("sound") then sound.play("minecraft:entity.experience_orb.pickup") end
   end
 end)

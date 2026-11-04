@@ -70,7 +70,7 @@ public final class Config {
 
         for (Module m : Modules.ALL) {
             JsonObject o = new JsonObject();
-            o.addProperty("enabled", m.switchedOn());
+            o.addProperty("enabled", m.enabled());
             if (m.bind >= 0) {
                 o.addProperty("bind", m.bind);
             }

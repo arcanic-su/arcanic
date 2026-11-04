@@ -5,14 +5,12 @@ All notable changes to Arcanic Visuals are listed here, newest first.
 ## 1.4
 
 - The Arcanic A replaces the cauldron: the mod icon, the intro animation, the menu mark and the nametag badge.
-- Trust mode (Client → Trust Mode): blocks every function that helps in PvP (swaps, auto actions, trajectories,
-  hitboxes, hit range and more) until the game restarts. It cannot be switched off from the game; blocked functions
-  show a padlock and "blocked" and keep their own settings.
 - Theme Studio (Client → Theme Studio): ten ready themes, every menu colour with the colour picker, menu opacity and
-  a code to share a theme.
-- Lua (Tools → Lua): your own scripts from config/arcanicvisuals/scripts, run in a sandbox with an API for events,
-  HUD drawing, colours, the player, the world and a small storage; a console and the API reference on the page.
-  Trust mode pauses scripts.
+  a code to share a theme. It replaces the dark/light and wide-menu buttons in the header.
+- Lua (Tools → Lua): scripts from config/arcanicvisuals/scripts in a sandbox. Scripts add their own modules to the
+  menu and HUD elements to the HUD editor, draw on screen and over the world, read the player, the world in sight,
+  the inventory and chat, send chat messages and commands, bind keys, play sounds, switch and set our modules, change
+  the theme, load configs, keep data, use timers, JSON and HTTPS. The reference is API.md next to the scripts.
 - World Lyrics: sign in to Yandex Music or Spotify and take the lyrics straight from there, as the first or a second
   source next to lrclib, YouTube Music and NetEase.
 

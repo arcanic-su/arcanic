@@ -248,6 +248,7 @@ public final class ArcanicVisuals implements ClientModInitializer {
                 }
 
                 TargetHud.hit(entity);
+                Scripts.attack(entity);
             }
 
             return InteractionResult.PASS;

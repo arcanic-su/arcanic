@@ -98,11 +98,10 @@ public final class Keys {
             // the wheel: pings and the player menu when a friend plays here or an Arcanic player is aimed at;
             // otherwise the old friend list
             if (code == MOUSE + 2 && !Pings.press()) Modules.FRIENDS.middleClicked();
-            for (Module m : Modules.ALL) {
+            net.arcanic.visuals.lua.Scripts.key(code);
+            for (Module m : Modules.everything()) {
                 if (m.bind == code) {
-                    if (Trust.blocks(m)) {
-                        Trust.deny(m);
-                    } else if (m == Modules.CLICK_PEARL) {
+                    if (m == Modules.CLICK_PEARL) {
                         Modules.CLICK_PEARL.press();
                     } else if (!m.enabled() && HolyFeatures.forbidden(m)) {
                         HolyFeatures.deny(m);

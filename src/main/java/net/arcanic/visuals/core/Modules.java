@@ -224,10 +224,20 @@ public final class Modules {
         return UTILITIES.contains(m.id) ? Category.UTILITY : m.category.section();
     }
 
+    /** Modules registered by Lua scripts while they run. */
+    public static final List<Module> SCRIPTED = new ArrayList<>();
+
+    public static List<Module> everything() {
+        if (SCRIPTED.isEmpty()) return ALL;
+        List<Module> out = new ArrayList<>(ALL);
+        out.addAll(SCRIPTED);
+        return out;
+    }
+
     public static List<Module> of(Category c) {
         List<Module> out = new ArrayList<>();
 
-        for (Module m : ALL) {
+        for (Module m : everything()) {
             if (section(m) == c && !HolyFeatures.hidden(m)) {
                 out.add(m);
             }
