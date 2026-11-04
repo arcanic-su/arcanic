@@ -44,7 +44,8 @@ public final class MeleePreview {
             GuiGraphics g, MeleeDesign skin, int x, int y, int w, int h, float hover, int clipTop, int clipBottom) {
         MeleeCardMesh model = MeleeCardBuilder.get(skin);
         if (model == null || model.width() == 0 || model.height() == 0) return;
-        if (!TexWarm.ready(skin.getTexture())) return; // decoded off the render thread, shows a moment later
+        if (skin.isPremium() ? !PremiumSkins.ready(skin) : !TexWarm.ready(skin.getTexture()))
+            return; // decoded off the render thread (or downloaded), shows a moment later
         var tex = Minecraft.getInstance().getTextureManager().getTexture(skin.getTexture());
         float scale = Math.min(w / model.width(), h / model.height()) * .84f * (1 + .06f * hover);
         var matrix = new Matrix3x2f(g.pose());

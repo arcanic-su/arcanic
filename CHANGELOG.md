@@ -2,6 +2,26 @@
 
 All notable changes to Arcanic Visuals are listed here, newest first.
 
+## 1.4
+
+- The Arcanic A replaces the cauldron: the mod icon, the intro animation, the menu mark and the nametag badge.
+- Trust mode (Client → Trust Mode): blocks every function that helps in PvP (swaps, auto actions, trajectories,
+  hitboxes, hit range and more) until the game restarts. It cannot be switched off from the game; blocked functions
+  show a padlock and "blocked" and keep their own settings.
+- Theme Studio (Client → Theme Studio): ten ready themes, every menu colour with the colour picker, menu opacity and
+  a code to share a theme.
+- Lua (Tools → Lua): your own scripts from config/arcanicvisuals/scripts, run in a sandbox with an API for events,
+  HUD drawing, colours, the player, the world and a small storage; a console and the API reference on the page.
+  Trust mode pauses scripts.
+- World Lyrics: sign in to Yandex Music or Spotify and take the lyrics straight from there, as the first or a second
+  source next to lrclib, YouTube Music and NetEase.
+
+## 1.3
+
+- Premium AWP skins: AWP | Asimov, AWP | Dragon Lore and AWP | Information Flow, sharp paint with highlights.
+  Their textures come from the Arcanic API to Premium accounts only; without Premium the wardrobe shows them locked.
+- Premium keys are gone: the developers give Premium to an Arcanic account.
+
 ## 1.2
 
 - FunTime Helper: events of the FunTime servers, item zones and server tools.

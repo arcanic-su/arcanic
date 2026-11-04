@@ -60,12 +60,17 @@ public final class Config {
         theme.addProperty("frontBackground", Theme.frontBackground);
         theme.addProperty("accentA", Integer.toHexString(Theme.customA));
         theme.addProperty("accentB", Integer.toHexString(Theme.customB));
+        JsonObject studio = new JsonObject();
+        for (Setting<?> st : Modules.THEMES.settings) {
+            studio.add(st.key, st.save());
+        }
+        theme.add("studio", studio);
         root.add("theme", theme);
         JsonObject mods = new JsonObject();
 
         for (Module m : Modules.ALL) {
             JsonObject o = new JsonObject();
-            o.addProperty("enabled", m.enabled());
+            o.addProperty("enabled", m.switchedOn());
             if (m.bind >= 0) {
                 o.addProperty("bind", m.bind);
             }
@@ -144,6 +149,18 @@ public final class Config {
                 Theme.customA = 0;
                 Theme.customB = 0;
             } catch (RuntimeException ignored) {
+            }
+
+            if (t.has("studio") && t.get("studio").isJsonObject()) {
+                JsonObject studio = t.getAsJsonObject("studio");
+                for (Setting<?> st : Modules.THEMES.settings) {
+                    if (studio.has(st.key)) {
+                        try {
+                            st.load(studio.get(st.key));
+                        } catch (RuntimeException ignored) {
+                        }
+                    }
+                }
             }
         }
 

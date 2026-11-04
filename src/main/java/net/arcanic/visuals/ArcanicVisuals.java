@@ -58,6 +58,7 @@ import net.arcanic.visuals.hud.HudModule;
 import net.arcanic.visuals.hud.HudRenderer;
 import net.arcanic.visuals.hud.Notify;
 import net.arcanic.visuals.hud.TargetHud;
+import net.arcanic.visuals.lua.Scripts;
 import net.arcanic.visuals.media.Music;
 import net.arcanic.visuals.render.Px;
 import net.arcanic.visuals.render.TexWarm;
@@ -139,6 +140,16 @@ public final class ArcanicVisuals implements ClientModInitializer {
         ExplosiveThing.register();
         ShulkerPreview.register();
         Kits.register();
+        Scripts.register();
+        net.arcanic.visuals.media.MusicAccounts.load();
+        ClientTickEvents.END_CLIENT_TICK.register((ClientTickEvents.EndTick) (mc) -> {
+            try {
+                Scripts.tick();
+                net.arcanic.visuals.media.MusicAccounts.tick();
+            } catch (RuntimeException e) {
+                LOGGER.debug("Lua tick failed", e);
+            }
+        });
         ClientTickEvents.END_CLIENT_TICK.register((ClientTickEvents.EndTick) (mc) -> {
             HandMovement.tick(mc);
             MeleeShots.tick(mc);
@@ -271,6 +282,10 @@ public final class ArcanicVisuals implements ClientModInitializer {
                 VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath("arcanicvisuals", "hud"),
                 (g, dt) -> HudRenderer.renderAll(g));
+        HudElementRegistry.attachElementAfter(
+                VanillaHudElements.CHAT,
+                Identifier.fromNamespaceAndPath("arcanicvisuals", "lua"),
+                (g, dt) -> Scripts.render(g));
         HudElementRegistry.replaceElement(VanillaHudElements.FOOD_BAR, (vanilla) -> (g, dt) -> {
             vanilla.render(g, dt);
             Modules.SATURATION.overlay(g);

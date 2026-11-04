@@ -27,6 +27,7 @@ import net.arcanic.visuals.arc.MeleeModels;
 import net.arcanic.visuals.arc.MeleePreview;
 import net.arcanic.visuals.arc.MeleeSkins;
 import net.arcanic.visuals.arc.MeleeSlot;
+import net.arcanic.visuals.arc.PremiumSkins;
 import net.arcanic.visuals.core.Config;
 import net.arcanic.visuals.core.Lang;
 import net.arcanic.visuals.core.Modules;
@@ -42,6 +43,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
 final class WardrobePage {
+    private static final int PREMIUM = 0xFF9B5CFF;
     private final ArcanicMenu menu;
 
     WardrobePage(ArcanicMenu menu) {
@@ -128,7 +130,8 @@ final class WardrobePage {
                                         Px.a(0xFFFFFF, Math.round(Px.fade * 255.0F)));
                             }
 
-                            this.garmentLabel(g, x, y + ch - this.menu.S(44.0) + lift, cw, design, worn, hv, false);
+                            this.garmentLabel(
+                                    g, x, y + ch - this.menu.S(44.0) + lift, cw, design, worn, hv, false, false);
                             Px.fade = kf;
                             if (!this.menu.under() && app > 0.3F) {
                                 this.menu.clipped(
@@ -168,7 +171,8 @@ final class WardrobePage {
                         if (!((float) y - sc > (float) this.menu.bottom)
                                 && !((float) (y + ch) - sc < (float) this.menu.top)) {
                             g.nextStratum();
-                            boolean worn = owner.enabled() && owner.skin.is(skin.getDisplayName());
+                            boolean locked = PremiumSkins.locked(skin);
+                            boolean worn = !locked && owner.enabled() && owner.skin.is(skin.getDisplayName());
                             arcanicMenu = this.menu;
                             float app = ArcanicMenu.ease(
                                     (float) (this.menu.now - this.menu.contentAt - (long) Math.min(i, 14) * 24L)
@@ -177,18 +181,33 @@ final class WardrobePage {
                             float kf = Px.fade;
                             Px.fade = kf * app;
                             int lift = Math.round((1.0F - app) * (float) this.menu.S(10.0));
-                            MeleePreview.draw(
-                                    g,
-                                    skin,
-                                    x + this.menu.S(10.0),
-                                    y + this.menu.S(8.0) + lift,
-                                    cw - this.menu.S(20.0),
-                                    ch - this.menu.S(62.0),
-                                    hv,
-                                    Math.round((float) this.menu.top + sc),
-                                    Math.round((float) this.menu.bottom + sc));
+                            // a locked Premium skin has no texture here: its model is shown in the free paint, dimmed
+                            MeleeDesign shown = locked ? MeleeCatalog.byKey(skin.getGeometryKey()) : skin;
+                            Px.fade = kf * app * (locked ? 0.4F : 1.0F);
+                            if (shown != null)
+                                MeleePreview.draw(
+                                        g,
+                                        shown,
+                                        x + this.menu.S(10.0),
+                                        y + this.menu.S(8.0) + lift,
+                                        cw - this.menu.S(20.0),
+                                        ch - this.menu.S(62.0),
+                                        hv,
+                                        Math.round((float) this.menu.top + sc),
+                                        Math.round((float) this.menu.bottom + sc));
+                            Px.fade = kf * app;
+                            if (skin.isPremium())
+                                this.premiumBadge(g, x + this.menu.S(10.0), y + this.menu.S(10.0) + lift, locked);
                             this.garmentLabel(
-                                    g, x, y + ch - this.menu.S(44.0) + lift, cw, skin.getDisplayName(), worn, hv, true);
+                                    g,
+                                    x,
+                                    y + ch - this.menu.S(44.0) + lift,
+                                    cw,
+                                    skin.getDisplayName(),
+                                    worn,
+                                    hv,
+                                    !locked,
+                                    locked);
                             Px.fade = kf;
                             if (!this.menu.under() && app > 0.3F) {
                                 this.menu.clipped(
@@ -200,6 +219,11 @@ final class WardrobePage {
                                         this.menu.top,
                                         this.menu.bottom,
                                         () -> {
+                                            if (locked) {
+                                                UiSound.play("pop", 0.7F, 1.0F);
+                                                Toasts.setting("Этот скин доступен с Premium", false);
+                                                return;
+                                            }
                                             if (worn) {
                                                 owner.setEnabled(false);
                                                 UiSound.play("drain");
@@ -216,7 +240,7 @@ final class WardrobePage {
 
                                             Config.dirty();
                                         },
-                                        () -> this.menu.openKnifeStudio(skin));
+                                        locked ? null : () -> this.menu.openKnifeStudio(skin));
                             }
 
                             ++i;
@@ -412,7 +436,26 @@ final class WardrobePage {
         return hv;
     }
 
-    void garmentLabel(GuiGraphics g, int x, int y, int w, String name, boolean worn, float hv, boolean studio) {
+    /** A purple PREMIUM tag in the card's corner, with a padlock while the account does not have Premium. */
+    void premiumBadge(GuiGraphics g, int x, int y, boolean locked) {
+        int fs = this.menu.S(10.0);
+        int h = this.menu.S(20.0);
+        int pad = this.menu.S(8.0);
+        int icon = locked ? this.menu.S(10.0) : 0;
+        int gap = locked ? this.menu.S(5.0) : 0;
+        int w = pad * 2 + icon + gap + Px.textWidth("PREMIUM", Px.Weight.SEMIBOLD, fs);
+        Px.round(g, x, y, w, h, h / 2, Px.a(PREMIUM, 52));
+        Px.outline(g, x, y, w, h, h / 2, Px.a(PREMIUM, 170));
+        if (locked) padlock(g, x + pad, y + (h - icon) / 2, icon, PREMIUM | 0xFF000000);
+        Px.text(g, "PREMIUM", x + pad + icon + gap, y + (h - fs) / 2, Px.Weight.SEMIBOLD, fs, 0xFFD9C2FF);
+    }
+
+    private void padlock(GuiGraphics g, int x, int y, int s, int colour) {
+        ArcanicMenu.padlock(g, x, y, s, colour);
+    }
+
+    void garmentLabel(
+            GuiGraphics g, int x, int y, int w, String name, boolean worn, float hv, boolean studio, boolean locked) {
         String text2 = Px.ellipsize(Lang.tr(name), Px.Weight.SEMIBOLD, this.menu.S(13.0), w - this.menu.S(28.0));
         int n5 = x + this.menu.S(14.0);
         Px.Weight weight = Px.Weight.SEMIBOLD;
@@ -420,15 +463,19 @@ final class WardrobePage {
         ArcanicMenu arcanicMenu8 = this.menu;
         Px.text(g, text2, n5, y, weight, n6, ArcanicMenu.T().text());
         text2 = Lang.tr(
-                studio && hv > 0.5F
-                        ? (worn ? "ЛКМ: снять, ПКМ: студия" : "ЛКМ: надеть, ПКМ: студия")
-                        : (worn ? "Надето" : (hv > 0.5F ? "Нажми, чтобы надеть" : "Не надето")));
+                locked
+                        ? "Только с Premium"
+                        : studio && hv > 0.5F
+                                ? (worn ? "ЛКМ: снять, ПКМ: студия" : "ЛКМ: надеть, ПКМ: студия")
+                                : (worn ? "Надето" : (hv > 0.5F ? "Нажми, чтобы надеть" : "Не надето")));
         n5 = x + this.menu.S(14.0);
         int n7 = y + this.menu.S(19.0);
         weight = Px.Weight.MEDIUM;
         n6 = this.menu.S(11.0);
         int n8;
-        if (worn) {
+        if (locked) {
+            n8 = 0xFFB794FF;
+        } else if (worn) {
             ArcanicMenu arcanicMenu9 = this.menu;
             n8 = ArcanicMenu.accText();
         } else {

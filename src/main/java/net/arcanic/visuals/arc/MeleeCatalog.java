@@ -120,6 +120,7 @@ public final class MeleeCatalog {
                     model,
                     name,
                     slot,
+                    entry.has("premium") && entry.get("premium").getAsBoolean(),
                     readVariants(entry),
                     readStrings(entry, "holyBones"),
                     readTransform(transforms, "thirdperson_righthand"),

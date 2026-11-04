@@ -100,7 +100,9 @@ public final class Keys {
             if (code == MOUSE + 2 && !Pings.press()) Modules.FRIENDS.middleClicked();
             for (Module m : Modules.ALL) {
                 if (m.bind == code) {
-                    if (m == Modules.CLICK_PEARL) {
+                    if (Trust.blocks(m)) {
+                        Trust.deny(m);
+                    } else if (m == Modules.CLICK_PEARL) {
                         Modules.CLICK_PEARL.press();
                     } else if (!m.enabled() && HolyFeatures.forbidden(m)) {
                         HolyFeatures.deny(m);

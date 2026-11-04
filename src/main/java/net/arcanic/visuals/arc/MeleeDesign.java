@@ -21,7 +21,10 @@ package net.arcanic.visuals.arc;
 import java.util.List;
 import net.minecraft.resources.Identifier;
 
-/** One melee skin: what it replaces, its model and animation files, texture, slot icon, variants and third person. */
+/**
+ * One melee skin: what it replaces, its model and animation files, texture, slot icon, variants and third person.
+ * A Premium skin's texture comes from the Arcanic API, not from the mod (see {@link PremiumSkins}).
+ */
 public final class MeleeDesign {
     private static final String MODEL_PATH = "/assets/arcanic/cosmetic/melee/%s.geo.json";
     private static final String ANIMATION_PATH = "/assets/arcanic/cosmetic/melee/%s.anim.json";
@@ -33,6 +36,7 @@ public final class MeleeDesign {
     private final String geometryKey;
     private final String displayName;
     private final MeleeSlot slot;
+    private final boolean premium;
     private final List<MeleeVariant> variants;
     private final List<String> holyBones;
     private final MeleeTransform thirdPersonRightHand;
@@ -46,6 +50,7 @@ public final class MeleeDesign {
             String geometryKey,
             String displayName,
             MeleeSlot slot,
+            boolean premium,
             List<MeleeVariant> variants,
             List<String> holyBones,
             MeleeTransform thirdPersonRightHand,
@@ -54,6 +59,7 @@ public final class MeleeDesign {
         this.geometryKey = geometryKey != null && !geometryKey.isEmpty() ? geometryKey : key;
         this.displayName = displayName;
         this.slot = slot;
+        this.premium = premium;
         this.variants = variants;
         this.holyBones = holyBones;
         this.thirdPersonRightHand = thirdPersonRightHand;
@@ -77,6 +83,10 @@ public final class MeleeDesign {
 
     public MeleeSlot getSlot() {
         return slot;
+    }
+
+    public boolean isPremium() {
+        return premium;
     }
 
     public List<MeleeVariant> getVariants() {

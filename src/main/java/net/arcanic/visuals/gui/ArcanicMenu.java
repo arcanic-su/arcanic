@@ -38,6 +38,8 @@ import net.arcanic.visuals.core.Setting;
 import net.arcanic.visuals.core.Social;
 import net.arcanic.visuals.core.Sync;
 import net.arcanic.visuals.core.Theme;
+import net.arcanic.visuals.core.ThemeStudio;
+import net.arcanic.visuals.core.Trust;
 import net.arcanic.visuals.core.UiSound;
 import net.arcanic.visuals.fx.ItemZones;
 import net.arcanic.visuals.fx.Studio;
@@ -121,6 +123,8 @@ public final class ArcanicMenu extends Screen {
     final PresetsPage presetsPage = new PresetsPage(this);
     final FriendsPage friendsPage = new FriendsPage(this);
     final CrosshairPage crosshairPage = new CrosshairPage(this);
+    final ThemesPage themesPage = new ThemesPage(this);
+    final LuaPage luaPage = new LuaPage(this);
     final ModulePopup popup = new ModulePopup(this);
     private static int helperTab;
     // which server the helpers page shows: 0 HolyWorld, 1 FunTime
@@ -273,39 +277,75 @@ public final class ArcanicMenu extends Screen {
         Px.icon(g, Px.hasIcon("a." + name) ? "a." + name : name, x, y, size, line);
     }
 
+    /** The amber of trust mode: its switch and the "blocked" functions. */
+    static final int TRUST = 0xFFF5B946;
+
+    /** A padlock drawn from shapes: the body, and the shackle as a rounded outline above it. */
+    static void padlock(GuiGraphics g, int x, int y, int s, int colour) {
+        int bodyTop = y + Math.round(s * 0.45F);
+        int sw = Math.round(s * 0.62F);
+        int sx = x + (s - sw) / 2;
+        for (int i = 0; i < Math.max(1, s / 6); i++)
+            Px.outline(g, sx + i, y + i, sw - i * 2, Math.round(s * 0.8F) - i, sw / 2, colour);
+        Px.round(g, x, bodyTop, s, y + s - bodyTop, Math.max(1, s / 6), colour);
+    }
+
+    /** The theme studio's colours, while the player's own theme is on; null otherwise. */
+    private static ThemeStudio own() {
+        return Theme.studio() ? Modules.THEMES : null;
+    }
+
     static int panelBg() {
+        ThemeStudio o = own();
+        if (o != null) return o.panelBg();
         return light() ? 0xFFF4F4F6 : 0xFF141417;
     }
 
     static int cardBg() {
+        ThemeStudio o = own();
+        if (o != null) return o.cardBg();
         return light() ? -1 : 0xFF161619;
     }
 
     static int cardHi() {
+        ThemeStudio o = own();
+        if (o != null) return o.cardHi();
         return light() ? 0xFFECECEF : 0xFF1C1C20;
     }
 
     static int field() {
+        ThemeStudio o = own();
+        if (o != null) return o.fieldBg();
         return light() ? 0xFFE6E6EA : 0xFF1A1A1E;
     }
 
     static int label() {
+        ThemeStudio o = own();
+        if (o != null) return o.label();
         return light() ? 0xFF2A2A31 : 0xFFD8D8D8;
     }
 
     static int sub() {
+        ThemeStudio o = own();
+        if (o != null) return o.sub();
         return light() ? 0xFF6A6A74 : 0xFF96969B;
     }
 
     static int faint() {
+        ThemeStudio o = own();
+        if (o != null) return o.faint();
         return light() ? 0xFF9C9CA6 : 0xFF656571;
     }
 
     static int edgeSmall() {
+        ThemeStudio o = own();
+        if (o != null) return o.edge(0.07F);
         return light() ? 0xFFE0E0E5 : 0xFF1E1E22;
     }
 
     static int edgeMedium() {
+        ThemeStudio o = own();
+        if (o != null) return o.edge(0.1F);
         return light() ? 0xFFD6D6DC : 0xFF232328;
     }
 
@@ -577,6 +617,8 @@ public final class ArcanicMenu extends Screen {
     }
 
     static int chrome() {
+        ThemeStudio o = own();
+        if (o != null) return o.chrome();
         return light() ? 0xFFEBEBEF : 0xFF1B1B1F;
     }
 
@@ -630,6 +672,8 @@ public final class ArcanicMenu extends Screen {
             case HELPERS -> this.helpers(g);
             case FRIENDS -> this.friendsPage.friends(g);
             case CROSSHAIR -> this.crosshairPage.studio(g);
+            case THEMES -> this.themesPage.draw(g);
+            case LUA -> this.luaPage.draw(g);
         }
 
         g.pose().popMatrix();
@@ -1181,6 +1225,14 @@ public final class ArcanicMenu extends Screen {
             case CROSSHAIR:
                 title = "Crosshair Studio";
                 break;
+            case THEMES:
+                title = "Theme Studio";
+                break;
+            case LUA:
+                title = "Lua";
+                labels = this.luaPage.labels();
+                active = this.luaPage.tab;
+                break;
             default:
                 title = "";
         }
@@ -1467,6 +1519,9 @@ public final class ArcanicMenu extends Screen {
             this.friendsPage.tab = i;
             this.friendsPage.back();
             this.content("tab");
+        } else if (page == ArcanicMenu.Page.LUA && this.luaPage.tab != i) {
+            this.luaPage.tab = i;
+            this.content("tab");
         } else if (page == ArcanicMenu.Page.STUDIO) {
             Studio.speed = i == 0 ? 0.25F : (i == 1 ? 0.5F : 1.0F);
             UiSound.play("click");
@@ -1619,7 +1674,13 @@ public final class ArcanicMenu extends Screen {
 
         if (!this.under()) {
             this.region(x, y, s, s, () -> {
-                Theme.setPalette(Theme.palette == 5 ? 0 : 5);
+                if (Theme.studio()) {
+                    // the switch gives the built-in dark or light look back
+                    Theme.fadeFrom(Theme.p());
+                    Modules.THEMES.custom.set(false);
+                } else {
+                    Theme.setPalette(Theme.palette == 5 ? 0 : 5);
+                }
                 Config.dirty();
                 UiSound.play("select");
             });
@@ -1639,6 +1700,11 @@ public final class ArcanicMenu extends Screen {
 
         this.scrollShown.put(key, v);
         return v;
+    }
+
+    void scrollTo(String key, float v) {
+        this.scroll.put(key, v);
+        this.scrollShown.put(key, v);
     }
 
     void resetScroll(String key) {
@@ -1908,7 +1974,8 @@ public final class ArcanicMenu extends Screen {
             int nfs = this.S(14.0);
             String name = Px.ellipsize(m.title(), Px.Weight.SEMIBOLD, nfs, textW);
             int nameC = T().text();
-            boolean lock = HolyFeatures.locked(m);
+            boolean trusted = Trust.blocks(m);
+            boolean lock = HolyFeatures.locked(m) || trusted;
             int ny = lock ? y + this.S(8.0) : y + (head - nfs) / 2;
             if (this.search.isEmpty()) {
                 Px.text(g, name, x + pad, ny, Px.Weight.SEMIBOLD, nfs, nameC);
@@ -1916,7 +1983,19 @@ public final class ArcanicMenu extends Screen {
                 this.nameLit(g, name, x + pad, ny, nfs, nameC);
             }
 
-            if (lock) {
+            if (trusted) {
+                // trust mode: a padlock and the word "blocked"
+                int lockS = this.S(10.0);
+                padlock(g, x + pad, ny + this.S(18.5), lockS, TRUST);
+                Px.text(
+                        g,
+                        "blocked",
+                        x + pad + lockS + this.S(5.0),
+                        ny + this.S(18.0),
+                        Px.Weight.SEMIBOLD,
+                        this.S(11.0),
+                        TRUST);
+            } else if (lock) {
                 Px.text(
                         g,
                         Px.ellipsize(Lang.tr("Запрещено на HolyWorld"), Px.Weight.MEDIUM, this.S(11.0), textW),
@@ -1944,7 +2023,10 @@ public final class ArcanicMenu extends Screen {
             }
 
             if (!itemList) {
-                if (lock) {
+                if (trusted) {
+                    int xs = this.S(14.0);
+                    padlock(g, ckX + ckS - xs - this.S(2.0), y + (head - xs) / 2, xs, TRUST);
+                } else if (lock) {
                     int xs = this.S(14.0);
                     glyph(g, "x", ckX + ckS - xs - this.S(2.0), y + (head - xs) / 2, xs, 0xFFD9505E);
                 } else {
@@ -1978,7 +2060,9 @@ public final class ArcanicMenu extends Screen {
             Px.fade = k;
             if (!this.under() && !(app < 0.3F)) {
                 Runnable flip = () -> {
-                    if (!m.enabled() && HolyFeatures.forbidden(m)) {
+                    if (Trust.blocks(m)) {
+                        Trust.deny(m);
+                    } else if (!m.enabled() && HolyFeatures.forbidden(m)) {
                         HolyFeatures.deny(m);
                     } else {
                         m.toggle();
@@ -2150,6 +2234,8 @@ public final class ArcanicMenu extends Screen {
             case 4 -> page == ArcanicMenu.Page.HELPERS;
             case 7 -> page == ArcanicMenu.Page.STUDIO;
             case 8 -> page == ArcanicMenu.Page.FRIENDS;
+            case 10 -> page == ArcanicMenu.Page.THEMES;
+            case 11 -> page == ArcanicMenu.Page.LUA;
         };
     }
 
@@ -2297,6 +2383,19 @@ public final class ArcanicMenu extends Screen {
             Px.textCenter(g, cnt, ccx + cww / 2, ccy + (chh - cfs) / 2, Px.Weight.BOLD, cfs, on ? acc() : -1);
         }
 
+        if (n.kind() == 9) {
+            // trust mode: an amber ON once switched on; it stays until the game restarts
+            boolean tr = Trust.on();
+            String st = tr ? "ON" : "OFF";
+            int cfs = this.S(9.5);
+            int chh = this.S(16.0);
+            int cww = Px.textWidth(st, Px.Weight.BOLD, cfs) + this.S(12.0);
+            int ccx = x + w - this.S(10.0) - cww;
+            int ccy = y + (h - chh) / 2;
+            Px.round(g, ccx, ccy, cww, chh, chh / 2, tr ? TRUST : field());
+            Px.textCenter(g, st, ccx + cww / 2, ccy + (chh - cfs) / 2, Px.Weight.BOLD, cfs, tr ? 0xFF1A1206 : faint());
+        }
+
         if (n.kind() == 6) {
             String code = Lang.english() ? "EN" : "RU";
             Px.textRight(
@@ -2396,6 +2495,29 @@ public final class ArcanicMenu extends Screen {
                 break;
             case 8:
                 this.toPage(ArcanicMenu.Page.FRIENDS);
+                break;
+            case 9:
+                if (Trust.on()) {
+                    Trust.deny(null);
+                } else {
+                    UiSound.play("pop");
+                    Minecraft.getInstance()
+                            .setScreen(PromptScreen.ask(
+                                    this,
+                                    "Trust mode",
+                                    "Функции, которые помогают в PvP (свапы, автодействия, траектории, хитбоксы, дистанция "
+                                            + "удара и другие), будут заблокированы. Trust mode нельзя выключить кнопкой: он "
+                                            + "выключится сам, когда ты перезапустишь игру. Твои настройки функций не "
+                                            + "изменятся.",
+                                    "Включить",
+                                    Trust::enable));
+                }
+                break;
+            case 10:
+                this.toPage(ArcanicMenu.Page.THEMES);
+                break;
+            case 11:
+                this.toPage(ArcanicMenu.Page.LUA);
         }
     }
 
@@ -2979,7 +3101,7 @@ public final class ArcanicMenu extends Screen {
                 }
             } else if (s instanceof Setting.Action ac) {
                 Px.text(g, name, x, y + (h - this.S(13.0)) / 2, Px.Weight.MEDIUM, this.S(13.0), label);
-                String lb = Lang.tr(ac.label);
+                String lb = Lang.tr(ac.label());
                 int bh = this.S(22.0);
                 int bw = Px.textWidth(lb, Px.Weight.SEMIBOLD, this.S(11.0)) + this.S(30.0);
                 int bx = x + w - bw;
@@ -3444,6 +3566,8 @@ public final class ArcanicMenu extends Screen {
                                     : (helperTab == 0 ? "c:hw" : "hwev");
                         case FRIENDS -> text2 = this.friendsPage.scrollKey();
                         case CROSSHAIR -> text2 = this.crosshairPage.scrollKey();
+                        case THEMES -> text2 = this.themesPage.scrollKey(this.mx);
+                        case LUA -> text2 = this.luaPage.scrollKey();
                         default -> throw new MatchException(null, null);
                     }
 
@@ -3669,8 +3793,16 @@ public final class ArcanicMenu extends Screen {
                 new Nav(2, 0, "presets-s", "Configs"),
                 new Nav(8, 0, "users", "Friends")
             },
-            {new Nav(3, 0, "hud-s", "HUD Editor"), new Nav(4, 0, "server-s", "Helpers")},
-            {new Nav(6, 0, "flag-s", "Language")}
+            {
+                new Nav(3, 0, "hud-s", "HUD Editor"),
+                new Nav(4, 0, "server-s", "Helpers"),
+                new Nav(11, 0, "w.scroll", "Lua")
+            },
+            {
+                new Nav(10, 0, "w.swatch", "Theme Studio"),
+                new Nav(6, 0, "flag-s", "Language"),
+                new Nav(9, 0, "w.shield", "Trust Mode")
+            }
         };
         GROUPS = new String[] {"Sections", "Content", "Tools", "Client"};
         ICONS = new HashMap<>();
@@ -3683,7 +3815,9 @@ public final class ArcanicMenu extends Screen {
         STUDIO,
         HELPERS,
         FRIENDS,
-        CROSSHAIR;
+        CROSSHAIR,
+        THEMES,
+        LUA;
     }
 
     private static record Region(int x, int y, int w, int h, Runnable click, Runnable alt, Drag drag, String id) {

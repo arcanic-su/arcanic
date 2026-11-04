@@ -155,6 +155,10 @@ public final class Lyrics {
         NETEASE(true),
         LRCLIB_ESTIMATED(false),
         YOUTUBE_MUSIC_ESTIMATED(false),
+        YANDEX(true),
+        YANDEX_ESTIMATED(false),
+        SPOTIFY(true),
+        SPOTIFY_ESTIMATED(false),
         WHISPER(true),
         NONE(false);
 
@@ -208,7 +212,8 @@ public final class Lyrics {
         Result best = Result.NOT_FOUND;
         int failed = 0;
         boolean shown = false;
-        for (Provider p : Provider.values()) {
+        List<Provider> providers = order();
+        for (Provider p : providers) {
             // with exact line timing in hand only NetEase is still worth asking: it alone times every word
             if (exact(best, q.seconds()) && p != Provider.NETEASE) continue;
             Result r;
@@ -218,6 +223,11 @@ public final class Lyrics {
                 LOG.debug("Lyrics provider {} failed", p, ex);
                 failed++;
                 continue;
+            }
+            if (p.account() && p == providers.get(0) && r.found() && r.origin().timed) {
+                // the source the player chose has timed lines for this very track: those are the ones shown
+                best = r;
+                break;
             }
             if (better(r, best, q.seconds())) best = r;
             if (exact(best, q.seconds())) {
@@ -233,7 +243,7 @@ public final class Lyrics {
             }
         }
         LOG.debug("Lyrics for {} resolved via {}", q.searchText(), best.origin());
-        if (failed == Provider.values().length) {
+        if (failed == providers.size()) {
             PENDING.put(key, -System.currentTimeMillis());
             return;
         }
@@ -323,6 +333,25 @@ public final class Lyrics {
     }
 
     private enum Provider {
+        // the player's own Yandex Music or Spotify account: asked only when signed in, first when chosen as the source
+        YANDEX {
+            Result find(Query q) throws Exception {
+                return MusicAccounts.yandexLyrics(q);
+            }
+
+            boolean usable() {
+                return MusicAccounts.yandex();
+            }
+        },
+        SPOTIFY {
+            Result find(Query q) throws Exception {
+                return MusicAccounts.spotifyLyrics(q);
+            }
+
+            boolean usable() {
+                return MusicAccounts.spotify();
+            }
+        },
         LRCLIB {
             Result find(Query q) throws Exception {
                 return Lrclib.find(q);
@@ -340,6 +369,40 @@ public final class Lyrics {
         };
 
         abstract Result find(Query q) throws Exception;
+
+        boolean usable() {
+            return true;
+        }
+
+        boolean account() {
+            return this == YANDEX || this == SPOTIFY;
+        }
+    }
+
+    /**
+     * The providers in the order they are asked: the account chosen as the source first, then the free ones, then
+     * the other account. Accounts the player has not signed in to are left out.
+     */
+    private static List<Provider> order() {
+        Provider first =
+                switch (MusicAccounts.preferred()) {
+                    case YANDEX -> Provider.YANDEX;
+                    case SPOTIFY -> Provider.SPOTIFY;
+                    default -> null;
+                };
+        List<Provider> out = new ArrayList<>();
+        if (first != null && first.usable()) out.add(first);
+        for (Provider p : Provider.values()) if (!p.account()) out.add(p);
+        for (Provider p : Provider.values()) if (p.account() && p != first && p.usable()) out.add(p);
+        return out;
+    }
+
+    /** Forgets every lyric looked up so far: after a sign-in or a change of source the songs are asked again. */
+    public static void forget() {
+        synchronized (CACHE) {
+            CACHE.entrySet().removeIf(e -> e.getValue().origin() != Origin.WHISPER);
+        }
+        PENDING.clear();
     }
 
     /** Artist and title cleaned of channel noise, brackets and featuring credits. */
@@ -417,7 +480,7 @@ public final class Lyrics {
     }
 
     /** How well a found song matches the query: title and artist likeness, nudged by the duration. */
-    private static double score(String title, String artist, long seconds, Query q) {
+    static double score(String title, String artist, long seconds, Query q) {
         double t = Query.similarity(Query.of(artist, title, 0).title(), q.title());
         if (t < 0.5) return 0;
         double a;
@@ -436,7 +499,7 @@ public final class Lyrics {
         return s;
     }
 
-    private static final double MIN_SCORE = 0.6;
+    static final double MIN_SCORE = 0.6;
 
     // ---- LRC parsing and plain-text estimation ----
 

@@ -258,7 +258,19 @@ public final class Theme {
         return PALETTES[Math.floorMod(palette, PALETTES.length)];
     }
 
+    /** Starts a smooth change from the colours given (the ones on screen before a change). */
+    public static void fadeFrom(Palette was) {
+        from = was;
+        changedAt = System.currentTimeMillis();
+    }
+
+    /** Whether the menu's colours come from the theme studio. */
+    public static boolean studio() {
+        return Modules.THEMES != null && Modules.THEMES.active();
+    }
+
     private static Palette target() {
+        if (studio()) return Modules.THEMES.palette();
         Palette b = base();
         if (customA == 0 && customB == 0) return b;
         return new Palette(

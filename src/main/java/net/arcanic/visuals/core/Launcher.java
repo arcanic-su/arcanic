@@ -44,7 +44,7 @@ public final class Launcher {
 
     // tokens on disk are encrypted for this Windows user (DPAPI), the same way the launcher keeps its own
 
-    static String seal(String plain) {
+    public static String seal(String plain) {
         if (plain.isEmpty()) return "";
         try {
             return "dpapi:"
@@ -54,7 +54,7 @@ public final class Launcher {
         }
     }
 
-    static String unseal(String text) {
+    public static String unseal(String text) {
         if (!text.startsWith("dpapi:")) return text;
         try {
             return new String(

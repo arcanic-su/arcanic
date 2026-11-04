@@ -129,6 +129,7 @@ public final class Sync {
     }
 
     public static void tick(Minecraft mc) {
+        ArcanicAccount.tick();
         if (!on()) {
             leave();
             return;

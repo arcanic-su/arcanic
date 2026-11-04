@@ -21,6 +21,7 @@ base { archivesName = project.archives_base_name }
 repositories {
 	// libs/optimizermod-*.jar: the optimiser mod, bundled jar-in-jar as it is
 	flatDir { dirs 'libs' }
+	mavenCentral()
 	exclusiveContent {
 		forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
 		filter { includeGroup 'maven.modrinth' }
@@ -49,6 +50,9 @@ dependencies {
 	// with Whisper when no lyrics are found; the native library for Windows ships inside it
 	implementation "local:whisper-jni:1.7.1"
 	include "local:whisper-jni:1.7.1"
+	// LuaJ (MIT), bundled jar-in-jar: runs the players' own Lua scripts from the Lua page, in a sandbox
+	implementation "org.luaj:luaj-jse:3.0.1"
+	include "org.luaj:luaj-jse:3.0.1"
 	// players run with Sodium (the launcher installs it): development runs do too; it is not put into our jar
 	modLocalRuntime "maven.modrinth:sodium:rkdTcxoT"
 

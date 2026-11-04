@@ -29,7 +29,6 @@ import net.arcanic.visuals.render.Px;
 import net.arcanic.visuals.render.Px.Weight;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -42,14 +41,12 @@ public final class SocialScreen extends Screen {
 
     private final Screen parent;
     private final Anim anim = new Anim();
-    private EditBox key;
-    private String draft = "";
     private State shownState;
     private boolean shownPremium;
     private Kit k = new Kit();
     private int cx, cy, cw, ch;
     // offsets from the top of the card; -1 when the part is not shown
-    private int head, whoY, keyY, redeemY, noteY, goY, outY;
+    private int head, whoY, noteY, goY, outY;
 
     public SocialScreen(Screen parent) {
         super(Component.literal("Arcanic Social"));
@@ -58,43 +55,23 @@ public final class SocialScreen extends Screen {
         ArcanicAccount.refresh();
     }
 
-    private boolean keyShown() {
-        return shownState == State.SIGNED_IN && !shownPremium;
-    }
-
     @Override
     protected void init() {
-        if (key != null) draft = key.getValue();
-        clearWidgets();
-        key = null;
         shownState = ArcanicAccount.state();
         shownPremium = ArcanicAccount.premium();
         k = new Kit();
         cw = k.S(300);
         layout();
-        if (!keyShown()) return;
-        key = new EditBox(font, 0, 0, 1, 1, Component.literal(Lang.tr("Ключ Premium")));
-        key.setMaxLength(24);
-        key.setBordered(false);
-        key.setValue(draft);
-        addWidget(key); // typed natively, drawn by us in the client font
-        place();
     }
 
-    /** Header, the account row, the key and its button, the note, then signing in or out; 10 px between parts. */
+    /** Header, the account row, the note, then signing in or out; 10 px between parts. */
     private void layout() {
         int gap = k.S(10);
         head = k.S(58);
         int y = head + k.S(12);
         whoY = y;
         y += k.S(44) + k.S(12);
-        keyY = redeemY = noteY = goY = outY = -1;
-        if (keyShown()) {
-            keyY = y;
-            y += k.S(32) + gap;
-            redeemY = y;
-            y += k.S(34) + gap;
-        }
+        noteY = goY = outY = -1;
         if (!ArcanicAccount.note().isEmpty()) {
             noteY = y;
             y += k.S(16) + gap;
@@ -111,15 +88,6 @@ public final class SocialScreen extends Screen {
         cy = (Px.height() - ch) / 2;
     }
 
-    /** The native field sits exactly under the one we draw, so clicks focus it. */
-    private void place() {
-        if (key == null) return;
-        key.setX(Kit.logical(cx + k.S(18)));
-        key.setY(Kit.logical(cy + keyY));
-        key.setWidth(Kit.logical(cw - k.S(36)));
-        key.setHeight(Kit.logical(k.S(32)));
-    }
-
     private String goLabel() {
         return switch (shownState) {
             case WAITING -> "Отменить вход";
@@ -128,22 +96,9 @@ public final class SocialScreen extends Screen {
         };
     }
 
-    private boolean redeemLive() {
-        return key != null && !key.getValue().isBlank() && !ArcanicAccount.redeeming();
-    }
-
     private void go() {
         if (shownState == State.LOADING) return;
         ArcanicAccount.signIn(); // (a second call while waiting cancels the sign-in)
-        UiSound.play("click");
-    }
-
-    private void redeem() {
-        if (!redeemLive()) {
-            UiSound.play("pop", .7f, 1);
-            return;
-        }
-        ArcanicAccount.redeem(key.getValue().trim());
         UiSound.play("click");
     }
 
@@ -160,10 +115,6 @@ public final class SocialScreen extends Screen {
                 go();
                 return true;
             }
-            if (redeemY >= 0 && Kit.in(mx, my, x, cy + redeemY, w, k.S(34))) {
-                redeem();
-                return true;
-            }
             if (outY >= 0 && Kit.in(mx, my, x, cy + outY, w, k.S(36))) {
                 ArcanicAccount.signOut();
                 UiSound.play("click");
@@ -176,8 +127,7 @@ public final class SocialScreen extends Screen {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) {
-            if (key != null) redeem();
-            else if (goY >= 0) go();
+            if (goY >= 0) go();
             return true;
         }
         return super.keyPressed(event);
@@ -203,7 +153,6 @@ public final class SocialScreen extends Screen {
     public void render(GuiGraphics g, int mx, int my, float delta) {
         if (ArcanicAccount.state() != shownState || ArcanicAccount.premium() != shownPremium) init();
         layout(); // the note comes and goes
-        place();
         renderBackground(g, mx, my, delta);
         g.nextStratum();
         anim.frame();
@@ -291,30 +240,6 @@ public final class SocialScreen extends Screen {
                     Weight.MEDIUM,
                     k.S(11),
                     Kit.dim());
-
-            if (key != null) {
-                k.field(
-                        g,
-                        key,
-                        x,
-                        top + keyY,
-                        w,
-                        "XXXX-XXXX-XXXX-XXXX",
-                        "key",
-                        Kit.in(px, py, x, cy + keyY, w, k.S(32)),
-                        anim,
-                        "key");
-                k.button(
-                        g,
-                        Lang.tr(ArcanicAccount.redeeming() ? "Проверяем ключ…" : "Активировать ключ"),
-                        x,
-                        top + redeemY,
-                        w,
-                        redeemLive(),
-                        Kit.in(px, py, x, cy + redeemY, w, k.S(34)),
-                        anim,
-                        "redeem");
-            }
 
             if (noteY >= 0)
                 Px.text(

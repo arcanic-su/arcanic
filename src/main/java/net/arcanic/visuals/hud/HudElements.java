@@ -66,7 +66,7 @@ public final class HudElements {
         return Theme.p();
     }
 
-    static int ping() {
+    public static int ping() {
         Minecraft mc = mc();
         if (mc.getConnection() != null && mc.player != null) {
             PlayerInfo info = mc.getConnection().getPlayerInfo(mc.player.getUUID());

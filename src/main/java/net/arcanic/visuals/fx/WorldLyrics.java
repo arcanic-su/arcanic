@@ -27,12 +27,16 @@ import net.arcanic.visuals.core.Category;
 import net.arcanic.visuals.core.Lang;
 import net.arcanic.visuals.core.Module;
 import net.arcanic.visuals.core.Setting;
+import net.arcanic.visuals.core.UiSound;
 import net.arcanic.visuals.fx.lyrics.LyricsFont;
 import net.arcanic.visuals.fx.lyrics.LyricsRenderer;
 import net.arcanic.visuals.fx.lyrics.SongClock;
 import net.arcanic.visuals.fx.lyrics.WordPlane;
+import net.arcanic.visuals.gui.PromptScreen;
+import net.arcanic.visuals.hud.Toasts;
 import net.arcanic.visuals.media.Lyrics;
 import net.arcanic.visuals.media.Music;
+import net.arcanic.visuals.media.MusicAccounts;
 import net.arcanic.visuals.media.whisper.SystemAudio;
 import net.arcanic.visuals.media.whisper.Whisper;
 import net.arcanic.visuals.media.whisper.WhisperModel;
@@ -169,6 +173,9 @@ public final class WorldLyrics extends Module {
     private static final float STATUS_FONT_SIZE = 8.0F;
     private static final float STATUS_BOTTOM_OFFSET = 62.0F;
     private static final int STATUS_COLOUR = 0xD0FFFFFF;
+    private static final String SOURCE_AUTO = "Авто";
+    private static final String SOURCE_YANDEX = "Яндекс Музыка";
+    private static final String SOURCE_SPOTIFY = "Spotify";
     private static final String LANGUAGE_AUTO = "Авто";
     private static final String LANGUAGE_RUSSIAN = "Русский";
     private static final String LANGUAGE_ENGLISH = "Английский";
@@ -177,6 +184,27 @@ public final class WorldLyrics extends Module {
     public final Setting.Num size = add(new Setting.Num("size", "Размер", 1.0, 0.5, 2.0, 0.05, "×"));
     public final Setting.Num scatter = add(new Setting.Num("scatter", "Разброс", 70.0, 0.0, 100.0, 5.0, "%"));
     public final Setting.Num offset = add(new Setting.Num("offset", "Сдвиг текста", 0.0, -1500.0, 1500.0, 50.0, " мс"));
+    /** Where the lyrics come from first: the free sources, or the player's own Yandex Music or Spotify. */
+    public final Setting.Mode source =
+            add(new Setting.Mode("source", "Откуда текст", SOURCE_AUTO, SOURCE_AUTO, SOURCE_YANDEX, SOURCE_SPOTIFY));
+
+    public final Setting.Action yandexAccount = add(new Setting.Action(
+            "yandex_account",
+            "Яндекс Музыка",
+            () -> MusicAccounts.yandex()
+                    ? "Выйти" + (MusicAccounts.yandexName().isEmpty() ? "" : " · " + MusicAccounts.yandexName())
+                    : (MusicAccounts.waitingYandex() ? "Жду адрес из буфера…" : "Войти"),
+            MusicAccounts::yandexButton));
+    public final Setting.Action spotifyAccount = add(new Setting.Action(
+            "spotify_account",
+            "Spotify",
+            () -> MusicAccounts.spotify()
+                    ? "Выйти" + (MusicAccounts.spotifyName().isEmpty() ? "" : " · " + MusicAccounts.spotifyName())
+                    : (MusicAccounts.waitingSpotify() ? "Жду sp_dc из буфера…" : "Войти"),
+            MusicAccounts::spotifyButton));
+    public final Setting.Action pasteAccount = add(new Setting.Action(
+                    "paste_account", "Вставить токен вручную", "Вставить", WorldLyrics::pasteByHand))
+            .showIf(() -> !MusicAccounts.yandex() || !MusicAccounts.spotify());
     public final Setting.Bool roadside = add(new Setting.Bool("roadside", "Вдоль дороги", true));
     public final Setting.Bool glow = add(new Setting.Bool("glow", "Свечение", true));
     public final Setting.Num glowStrength = add(new Setting.Num(
@@ -326,7 +354,7 @@ public final class WorldLyrics extends Module {
         super(
                 "world_lyrics",
                 "Текст песни в мире",
-                "Строки песни, которая играет у тебя на ПК, появляются в мире по словам: проявляются, заливаются цветом в такт и рассыпаются. Текст ищется на lrclib.net, YouTube Music и NetEase, а если его нигде нет, слова может распознать Whisper.",
+                "Строки песни, которая играет у тебя на ПК, появляются в мире по словам: проявляются, заливаются цветом в такт и рассыпаются. Текст ищется на lrclib.net, YouTube Music и NetEase или берётся прямо из твоей Яндекс Музыки или Spotify, а если его нигде нет, слова может распознать Whisper.",
                 Category.WORLD,
                 false);
         // after the level (translucent blocks, particles, weather) and before the hand
@@ -336,6 +364,27 @@ public final class WorldLyrics extends Module {
     @Override
     public void tick() {
         Music.request();
+        MusicAccounts.prefer(
+                source.is(SOURCE_YANDEX)
+                        ? MusicAccounts.Source.YANDEX
+                        : (source.is(SOURCE_SPOTIFY) ? MusicAccounts.Source.SPOTIFY : MusicAccounts.Source.AUTO));
+    }
+
+    /** A window to paste the address after the Yandex sign-in, a Yandex token or the Spotify sp_dc cookie. */
+    private static void pasteByHand() {
+        Minecraft mc = Minecraft.getInstance();
+        mc.setScreen(PromptScreen.field(
+                        mc.screen,
+                        "Токен музыки",
+                        "Адрес после входа в Яндекс или sp_dc из Spotify",
+                        "Подключить",
+                        text -> {
+                            if (!MusicAccounts.paste(text)) {
+                                UiSound.play("reset");
+                                Toasts.setting(Lang.tr("Это не токен Яндекса и не sp_dc Spotify"), false);
+                            }
+                        })
+                .limit(2000));
     }
 
     @Override

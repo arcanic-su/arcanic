@@ -62,7 +62,8 @@ public final class ArcanicAccount {
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
     private static volatile State state = State.SIGNED_OUT;
     private static volatile String name = "", plan = "", note = "";
-    private static volatile boolean noteBad, redeeming, cancel, asked;
+    private static volatile boolean noteBad, cancel, asked;
+    private static volatile long nextAsk;
 
     public static State state() {
         return state;
@@ -88,10 +89,6 @@ public final class ArcanicAccount {
         return noteBad;
     }
 
-    public static boolean redeeming() {
-        return redeeming;
-    }
-
     static String savedToken() {
         try {
             return Files.exists(SAVED) ? Launcher.unseal(Files.readString(SAVED).trim()) : "";
@@ -105,7 +102,19 @@ public final class ArcanicAccount {
         noteBad = bad;
     }
 
-    /** Asks the server whose the token is and on which plan, once per start. */
+    /**
+     * Each client tick: the plan is asked for soon after the start and then every few minutes, so the Premium skins
+     * open without visiting the account screen, and a Premium given during the game shows up by itself.
+     */
+    static void tick() {
+        long now = System.currentTimeMillis();
+        if (!Sync.signedIn() || now < nextAsk) return;
+        nextAsk = now + (state == State.SIGNED_IN && !noteBad ? 5 * 60_000L : 30_000L);
+        asked = false;
+        refresh();
+    }
+
+    /** Asks the server whose the token is and on which plan. */
     public static void refresh() {
         if (asked) return;
         asked = true;
@@ -113,7 +122,7 @@ public final class ArcanicAccount {
             state = State.SIGNED_OUT;
             return;
         }
-        state = State.LOADING;
+        if (state != State.SIGNED_IN) state = State.LOADING; // a check while signed in changes nothing on screen
         call("GET", "/api/v1/me", null, Sync.token()).whenComplete((r, e) -> {
             if (e == null && r.statusCode() == 200)
                 profile(JsonParser.parseString(r.body()).getAsJsonObject());
@@ -283,33 +292,18 @@ public final class ArcanicAccount {
         }
     }
 
-    /** Redeems a Premium key for this account. */
-    public static void redeem(String key) {
-        if (redeeming || state != State.SIGNED_IN) return;
-        if (key.replaceAll("[^A-Za-z0-9]", "").length() != 16) {
-            say("Ключ: 16 латинских букв и цифр", true);
-            return;
-        }
-        redeeming = true;
-        say("", false);
-        JsonObject body = new JsonObject();
-        body.addProperty("key", key);
-        call("POST", "/api/v1/redeem", body, Sync.token()).whenComplete((r, e) -> {
-            redeeming = false;
-            if (e != null) say("Нет связи с сервером", true);
-            else if (r.statusCode() == 200) {
-                profile(JsonParser.parseString(r.body()).getAsJsonObject());
-                say("Premium активирован", false);
-            } else
-                say(
-                        switch (r.statusCode()) {
-                            case 404 -> "Такого ключа нет";
-                            case 409 -> "Этот ключ уже использован";
-                            case 429 -> "Слишком много попыток. Подожди немного";
-                            case 401 -> "Войди в аккаунт заново";
-                            default -> "Сервер ответил " + r.statusCode();
-                        },
-                        true);
-        });
+    /**
+     * A file the API gives Premium accounts only, such as a Premium skin's texture: its bytes, or null when the
+     * account may not have it.
+     */
+    public static CompletableFuture<byte[]> premiumFile(String path) {
+        if (!premium() || !Sync.signedIn()) return CompletableFuture.completedFuture(null);
+        HttpRequest request = HttpRequest.newBuilder(URI.create(Sync.api() + path))
+                .timeout(Duration.ofSeconds(30))
+                .header("Authorization", "Bearer " + Sync.token())
+                .GET()
+                .build();
+        return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+                .thenApply(r -> r.statusCode() == 200 ? r.body() : null);
     }
 }

@@ -126,11 +126,22 @@ public abstract class Setting<T> {
     public static final class Action extends Setting<Boolean> {
         public final String label;
         public final Runnable run;
+        private java.util.function.Supplier<String> live;
 
         public Action(String key, String name, String label, Runnable run) {
             super(key, name, false);
             this.label = label;
             this.run = run;
+        }
+
+        /** A button whose word changes with the state, such as "Войти" and "Выйти". */
+        public Action(String key, String name, java.util.function.Supplier<String> label, Runnable run) {
+            this(key, name, label.get(), run);
+            this.live = label;
+        }
+
+        public String label() {
+            return this.live != null ? this.live.get() : this.label;
         }
 
         public boolean modified() {

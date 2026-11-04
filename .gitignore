@@ -9,11 +9,17 @@ build/
 run/
 logs/
 
-# Python caches and the sync server's live data
+# Python caches
 __pycache__/
 *.pyc
-server/tokens.json
-server/friends.json
+
+# only the mod lives here: the launcher, the API server and their docs are private
+server/
+launcher/
+native/
+installer/
+*.exe
+docs/microsoft-setup.md
 
 # IDE and OS
 .idea/

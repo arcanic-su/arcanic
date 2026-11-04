@@ -213,6 +213,7 @@ public final class Modules {
     public static final Overlays.TabList TAB;
     public static final Overlays.BossBars BOSS_BARS;
     public static final MenuPrefs PREFS;
+    public static final ThemeStudio THEMES;
     public static final List<Module> ALL;
     public static final List<HudModule> HUD;
     private static final Set<String> UTILITIES;
@@ -301,6 +302,7 @@ public final class Modules {
         TAB = new Overlays.TabList();
         BOSS_BARS = new Overlays.BossBars();
         PREFS = new MenuPrefs();
+        THEMES = new ThemeStudio();
         ALL = new ArrayList<>();
         HUD = new ArrayList<>();
         ALL.addAll(List.of(
@@ -406,6 +408,10 @@ public final class Modules {
         }
 
         for (Setting<?> st : PREFS.settings) {
+            st.markDefault();
+        }
+
+        for (Setting<?> st : THEMES.settings) {
             st.markDefault();
         }
 

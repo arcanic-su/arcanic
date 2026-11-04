@@ -121,12 +121,19 @@ public final class MeleeSkins extends Module {
         return skins.rendersThirdPerson(stack) ? skins : null;
     }
 
+    /**
+     * The chosen skin. A Premium one only while the account has Premium and its texture is here; until then (or
+     * without Premium) the first free skin of the kind is drawn instead.
+     */
     public MeleeDesign selected() {
         List<MeleeDesign> designs = MeleeCatalog.of(this.slot);
         for (MeleeDesign design : designs) {
-            if (design.getDisplayName().equals(this.skin.get())) return design;
+            if (design.getDisplayName().equals(this.skin.get()) && PremiumSkins.ready(design)) return design;
         }
-        return designs.isEmpty() ? null : designs.getFirst();
+        for (MeleeDesign design : designs) {
+            if (!design.isPremium()) return design;
+        }
+        return null;
     }
 
     /** On in the game, or the studio's picture shows a skin of this kind. */
