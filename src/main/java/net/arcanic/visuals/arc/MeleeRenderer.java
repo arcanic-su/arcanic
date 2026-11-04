@@ -301,7 +301,11 @@ public final class MeleeRenderer {
             boolean primary) {
         MeleeSkins.Placement knife = skins.placement(MeleeSkins.knifeKey(design));
         MeleeSkins.Placement other = primary ? skins.rigOtherHand(player, hand) : null;
-        if (knife.moved() || knife.size() != 1.0F || other != null && other.moved()) {
+        // the hand without the skin, set for this skin: on top of everything else
+        MeleeSkins.Placement free =
+                primary ? skins.placement(MeleeSkins.otherHandKey(design)) : MeleeSkins.Placement.NONE;
+        boolean freeMoved = free.moved() || free.size() != 1.0F;
+        if (knife.moved() || knife.size() != 1.0F || other != null && other.moved() || freeMoved) {
             byte[] sides = this.knifeSides(model);
             Matrix4f[] at = new Matrix4f[3];
 
@@ -326,6 +330,16 @@ public final class MeleeRenderer {
                     } else {
                         bones.world[handBone].set((new Matrix4f(move)).mul(bones.world[handBone]));
                     }
+                }
+                if (!right && freeMoved) {
+                    Vector3f g = handBone < 0 ? new Vector3f() : fist(model, bones, handBone, false, new Vector3f());
+                    Matrix4f extra = new Matrix4f()
+                            .translation(-free.x(), free.y(), -free.z())
+                            .translate(g)
+                            .scale(free.size())
+                            .translate(-g.x, -g.y, -g.z);
+                    at[side] = new Matrix4f(extra).mul(at[side]);
+                    if (handBone >= 0) bones.world[handBone].set(new Matrix4f(extra).mul(bones.world[handBone]));
                 }
             }
 

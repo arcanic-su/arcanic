@@ -386,7 +386,15 @@ public final class Wearables extends Module {
                 pose.mulPose((Quaternionfc) Axis.ZP.rotationDegrees(it.roll()));
             }
 
-            pose.scale(it.scale() * grow, it.scale() * grow, it.scale() * grow);
+            pose.scale(it.scale(), it.scale(), it.scale());
+            if (grow != 1.0F) {
+                // about the model's own middle: it grows or shrinks where it is, nothing moves
+                float[] bb = geo.bounds();
+                float cx = (bb[0] + bb[3]) / 2.0F, cy = (bb[1] + bb[4]) / 2.0F, cz = (bb[2] + bb[5]) / 2.0F;
+                pose.translate(cx, cy, cz);
+                pose.scale(grow, grow, grow);
+                pose.translate(-cx, -cy, -cz);
+            }
             float[] quads = (float[]) posed.computeIfAbsent(it.n(), (k) -> new float[geo.quadCount * 32]);
             geo.pose(d, quads);
             long ms = d.millis();

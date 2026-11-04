@@ -266,6 +266,11 @@ public final class MeleeSkins extends Module {
         return "knife:" + design.getKey();
     }
 
+    /** The hand that does not hold the skin: where it sits and how large, kept for each skin. */
+    public static String otherHandKey(MeleeDesign design) {
+        return knifeKey(design) + "/hand";
+    }
+
     public static String itemKey(ItemStack stack) {
         return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
     }

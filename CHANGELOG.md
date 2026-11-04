@@ -2,6 +2,12 @@
 
 All notable changes to Arcanic Visuals are listed here, newest first.
 
+## 1.6.1
+
+- Knife and weapon studio: the left hand has its own offsets and size for each skin, like the right one.
+- Size in the cosmetics studio grows and shrinks a piece where it is, without moving it.
+- The cosmetics studio shows the piece you clicked, not the one you wear.
+
 ## 1.6
 
 - Studio for wings, backpacks and headwear (right click in the wardrobe): size, offsets, tilt and turn.

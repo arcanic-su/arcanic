@@ -367,13 +367,14 @@ final class WardrobePage {
                                 } else {
                                     master.design.set(name);
                                     master.setEnabled(true);
+                                    if (this.menu.wearStudio.open == master) this.menu.wearStudio.item = it;
                                     UiSound.play("charge");
                                     Toasts.setting(Lang.tr(onPrefix) + Lang.tr(name), true);
                                 }
 
                                 Config.dirty();
                             },
-                            () -> this.menu.openWearStudio(master));
+                            () -> this.menu.openWearStudio(master, it));
                 }
             }
         }

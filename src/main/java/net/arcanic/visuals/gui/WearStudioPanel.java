@@ -30,6 +30,9 @@ import net.minecraft.client.gui.GuiGraphics;
 final class WearStudioPanel {
     private final ArcanicMenu menu;
     Wearables open;
+    /** The piece clicked in the wardrobe: the studio shows it, worn or not. */
+    Wearables.Item item;
+
     private Wearables shown;
     private int x, y, w, h, inner;
 
@@ -74,7 +77,7 @@ final class WearStudioPanel {
         Px.round(g, this.x, this.y, this.w, this.h, R, ArcanicMenu.panelBg());
         Px.outline(g, this.x, this.y, this.w, this.h, R, ArcanicMenu.edgeMedium());
 
-        Wearables.Item it = m.current();
+        Wearables.Item it = this.item != null ? this.item : m.current();
         String title = it == null ? m.title() : Lang.tr(it.name());
         int bs = this.menu.S(30.0);
         Px.text(

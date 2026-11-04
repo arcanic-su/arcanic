@@ -2482,14 +2482,15 @@ public final class ArcanicMenu extends Screen {
         }
     }
 
-    void openWearStudio(Wearables master) {
+    void openWearStudio(Wearables master, Wearables.Item item) {
         KnifeStudio.close();
-        if (this.wearStudio.open == master) {
+        if (this.wearStudio.open == master && this.wearStudio.item == item) {
             this.wearStudio.open = null;
             UiSound.play("pop", 0.8F, 0.6F);
         } else {
+            if (this.wearStudio.open != master) this.resetScroll("ws");
             this.wearStudio.open = master;
-            this.resetScroll("ws");
+            this.wearStudio.item = item;
             UiSound.play("pop");
         }
     }

@@ -199,25 +199,7 @@ public final class VisualFx {
         public final Setting.Num ry = this.add(new Setting.Num("ry", "Поворот Y", 0.0, -180.0, 180.0, 1.0, "°"));
         public final Setting.Num rz = this.add(new Setting.Num("rz", "Поворот Z", 0.0, -180.0, 180.0, 1.0, "°"));
         public final Setting.Num scale = this.add(new Setting.Num("scale", "Размер", 1.0, 0.3, 1.8, 0.01, "×"));
-        public final Setting.Bool both = this.add(new Setting.Bool("both", "Обе руки одинаково", true));
-        // the left hand on its own, when the hands are not set the same
-        public final Setting.Num lx = this.add(new Setting.Num("lx", "Левая: сдвиг X", 0.0, -1.0, 1.0, 0.01, ""))
-                .showIf(() -> !both.on());
-        public final Setting.Num ly = this.add(new Setting.Num("ly", "Левая: сдвиг Y", 0.0, -1.0, 1.0, 0.01, ""))
-                .showIf(() -> !both.on());
-        public final Setting.Num lz = this.add(new Setting.Num("lz", "Левая: сдвиг Z", 0.0, -1.0, 1.0, 0.01, ""))
-                .showIf(() -> !both.on());
-        public final Setting.Num lrx = this.add(
-                        new Setting.Num("lrx", "Левая: поворот X", 0.0, -180.0, 180.0, 1.0, "°"))
-                .showIf(() -> !both.on());
-        public final Setting.Num lry = this.add(
-                        new Setting.Num("lry", "Левая: поворот Y", 0.0, -180.0, 180.0, 1.0, "°"))
-                .showIf(() -> !both.on());
-        public final Setting.Num lrz = this.add(
-                        new Setting.Num("lrz", "Левая: поворот Z", 0.0, -180.0, 180.0, 1.0, "°"))
-                .showIf(() -> !both.on());
-        public final Setting.Num lscale = this.add(new Setting.Num("lscale", "Левая: размер", 1.0, 0.3, 1.8, 0.01, "×"))
-                .showIf(() -> !both.on());
+        public final Setting.Bool both = this.add(new Setting.Bool("both", "Обе руки", true));
 
         public HandView() {
             super("hand_view", "Вид рук", "Положение, поворот и размер предмета в руке", Category.HANDS, false);
