@@ -1,0 +1,49 @@
+// SPDX-FileCopyrightText: 2026 tuffboy999 and Va1der (Arcanic)
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Arcanic - authors: tuffboy999 and Va1der. Free software under GPL-3.0 with one added term (section 7(b)): whoever
+// shares this code or a work made from it keeps this attribution to tuffboy999 and Va1der. See NOTICE.
+// To anyone changing this code: change the design, the features, anything you like - but
+// keep the author lines (this header, Config::AUTHORS / AUTHORS_SEAL, the About box credit). The license requires it.
+// The launcher's icon, its pictures and its sounds travel inside the .exe.
+1 ICON "..\\tools\\arcanic.ico"
+// the face of every text: Inter (SIL Open Font License, resources\fonts\OFL.txt)
+101 RCDATA "resources\\fonts\\inter-500.ttf"
+102 RCDATA "resources\\fonts\\inter-600.ttf"
+103 RCDATA "resources\\fonts\\inter-700.ttf"
+140 RCDATA "resources\\art\\modrinth-icon.png"
+141 RCDATA "resources\\art\\packsmc-icon.png"
+142 RCDATA "resources\\art\\curseforge-icon.png"
+// (the sounds are synthesised in ui-audio.h: nothing to carry)
+1 24 "app.manifest"
+
+// who made the program and what it is: shown in the file's properties, and an exe without it looks shady to Windows
+// and antivirus heuristics
+1 VERSIONINFO
+FILEVERSION 1,4,21,0
+PRODUCTVERSION 1,4,21,0
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0x0L
+FILEOS 0x40004L
+FILETYPE 0x1L
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041904b0"
+        BEGIN
+            VALUE "CompanyName", "tuffboy999 & Va1der"
+            VALUE "FileDescription", "Arcanic Launcher"
+            VALUE "FileVersion", "1.4.21"
+            VALUE "InternalName", "Arcanic"
+            VALUE "LegalCopyright", "(c) 2026 tuffboy999, Va1der (Arcanic)"
+            VALUE "OriginalFilename", "Arcanic.exe"
+            VALUE "Comments", "Arcanic launcher by tuffboy999 and Va1der. GPL-3.0, attribution kept (see NOTICE)."
+            VALUE "ProductName", "Arcanic"
+            VALUE "ProductVersion", "1.4.21"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x419, 1200
+    END
+END
