@@ -1579,10 +1579,7 @@ struct Scene {
                    accNick.y - 12, MEDIUM, 11.5f, fade(mix(MUTED, rgb(0xFF8A80), ek), a));
         });
     }
-    // ---- page history: the arrows at the left of the toolbar
-    vector<Page> backStack, fwdStack;
-    bool historyMove = false;
-    IconBtn navBack{"navBack", "back"}, navFwd{"navFwd", "fwd"}, greenBtn{"green", "plus"};
+    IconBtn greenBtn{"green", "plus"};
     // ---- the sidebar: the search field, the pages, the versions, Settings and the game account at the foot
     Field sbSearch{"sbSearch", "Поиск"};
     vector<std::unique_ptr<Clickable>> favRows;  // a row per version: picks it; the round button on the chosen one plays
@@ -1687,7 +1684,13 @@ struct Scene {
     vector<uint32_t> wpThumbs[Wallpaper::COUNT];
     static constexpr int THUMB_W = 336, THUMB_H = 200;  // rendered at 2x so the wallpaper picker stays crisp on hiDPI screens
     std::atomic<bool> thumbsReady{false};
-    Clickable wpThumb[Wallpaper::COUNT] = {Clickable{"wp0"}, Clickable{"wp1"}, Clickable{"wp2"}, Clickable{"wp3"}};
+    Clickable wpThumb[Wallpaper::COUNT] = {Clickable{"wp0"}, Clickable{"wp1"}, Clickable{"wp2"},  Clickable{"wp3"},
+                                           Clickable{"wp4"}, Clickable{"wp5"}, Clickable{"wp6"},  Clickable{"wp7"},
+                                           Clickable{"wp8"}, Clickable{"wp9"}, Clickable{"wp10"}, Clickable{"wp11"}};
+    // the picker: six thumbnails a row, two rows
+    static constexpr int WP_COLS = 6;
+    static inline const float WP_GAP = 12, WP_TW = (CW - 32 - (WP_COLS - 1) * WP_GAP) / WP_COLS, WP_TH = WP_TW * THUMB_H / THUMB_W,
+                           WP_ROWS = (Wallpaper::COUNT + WP_COLS - 1) / WP_COLS;
     double wpChangedAt = -10;
     void makeWallpaper(int theme) {
         theme = std::clamp(theme, 0, Wallpaper::COUNT - 1);
@@ -1858,7 +1861,7 @@ struct Scene {
         premAct[0].click = [this] { premGiveDays(); };
         premAct[1].click = [this] { premiumAction(premSel, 0, false); };
         premAct[2].click = [this] { premiumAction(premSel, 0, true); };
-        chrome = {&minBtn, &closeBtn, &greenBtn, &langBtn, &navBack, &navFwd, &accountRow, &sbSearch, &toastHit};
+        chrome = {&minBtn, &closeBtn, &greenBtn, &langBtn, &accountRow, &sbSearch, &toastHit};
         for (int i = 0; i < 4; i++) {
             favRows.push_back(std::make_unique<Clickable>("fav" + std::to_string(i)));
             favRows.back()->visible = favRows.back()->enabled = false;
@@ -1868,24 +1871,6 @@ struct Scene {
             eggAt = T;
             eggBite = false;
             wake(EGG_LEN + .3);
-        };
-        navBack.click = [this] {
-            if (backStack.empty()) return;
-            fwdStack.push_back(page);
-            Page p = backStack.back();
-            backStack.pop_back();
-            historyMove = true;
-            openPage(p);
-            historyMove = false;
-        };
-        navFwd.click = [this] {
-            if (fwdStack.empty()) return;
-            backStack.push_back(page);
-            Page p = fwdStack.back();
-            fwdStack.pop_back();
-            historyMove = true;
-            openPage(p);
-            historyMove = false;
         };
         accountRow.click = [this] { openAccounts(); };
         kindTab[0].tag = "Моды";
@@ -2220,11 +2205,6 @@ struct Scene {
     }
     void openPage(Page p) {
         if (!loggedIn() || page == p) return;
-        if (!historyMove) {
-            backStack.push_back(page);
-            if (backStack.size() > 30) backStack.erase(backStack.begin());
-            fwdStack.clear();
-        }
         sourcesOpen = false;
         wake(1);
         previewOpen = false;
@@ -3769,7 +3749,8 @@ struct Scene {
     struct SettingsGeom {
         float account, accountH, look, lookH, sound, soundH, game, gameH, files, filesH, about, aboutH, end;
     };
-    static constexpr float SG_HEAD = 26, SG_GAP = 18, SG_ROW = 48, SG_WALL = 154;
+    static constexpr float SG_HEAD = 26, SG_GAP = 18, SG_ROW = 48;
+    static inline const float SG_WALL = 38 + WP_ROWS * (WP_TH + 22) + (WP_ROWS - 1) * WP_GAP - 4;
     SettingsGeom settingsGeom() const {
         SettingsGeom g;
         float y = PAGE_TOP + SG_HEAD;
@@ -3811,12 +3792,6 @@ struct Scene {
                 };
             }
         }
-        // ---- the toolbar
-        navBack.at(CX, TB_Y, 34, TB_H);
-        navFwd.at(CX + 34, TB_Y, 34, TB_H);
-        navBack.enabled = !backStack.empty();
-        navFwd.enabled = !fwdStack.empty();
-        navBack.visible = navFwd.visible = loggedIn();
         // ---- the banner of a notification
         toastHit.at(WIN_W - 16 - TOAST_W, 14, TOAST_W, TOAST_H);
         toastHit.visible = toastHit.enabled = toastK() > .05f;
@@ -3899,7 +3874,7 @@ struct Scene {
                     updateAllBtn.fontSize = 12.5f;
                     updateAllBtn.icon = "refresh";
                     // as long as it fits beside the page's title: "Update all (3)", then "Update (3)", then the icon and "3"
-                    float titleEnd = navFwd.x + navFwd.w + 14 + G.width(Lang::t("Библиотека"), BOLD, 15) + 8, room = leftmost - 8 - titleEnd;
+                    float titleEnd = CX + G.width(Lang::t("Библиотека"), BOLD, 15) + 8, room = leftmost - 8 - titleEnd;
                     int n = (int)modUpdates.size();
                     string labels[3] = {updatingAll ? "Обновляем…" : fmt(Lang::en ? "Update all (%d)" : "Обновить все (%d)", n),
                                         updatingAll ? "…" : fmt(Lang::en ? "Update (%d)" : "Обновить (%d)", n), updatingAll ? "" : std::to_string(n)};
@@ -4064,10 +4039,8 @@ struct Scene {
                 premDays.fontSize = 13;
                 if (open >= 0) premDays.at(bx - 80, by, 80, 30);
             }
-            {  // the wallpapers: four thumbnails
-                float tw = (CW - 32 - 3 * 14) / 4, th = tw * THUMB_H / THUMB_W;
-                for (int i = 0; i < Wallpaper::COUNT; i++) wpThumb[i].at(inner + i * (tw + 14), g.look + 38, tw, th + 22);
-            }
+            for (int i = 0; i < Wallpaper::COUNT; i++)  // the wallpapers
+                wpThumb[i].at(inner + (i % WP_COLS) * (WP_TW + WP_GAP), g.look + 38 + (i / WP_COLS) * (WP_TH + 22 + WP_GAP), WP_TW, WP_TH + 22);
             float row = g.look + SG_WALL;
             menuScale.at(CX + 150, row + (SG_ROW - 28) / 2, CW - 150 - 16 - 96 - 56, 28);
             resetScale.boxy = true;
@@ -4571,22 +4544,12 @@ struct Scene {
             G.center(c.tag, c.x + c.w / 2, Gfx::mid(c.y + c.h / 2, 12.5f), SEMI, 12.5f, fade(mix(mix(rgb(0xAEAEB2), TEXT, hv), WHITE, on), a));
         }
     }
-    // The toolbar: the arrows, the page's name and a line of facts, then the page's own controls on the right
+    // The toolbar: the page's name and a line of facts, then the page's own controls on the right
     void toolbar() {
         float a = 1;
-        {  // back and forward, one capsule
-            G.rr(navBack.x, navBack.y, navBack.w + navFwd.w, navBack.h, navBack.h / 2, alpha(WHITE, .08f));
-            for (IconBtn* b : {&navBack, &navFwd}) {
-                float hv = an.to(b->id + ".h", b->hovered && b->enabled ? 1.f : 0.f, 20);
-                if (hv > .01f) G.rr(b->x, b->y, b->w, b->h, b->h / 2, alpha(WHITE, .08f * hv));
-                ripple(*b, b->x, b->y, b->w, b->h, b->h / 2, 1, WHITE);
-                G.icon(b == &navBack ? "back" : "fwd", b->x + b->w / 2, b->y + b->h / 2, 14, b->enabled ? mix(rgb(0xD1D1D6), WHITE, hv) : rgba(255, 255, 255, 60), 1.8f);
-            }
-            G.rect(navBack.x + navBack.w, navBack.y + 7, 1, navBack.h - 14, SEPARATOR);
-        }
         string title = page == HOME ? "Играть" : page == SETTINGS ? "Настройки" : page == ACCOUNTS ? (addMode() ? "Добавить аккаунт" : "Аккаунты")
                        : ((page == MODS ? modsRemote : packsRemote) ? "Каталог" : "Библиотека");
-        float tx = navFwd.x + navFwd.w + 14;
+        float tx = CX + 2;
         G.headline = true;
         G.text(title, tx, TB_Y + 19, BOLD, 15, fade(WHITE, a));
         G.headline = false;
@@ -6493,7 +6456,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
                         scene->startupToggle.onChange(previousAnimation);
                         scene->soundsToggle.onChange(previous);
                     }
-                    for (Widget* button : std::initializer_list<Widget*>{&scene->playBtn, &scene->accountRow, &scene->sbSearch, &scene->closeBtn, &scene->minBtn, &scene->greenBtn, &scene->navBack, &scene->navFwd})
+                    for (Widget* button : std::initializer_list<Widget*>{&scene->playBtn, &scene->accountRow, &scene->sbSearch, &scene->closeBtn, &scene->minBtn, &scene->greenBtn})
                         if (button->visible && button->enabled && scene->pick(button->x + button->w / 2, button->y + button->h / 2) != button) errors += "Hit target: " + button->id + "\n";
                     for (auto& row : scene->favRows)
                         if (row->visible && row->enabled && scene->pick(row->x + 30, row->y + row->h / 2) != row.get()) errors += "Version row hit target: " + row->id + "\n";

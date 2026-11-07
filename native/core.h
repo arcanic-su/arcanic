@@ -159,7 +159,7 @@ namespace Config {
         effects = get("effects", "false") == "true";
         software = get("software", "false") == "true";
         ramMb = atoi(get("ramMb", "0").c_str());
-        wallpaper = std::clamp(atoi(get("wallpaper", "0").c_str()), 0, 3);
+        wallpaper = std::clamp(atoi(get("wallpaper", "0").c_str()), 0, 11);  // wallpaper.h has 12
         if (p.count("winX") && p.count("winY")) {
             winX = atoi(p["winX"].c_str());
             winY = atoi(p["winY"].c_str());
@@ -307,6 +307,14 @@ namespace Lang {
         "Лагуна", "Lagoon",
         "Закат", "Sunset",
         "Графит", "Graphite",
+        "Аврора", "Aurora",
+        "Сирень", "Lilac",
+        "Дюны", "Dunes",
+        "Полночь", "Midnight",
+        "Изумруд", "Emerald",
+        "Роза", "Rose",
+        "Сумерки", "Dusk",
+        "Лёд", "Ice",
         "Звук и анимация", "Sound & motion",
         "авто", "auto",
         "Папка mods остаётся чистой для других сборок", "Keeps the mods folder clean for other setups",
