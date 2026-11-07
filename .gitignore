@@ -1,0 +1,7 @@
+# each part has its own .gitignore; this one keeps the private side out of the whole repo
+server/
+private/
+*.env
+accounts.json
+tokens.json
+premium_accounts.json
