@@ -33,7 +33,7 @@ namespace Config {
     inline float uiScale = 1.f;
     inline int modSources = 3, packSources = 3;  // mods: 1 Modrinth, 2 CurseForge; packs: 1 PacksMC, 2 Modrinth; 3 both (the default)
     inline const char* MOD_FILE = "arcanic-client.jar";
-    inline const char* VERSION = "1.4.19";  // this launcher (the same number as in res.rc)
+    inline const char* VERSION = "1.4.21";  // this launcher (the same number as in res.rc)
     // the authors of Arcanic: tuffboy999 and Va1der. GPL-3.0 section 7(b) (see NOTICE and LICENSE.txt): anyone who
     // shares this launcher, changed or not, keeps this attribution - in the About box and in the program's notices.
     inline const char* AUTHORS = "tuffboy999 & Va1der";

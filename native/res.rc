@@ -19,8 +19,8 @@
 // who made the program and what it is: shown in the file's properties, and an exe without it looks shady to Windows
 // and antivirus heuristics
 1 VERSIONINFO
-FILEVERSION 1,4,19,0
-PRODUCTVERSION 1,4,19,0
+FILEVERSION 1,4,21,0
+PRODUCTVERSION 1,4,21,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS 0x40004L
@@ -33,13 +33,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "tuffboy999 & Va1der"
             VALUE "FileDescription", "Arcanic Launcher"
-            VALUE "FileVersion", "1.4.19"
+            VALUE "FileVersion", "1.4.21"
             VALUE "InternalName", "Arcanic"
             VALUE "LegalCopyright", "(c) 2026 tuffboy999, Va1der (Arcanic)"
             VALUE "OriginalFilename", "Arcanic.exe"
             VALUE "Comments", "Arcanic launcher by tuffboy999 and Va1der. GPL-3.0, attribution kept (see NOTICE)."
             VALUE "ProductName", "Arcanic"
-            VALUE "ProductVersion", "1.4.19"
+            VALUE "ProductVersion", "1.4.21"
         END
     END
     BLOCK "VarFileInfo"
