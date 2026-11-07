@@ -1,0 +1,20 @@
+native/build/
+dist/
+backup/
+*.obj
+*.res
+*.pdb
+*.ilk
+*.msi
+*.zip
+.vs/
+.vscode/
+.idea/
+*.user
+
+# server side never goes here
+server/
+*.env
+accounts.json
+tokens.json
+premium_accounts.json

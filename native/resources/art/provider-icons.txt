@@ -1,0 +1,4 @@
+Official website favicons used as source identifiers.
+Modrinth: https://modrinth.com/favicon-32x32.png
+PacksMC: https://packsmc.com/favicon-96x96.png
+
