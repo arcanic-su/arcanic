@@ -134,6 +134,16 @@ namespace Doctor {
         static const std::set<string> ids = {"minecraft", "java", "fabricloader", "fabric-loader", "mixinextras"};
         return ids;
     }
+    // Mods known to break the game together with ours or with Sodium, whatever their own files say: id -> why (ru, en)
+    inline const std::map<string, std::pair<string, string>>& incompatible() {
+        static const std::map<string, std::pair<string, string>> ids = {
+            {"optifabric", {"(OptiFine) не работает с Sodium и Arcanic — вместо него уже стоит Sodium",
+                            "(OptiFine) does not work with Sodium and Arcanic - Sodium is already in its place"}},
+            {"optifine", {"(OptiFine) не работает с Sodium и Arcanic — вместо него уже стоит Sodium",
+                          "(OptiFine) does not work with Sodium and Arcanic - Sodium is already in its place"}},
+        };
+        return ids;
+    }
     inline void readJar(string bytes, Mod& m, int depth) {
         Zip z;
         if (!z.load(std::move(bytes))) {
@@ -206,9 +216,28 @@ namespace Doctor {
     struct Report {
         vector<string> fixed, problems;
         vector<Json> loaderNeeds;
+        // Fix asks instead: a mod that is in the way is named with what to do, and switched off only on the player's word
+        bool ask = false;
+        vector<std::pair<string, string>> asked;  // what is wrong, what to do
+        vector<fs::path> offer;                   // the mods the player can switch off with one button
         bool changed() const { return !fixed.empty(); }
     };
-    inline bool switchOff(const Mod& m, Report& r, const string& why) {
+    // issue: what is wrong, without what was done about it; always: switched off even when asking (a second copy)
+    inline bool switchOff(const Mod& m, Report& r, const string& issue, bool always = false, const string& done = "") {
+        string why = !done.empty() ? done : issue + say(" — выключили", " - switched off");
+        if (r.ask && !always) {
+            for (auto& a : r.asked)
+                if (a.first == issue) return false;
+            string file = S(m.file.filename());
+            if (m.ours)
+                r.asked.push_back({issue, say("Переустанови лаунчер с arcanic.su", "Reinstall the launcher from arcanic.su")});
+            else {
+                r.asked.push_back({issue, Lang::en ? "Delete \"" + file + "\" from the mods folder or switch it off in the Library"
+                                                   : "Удали «" + file + "» из папки mods или выключи его в Библиотеке"});
+                r.offer.push_back(m.file);
+            }
+            return false;
+        }
         if (m.ours) {
             r.problems.push_back(why);
             return false;
@@ -315,8 +344,9 @@ namespace Doctor {
     }
 
     // ---- before the game: everything Fabric would refuse to start with
-    inline Report scan(const fs::path& mods, const string& mc) {
+    inline Report scan(const fs::path& mods, const string& mc, bool ask = false) {
         Report r;
+        r.ask = ask;
         std::set<string> tried;
         for (int pass = 0; pass < 6; pass++) {
             size_t before = r.fixed.size();
@@ -325,16 +355,22 @@ namespace Doctor {
             // broken files and mods for other loaders
             for (auto& m : all) {
                 if (m.broken) {
-                    switchOff(m, r, Lang::en ? "\"" + m.name + "\" is damaged (not a whole jar) - switched off"
-                                             : "«" + m.name + "» повреждён (файл не целый) — выключили");
+                    switchOff(m, r, Lang::en ? "\"" + m.name + "\" is damaged (not a whole jar)" : "«" + m.name + "» повреждён (файл не целый)");
                     continue;
                 }
                 if (m.foreign) {
-                    switchOff(m, r, Lang::en ? "\"" + m.name + "\" is a Forge/NeoForge mod, it does not run on Fabric - switched off"
-                                             : "«" + m.name + "» — мод для Forge/NeoForge, на Fabric он не работает — выключили");
+                    switchOff(m, r, Lang::en ? "\"" + m.name + "\" is a Forge/NeoForge mod, it does not run on Fabric"
+                                             : "«" + m.name + "» — мод для Forge/NeoForge, на Fabric он не работает");
                     continue;
                 }
-                if (m.fabric) live.push_back(&m);
+                if (m.fabric) {
+                    auto bad = incompatible().find(m.id);
+                    if (bad != incompatible().end() && !m.ours) {
+                        switchOff(m, r, Lang::en ? "\"" + m.name + "\" " + bad->second.second : "«" + m.name + "» " + bad->second.first);
+                        continue;
+                    }
+                    live.push_back(&m);
+                }
             }
             // two copies of one mod: ours wins, then the newest
             std::map<string, vector<Mod*>> byId;
@@ -347,10 +383,11 @@ namespace Doctor {
                     if (a->ours != b->ours) return b->ours;
                     return compare(parseVer(a->version), parseVer(b->version)) < 0;
                 });
-                for (auto* m : kv.second)
-                    if (m != keep && switchOff(*m, r, Lang::en ? "Two copies of \"" + m->name + "\" - kept version " + keep->version
-                                                               : "Две копии «" + m->name + "» — оставили версию " + keep->version))
-                        gone.insert(m);
+                for (auto* m : kv.second) {
+                    string said = Lang::en ? "Two copies of \"" + m->name + "\" - the extra one switched off, kept version " + keep->version
+                                           : "Две копии «" + m->name + "» — лишнюю выключили, оставили версию " + keep->version;
+                    if (m != keep && switchOff(*m, r, said, true, said)) gone.insert(m);
+                }
             }
             live.erase(std::remove_if(live.begin(), live.end(), [&](Mod* m) { return gone.count(m) > 0; }), live.end());
             if (r.fixed.size() > before) continue;  // read the folder again before going further
@@ -361,8 +398,8 @@ namespace Doctor {
             auto replaced = replaceFromModrinth(otherVersion, mc, r, true);
             for (auto* m : otherVersion)
                 if (!replaced.count(m->file))
-                    switchOff(*m, r, Lang::en ? "\"" + m->name + "\" is not for Minecraft " + mc + " and has no build for it - switched off"
-                                              : "«" + m->name + "» не для Minecraft " + mc + ", а версии под неё нет — выключили");
+                    switchOff(*m, r, Lang::en ? "\"" + m->name + "\" is not for Minecraft " + mc + " and has no build for it"
+                                              : "«" + m->name + "» не для Minecraft " + mc + ", а версии под неё нет");
             if (r.fixed.size() > before) continue;
             // what is there, and the libraries that are missing or too old
             std::map<string, std::pair<string, Mod*>> have;  // id -> version, the jar it is in
@@ -394,8 +431,8 @@ namespace Doctor {
                 for (auto* m : live) {
                     bool needsIt = std::any_of(m->needs.begin(), m->needs.end(), [&](const auto& n) { return n.first == kv.first; });
                     if (needsIt)
-                        switchOff(*m, r, Lang::en ? "\"" + m->name + "\" needs \"" + kv.first + "\", which is nowhere to be found - switched off"
-                                                  : "«" + m->name + "» требует «" + kv.first + "», а его нигде нет — выключили");
+                        switchOff(*m, r, Lang::en ? "\"" + m->name + "\" needs \"" + kv.first + "\", which is nowhere to be found"
+                                                  : "«" + m->name + "» требует «" + kv.first + "», а его нигде нет");
                 }
             }
             if (!tooOld.empty()) {
@@ -412,9 +449,11 @@ namespace Doctor {
                     Mod* other = h->second.second;
                     Mod* off = m->ours ? other : m;
                     if (off->ours) continue;
-                    switchOff(*off, r, Lang::en ? "\"" + m->name + "\" does not work together with \"" + other->name + "\" - switched off \"" + off->name + "\""
-                                                : "«" + m->name + "» не работает вместе с «" + other->name + "» — выключили «" + off->name + "»");
-                    goto nextPass;
+                    string issue = Lang::en ? "\"" + m->name + "\" does not work together with \"" + other->name + "\""
+                                            : "«" + m->name + "» не работает вместе с «" + other->name + "»";
+                    if (switchOff(*off, r, issue, false,
+                                  issue + (Lang::en ? " - switched off \"" + off->name + "\"" : " — выключили «" + off->name + "»")))
+                        goto nextPass;
                 }
             break;  // nothing more to fix
         nextPass:;
@@ -522,13 +561,15 @@ namespace Doctor {
         for (auto* m : old)
             if (!replaced.count(m->file) && !d.install.count(m->id)) {
                 Mod copy = *m;
-                switchOff(copy, r, Lang::en ? "\"" + m->name + "\" is the wrong version and has no update - switched off"
-                                            : "«" + m->name + "» не той версии, а обновления нет — выключили");
+                switchOff(copy, r, Lang::en ? "\"" + m->name + "\" is the wrong version and has no update"
+                                            : "«" + m->name + "» не той версии, а обновления нет");
             }
         for (auto& id : d.off)
-            if (Mod* m = holder(id))
-                switchOff(*m, r, Lang::en ? "\"" + m->name + "\" broke the game's start - switched off (turn it back on in the Library)"
-                                          : "«" + m->name + "» ломал запуск игры — выключили (включить обратно можно в Библиотеке)");
+            if (Mod* m = holder(id)) {
+                string issue = Lang::en ? "\"" + m->name + "\" broke the game's start" : "«" + m->name + "» ломал запуск игры";
+                switchOff(*m, r, issue, false,
+                          issue + say(" — выключили (включить обратно можно в Библиотеке)", " - switched off (turn it back on in the Library)"));
+            }
         if (d.jvmArgs && (!Config::jvmArgs.empty() || Config::ramMb > 0)) {
             Config::jvmArgs.clear();
             Config::ramMb = 0;

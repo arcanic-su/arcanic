@@ -33,7 +33,7 @@ namespace Config {
     inline float uiScale = 1.f;
     inline int modSources = 3, packSources = 3;  // mods: 1 Modrinth, 2 CurseForge; packs: 1 PacksMC, 2 Modrinth; 3 both (the default)
     inline const char* MOD_FILE = "arcanic-client.jar";
-    inline const char* VERSION = "1.4.21";  // this launcher (the same number as in res.rc)
+    inline const char* VERSION = "1.4.22";  // this launcher (the same number as in res.rc)
     // the authors of Arcanic: tuffboy999 and Va1der. GPL-3.0 section 7(b) (see NOTICE and LICENSE.txt): anyone who
     // shares this launcher, changed or not, keeps this attribution - in the About box and in the program's notices.
     inline const char* AUTHORS = "tuffboy999 & Va1der";
@@ -2318,6 +2318,12 @@ namespace Installer {
     // Trust mode: the client starts as visuals only (no modules that act for the player, no Lua)
     inline std::atomic<bool> trust{false};
     using Progress = std::function<void(float, const string&, const string&)>;
+    // What prepare() had to put right on the way; Fix sets this on its own thread to tell the player
+    struct Repairs {
+        bool javaDownloaded = false, javaBroken = false, describedAgain = false, fresh = false;
+        int missing = 0, damaged = 0, major = 0;
+    };
+    inline thread_local Repairs* repairs = nullptr;
     struct Plan {
         vector<string> command;
         fs::path workDir;
@@ -2665,6 +2671,7 @@ namespace Installer {
                 fetchVanilla();
         }
         if (!wholeVanilla()) {
+            if (repairs) repairs->describedAgain = true;
             removeFile(vf);
             Net::preferMirror = true;
             fetchVanilla();
@@ -2709,6 +2716,7 @@ namespace Installer {
         };
         if (!isFile(ff)) fetchFabric();
         if (!wholeFabric()) {
+            if (repairs) repairs->describedAgain = true;
             removeFile(ff);
             Net::preferMirror = true;
             fetchFabric();
@@ -2723,9 +2731,11 @@ namespace Installer {
         int major = (int)vanilla["javaVersion"].num("majorVersion", 21);
         if (major <= 0) major = 21;
         progress(.03f, "Проверяем Java…", "Java " + std::to_string(major));
+        if (repairs) repairs->major = major;
         fs::path java = findJava(major);
         if (!java.empty() && !javaRuns(java)) {  // there, but it does not start: ours is put in its place
             Log::warn("java does not start: " + S(java));
+            if (repairs) repairs->javaBroken = true;
             std::error_code jec;
             if (java.wstring().rfind(ownRuntime(major).wstring(), 0) == 0) fs::remove_all(ownRuntime(major), jec);
             if (!Config::javaPath.empty()) {
@@ -2735,7 +2745,10 @@ namespace Installer {
             java = findJava(major);
             if (!java.empty() && !javaRuns(java)) java.clear();
         }
-        if (java.empty()) java = downloadJava(major, progress);
+        if (java.empty()) {
+            java = downloadJava(major, progress);
+            if (repairs) repairs->javaDownloaded = true;
+        }
         if (!javaRuns(java)) throw std::runtime_error(Lang::en ? "Java does not start on this computer" : "Java не запускается на этом компьютере");
 
         // ---- everything that must exist on disk
@@ -2863,6 +2876,7 @@ namespace Installer {
         }
 
         // ---- integrity, the way Lunar does it: every file is held against its published hash
+        if (repairs) repairs->fresh = !isFile(clientJar);
         for (auto& it : items)
             if (!valid(it.dest, it.size)) fromSeed(it);
         fs::path cacheFile = Config::stateDir() / L"verified.txt";
@@ -2932,6 +2946,10 @@ namespace Installer {
             if (isFile(items[i].dest)) removeFile(items[i].dest);
             todo.push_back(items[i]);
             total += items[i].size > 0 ? items[i].size : 300000;
+        }
+        if (repairs) {
+            repairs->damaged = damaged;
+            repairs->missing = (int)todo.size() - damaged;
         }
         string fetchCaption = damaged > 0 || todo.size() < 400 ? "Докачиваем файлы…" : "Загружаем игру…";
         if (!todo.empty()) {

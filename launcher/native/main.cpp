@@ -10,6 +10,7 @@
 #include "media.h"
 #include "packsmc.h"
 #include "doctor.h"
+#include "fix.h"
 #include "wallpaper.h"
 #include <future>
 #include <dbghelp.h>
@@ -718,6 +719,7 @@ struct Scene {
     std::atomic<bool> arcCancel{false};
     bool signedIn() const { return !session.token.empty(); }
     Btn trustBtn{"trust", "Trust mode"};  // the same game as visuals only: nothing that acts for the player, no Lua
+    Btn fixBtn{"fix", "Fix"};             // checks everything that can keep the client from starting, and fixes it
     Btn loginBtn{"login", "Начать"}, discordBtn{"discordBtn", "Наш Discord"}, playBtn{"play", "Играть"},
         autoRamBtn{"autoRam", "Авто"}, gameDirBtn{"gameDir", "Папка игры"}, modsDirBtn{"modsDir", "Папка модов"},
         moveBtn{"move", "Сменить расположение"}, defaultBtn{"default", "По умолчанию"},
@@ -1128,7 +1130,7 @@ struct Scene {
         if (c.find("microsoft") != string::npos || c.find("запускаем") != string::npos) return 4;
         return -1;
     }
-    bool modal() const { return previewOpen || errOpen; }
+    bool modal() const { return previewOpen || errOpen || fixOpen; }
     // ---- the alert, as macOS shows one
     bool errOpen = false;
     string errTitle, errText;
@@ -1179,7 +1181,179 @@ struct Scene {
         G.raw = false;
         errCopy.text = T - errCopiedAt < 1.8 ? "Скопировано" : "Скопировать путь";
         for (Btn* b : {&errFolder, &errClose, &errCopy}) b->paint(k);
-    }    
+    }
+    // ---- Fix: the check of everything, and its report in the middle of the window
+    bool fixOpen = false, fixBusy = false;
+    Fix::Result fixResult;
+    Btn fixDone{"fixDone", ""}, fixAct{"fixAct", ""}, fixMods{"fixMods", ""};
+    struct FixRow {
+        int kind;  // 0 put right, 1 left for the player, 2 a tip, 3 a heading
+        vector<string> what, todo;
+        float h;
+    };
+    vector<FixRow> fixRows;
+    float fixBodyH = 0, fixScroll = 0;
+    static constexpr float FIX_W = 540, FIX_TOP = 150, FIX_FOOT = 84, FIX_TEXT = FIX_W - 92;
+    float fixBodyView() const { return std::min(fixBodyH, WIN_H - 40 - FIX_TOP - FIX_FOOT); }
+    float fixH() const { return FIX_TOP + fixBodyView() + FIX_FOOT; }
+    float fixX() const { return (WIN_W - FIX_W) / 2; }
+    float fixY() const { return (WIN_H - fixH()) / 2; }
+    void runFix(vector<string> pre = {}) {
+        if (gameProc || playBusy || microsoftBusy || fixBusy) return;
+        Log::info("fix: started");
+        fixBusy = preparing = playBusy = true;
+        prepFrac = 0;
+        prepDetail.clear();
+        an.set("prep", 0);
+        fixBtn.busy = true;
+        fixBtn.text = Fix::say("Проверяем…", "Checking…");
+        setCaption(Fix::say("Проверяем всё…", "Checking everything…"));
+        string name = nick(), token = session.token, jar = clientJar;
+        std::thread([this, name, token, jar, pre] {
+            Fix::Result r;
+            try {
+                r = Fix::run(name, token, jar, [this](float f, const string& c, const string& d) {
+                    post([this, f, c, d] {
+                        prepFrac = f;
+                        prepDetail = d;
+                        if (c != caption) setCaption(c);
+                        wake(.2);
+                    });
+                });
+            } catch (std::exception& e) {
+                r.problems.push_back({Fix::say("Проверка прервалась: ", "The check stopped: ") + Lang::t(e.what()),
+                                      Fix::say("Нажми Fix ещё раз", "Press Fix again")});
+            } catch (...) {}
+            r.fixed.insert(r.fixed.begin(), pre.begin(), pre.end());
+            post([this, r] {
+                fixBusy = preparing = playBusy = false;
+                fixBtn.busy = false;
+                fixBtn.text = "Fix";
+                jvmField.set(Config::jvmArgs);  // Fix may have changed the launch settings
+                memory.value = ramToV(Config::ramMb > 0 ? Config::ramMb : Installer::defaultRam());
+                scannedAt = -10;                // and the mods: the Library reads them again
+                UiAudio::play(r.problems.empty() ? UiAudio::LAUNCH : UiAudio::FAIL);
+                showFix(r);
+            });
+        }).detach();
+    }
+    void showFix(const Fix::Result& r) {
+        fixResult = r;
+        fixRows.clear();
+        auto section = [&](int kind, const string& title, const vector<Fix::Issue>& list) {
+            if (list.empty()) return;
+            fixRows.push_back({3, {title}, {}, 28});
+            for (auto& i : list) {
+                FixRow row{kind, wrap(i.what, MEDIUM, 12.5f, FIX_TEXT, 3), {}, 0};
+                if (!i.todo.empty()) row.todo = wrap(i.todo, MEDIUM, 11.5f, FIX_TEXT, 3);
+                row.h = 10 + 17.f * row.what.size() + 15.f * row.todo.size() + 10;
+                fixRows.push_back(row);
+            }
+        };
+        vector<Fix::Issue> fixedList;
+        for (auto& f : r.fixed) fixedList.push_back({f, ""});
+        section(1, Fix::say("Нужно твоё действие", "Needs you"), r.problems);
+        section(0, Fix::say("Исправлено автоматически", "Fixed automatically"), fixedList);
+        section(2, Fix::say("Советы", "Tips"), r.tips);
+        fixBodyH = 0;
+        for (auto& row : fixRows) fixBodyH += row.h;
+        fixScroll = 0;
+        an.set("fix.scroll", 0);
+        fixOpen = true;
+        previewOpen = sourcesOpen = false;
+        setFocus(nullptr);
+        pressedW = nullptr;
+        wake(1);
+    }
+    void fixRow(const FixRow& row, float x0, float y, float k) {
+        if (row.kind == 3) {
+            G.text(row.what[0], x0 + 26, Gfx::mid(y + 17, 11.5f), SEMI, 11.5f, fade(MUTED, k));
+            return;
+        }
+        Col c = row.kind == 0 ? OK : row.kind == 1 ? ERR : WARN;
+        G.rr(x0 + 18, y + 2, FIX_W - 36, row.h - 4, 10, fade(alpha(WHITE, .045f), k));
+        float iy = y + 10 + 8.5f;
+        G.circle(x0 + 38, iy, 8.5f, fade(alpha(c, .22f), k));
+        if (row.kind == 0)
+            G.icon("check", x0 + 38, iy, 11, fade(c, k), 2.f);
+        else {
+            G.rect(x0 + 37.1f, iy - 4.6f, 1.8f, 5.6f, fade(c, k));
+            G.rect(x0 + 37.1f, iy + 2.3f, 1.8f, 1.8f, fade(c, k));
+        }
+        float cy = iy;  // the middle of each line; the icon sits on the first
+        for (auto& l : row.what) {
+            G.text(l, x0 + 56, Gfx::mid(cy, 12.5f), MEDIUM, 12.5f, fade(TEXT, k));
+            cy += 17;
+        }
+        cy -= 1;
+        for (auto& l : row.todo) {
+            G.text(l, x0 + 56, Gfx::mid(cy, 11.5f), MEDIUM, 11.5f, fade(row.kind == 1 ? rgb(0xFFB4AE) : MUTED, k));
+            cy += 15;
+        }
+    }
+    void fixDialog() {
+        float k = an.to("fix.dlg", fixOpen ? 1.f : 0.f, 14);
+        if (k < .005f) return;
+        G.rect(0, 0, WIN_W, WIN_H, rgba(0, 0, 0, (int)lroundf(90 * k)));
+        const Fix::Result& r = fixResult;
+        float x0 = fixX(), y0 = fixY(), H = fixH(), cx = x0 + FIX_W / 2;
+        DialogPop pop(k, cx, y0 + H / 2);
+        G.glow(x0, y0 + 12, FIX_W, H, 18, alpha(rgb(0), .45f * k), 30);
+        G.glass(x0, y0, FIX_W, H, 18, rgba(38, 38, 44, 215), k);
+        appIcon(cx - 27, y0 + 20, 54, k);
+        bool bad = !r.problems.empty();
+        G.circle(cx + 22, y0 + 68, 11, fade(rgb(0x2A2A30), k));  // the badge on the icon: a tick, or the alert
+        G.circle(cx + 22, y0 + 68, 9, fade(bad ? ERR : OK, k));
+        if (bad) {
+            G.rect(cx + 21, y0 + 62.5f, 2, 6.5f, fade(WHITE, k));
+            G.rect(cx + 21, y0 + 70.5f, 2, 2, fade(WHITE, k));
+        } else
+            G.icon("check", cx + 22, y0 + 68, 11, fade(WHITE, k), 2.2f);
+        int nf = (int)r.fixed.size(), np = (int)r.problems.size();
+        string title, sub;
+        if (np) {
+            title = Lang::en ? fmt("Problems found: %d", np) : fmt("Найдены проблемы: %d", np);
+            sub = nf ? (Lang::en ? fmt("The launcher fixed the rest by itself (%d) - see what is left for you below", nf)
+                                 : fmt("Остальное лаунчер исправил сам (%d) — ниже, что сделать тебе", nf))
+                     : Fix::say("Это лаунчер не может исправить сам — ниже, что сделать", "The launcher cannot fix this by itself - see what to do below");
+        } else if (nf) {
+            title = Lang::en ? fmt("Fixed: %d", nf) : fmt("Исправлено: %d", nf);
+            sub = Fix::say("Всё остальное в порядке — можно играть", "Everything else is fine - you can play");
+        } else {
+            title = Fix::say("Всё исправно", "Everything is fine");
+            sub = Fix::say("Ничего не мешает запуску — можно играть", "Nothing stands in the way - you can play");
+        }
+        G.raw = true;
+        G.headline = true;
+        G.center(G.fit(title, SEMI, 16, FIX_W - 48), cx, y0 + 98, SEMI, 16, fade(TEXT, k));
+        G.headline = false;
+        G.center(G.fit(sub, MEDIUM, 12.5f, FIX_W - 48), cx, y0 + 122, MEDIUM, 12.5f, fade(rgb(0xC7C7CC), k));
+        float by = y0 + FIX_TOP, view = fixBodyView(), maxScroll = std::max(0.f, fixBodyH - view);
+        fixScroll = std::clamp(fixScroll, 0.f, maxScroll);
+        float sc = an.to("fix.scroll", fixScroll, 18);
+        if (view > 0) {
+            G.clip(x0 + 8, by, FIX_W - 16, view);
+            float y = by - sc;
+            for (auto& row : fixRows) {
+                if (y + row.h >= by && y <= by + view) fixRow(row, x0, y, k);
+                y += row.h;
+            }
+            G.unclip();
+            if (maxScroll > 0) {  // a thin bar at the right while there is more to read
+                float th = std::max(30.f, view * view / fixBodyH), ty = by + (view - th) * (sc / maxScroll);
+                G.rr(x0 + FIX_W - 9, ty, 3, th, 1.5f, fade(alpha(WHITE, .25f), k));
+            }
+        }
+        string checked;
+        for (auto& c : r.checked) checked += (checked.empty() ? "" : "  ·  ") + c;
+        if (!checked.empty())
+            G.center(G.fit(Fix::say("Проверено: ", "Checked: ") + checked, MEDIUM, 11, FIX_W - 48), cx, y0 + H - 20 - 30 - 22, MEDIUM, 11,
+                     fade(MUTED, k));
+        G.raw = false;
+        for (Btn* b : {&fixMods, &fixAct, &fixDone})
+            if (b->visible) b->paint(k);
+    }
+
     vector<string> accounts() const {
         vector<string> out;
         for (auto& a : split(Config::accounts, ",")) {
@@ -1956,6 +2130,21 @@ struct Scene {
         playBtn.click = [this] { play(); };
         trustBtn.icon = "shield";
         trustBtn.click = [this] { play(true); };
+        fixBtn.icon = "wrench";
+        fixBtn.click = [this] { runFix(); };
+        fixDone.boxy = fixAct.boxy = fixMods.boxy = true;
+        fixMods.ghost = true;
+        fixDone.fontSize = fixAct.fontSize = fixMods.fontSize = 12.5f;
+        fixDone.click = [this] {
+            fixOpen = false;
+            wake(1);
+        };
+        fixMods.click = [] { openInExplorer(Game::modsDir()); };
+        fixAct.click = [this] {  // what Fix asked about, done, then everything checked once more
+            vector<string> done = Fix::act(fixResult);
+            fixOpen = false;
+            runFix(done);
+        };
         auto ghost = [](Btn& b, const char* icon, std::function<void()> click) {
             b.ghost = true;
             b.fontSize = 15.5f;
@@ -2720,7 +2909,7 @@ struct Scene {
                         text += Lang::en ? "\n\nThe launcher fixed this and tried again, but the game closed again:\n• " + join(fixedAll, "\n• ")
                                          : "\n\nЛаунчер уже исправил это и попробовал снова, но игра опять закрылась:\n• " + join(fixedAll, "\n• ");
                     else if (advice.empty())
-                        text += Lang::en ? " Details are in the game log." : " Подробности — в логе игры.";
+                        text += Lang::en ? " Press Fix next to Play - the launcher will find the cause." : " Нажми Fix рядом с «Играть» — лаунчер найдёт причину.";
                     showError("Игра закрылась с ошибкой", text, gameLog);
                 } else if (!fixedAll.empty())
                     setNote(fixSummary(fixedAll), OK);
@@ -3616,6 +3805,11 @@ struct Scene {
             out = {&errCopy, &errFolder, &errClose};
             return out;
         }
+        if (fixOpen) {
+            for (Btn* b : {&fixMods, &fixAct, &fixDone})
+                if (b->visible) out.push_back(b);
+            return out;
+        }
         if (!loggedIn()) {
             if (cur == LOGIN && !splash()) out = {&loginBtn, &discordBtn};
             return out;
@@ -3630,7 +3824,7 @@ struct Scene {
         }
         switch (page) {
         case HOME:
-            out = {&playBtn, &trustBtn};
+            out = {&playBtn, &trustBtn, &fixBtn};
             break;
         case ACCOUNTS:
             if (addMode()) {
@@ -3770,6 +3964,8 @@ struct Scene {
         playBtn.visible = playBtn.enabled = loggedIn() && page == HOME;
         trustBtn.visible = loggedIn() && page == HOME && !playBtn.running && !playBtn.busy;
         trustBtn.enabled = trustBtn.visible && !playBusy;
+        fixBtn.visible = trustBtn.visible;
+        fixBtn.enabled = fixBtn.visible && (!playBusy || fixBusy);
         // ---- the sidebar (window coordinates: it never scrolls)
         closeBtn.at(18, 18, 20, 20);
         minBtn.at(38, 18, 20, 20);
@@ -3811,6 +4007,24 @@ struct Scene {
             errClose.at(errX() + 20 + bw + 8, by, bw, 30);
             errCopy.at(errX() + 20 + 2 * (bw + 8), by, bw, 30);
         }
+        {  // Fix's report: its buttons along the bottom
+            float x0 = fixX(), by = fixY() + fixH() - 20 - 30;
+            int n = fixResult.actions();
+            fixDone.visible = fixDone.enabled = fixOpen;
+            fixAct.visible = fixAct.enabled = fixOpen && n > 0;
+            fixMods.visible = fixMods.enabled = fixOpen && fixResult.modsProblem;
+            fixDone.text = Fix::say("Готово", "Done");
+            fixAct.text = Lang::en ? fmt("Fix the rest (%d)", n) : fmt("Исправить остальное (%d)", n);
+            fixMods.text = Fix::say("Папка mods", "Mods folder");
+            fixAct.primary = fixAct.visible;
+            fixDone.primary = !fixAct.visible;
+            fixDone.ghost = fixAct.visible;
+            float wd = G.width(fixDone.text, SEMI, 12.5f) + 44, wa = G.width(fixAct.text, SEMI, 12.5f) + 44,
+                  wm = G.width(fixMods.text, SEMI, 12.5f) + 44;
+            fixDone.at(x0 + FIX_W - 20 - wd, by, wd, 30);
+            fixAct.at(fixDone.x - 8 - wa, by, wa, 30);
+            fixMods.at(x0 + 20, by, wm, 30);
+        }
         {  // the preview's own buttons (they also fade out with it)
             float x0 = pvX(), y0p = pvY(), iy = y0p + 20, ih = 372;
             pvClose.at(x0 + PV_W - 20 - 40, iy + 10, 30, 30);
@@ -3829,6 +4043,9 @@ struct Scene {
             // Trust mode sits right of Play while the game can be started
             trustBtn.fontSize = 14;
             trustBtn.at(playBtn.x + playBtn.w + 10, playBtn.y, G.width(Lang::t(trustBtn.text), SEMI, 13.f) + 52, 36);
+            // Fix right of Trust mode
+            fixBtn.fontSize = 14;
+            fixBtn.at(trustBtn.x + trustBtn.w + 10, playBtn.y, G.width(Lang::t(fixBtn.text), SEMI, 13.f) + 52, 36);
             for (auto& all : homeAll) all.visible = all.enabled = false;  // the home page is the banner alone now
             for (auto& card : homeCards) card->visible = card->enabled = false;
             contentHeight = HERO_Y + HERO_HT + 24 - listTop();
@@ -4636,7 +4853,8 @@ struct Scene {
                     G.text(l, x + 22, y + 148, MEDIUM, 13, fade(rgb(0xD1D1D6), a));
             playBtn.paint(a);
             if (trustBtn.visible) trustBtn.paint(a);
-            float after = trustBtn.visible ? trustBtn.x + trustBtn.w : playBtn.x + playBtn.w;
+            if (fixBtn.visible) fixBtn.paint(a);
+            float after = fixBtn.visible ? fixBtn.x + fixBtn.w : trustBtn.visible ? trustBtn.x + trustBtn.w : playBtn.x + playBtn.w;
             if (!playBtn.running)
                 G.text(version.empty() ? "Arcanic" : "Клиент v" + version, after + 16, Gfx::mid(playBtn.y + playBtn.h / 2, 12.5f),
                        MEDIUM, 12.5f, fade(rgb(0xAEAEB2), a));
@@ -5312,6 +5530,7 @@ struct Scene {
             trafficLights();
         }
         easterEgg();
+        if (loggedIn()) fixDialog();
         errorDialog();
         if (!windowRoundedByWindows) G.rrLine(.5f, .5f, WIN_W - 1, WIN_H - 1, RADIUS, rgba(255, 255, 255, 30), 1);
         return G.end();
@@ -5409,6 +5628,11 @@ struct Scene {
     void wheel(float notches) {
         lastWheelAt = T;
         if (errOpen) return;
+        if (fixOpen) {
+            fixScroll -= notches * 60;
+            wake(.4);
+            return;
+        }
         if(sourcesOpen) {sourcesOpen=false;wake(.3);return;}
         if (previewOpen) {
             stepPreview(notches > 0 ? -1 : 1);
@@ -5427,6 +5651,11 @@ struct Scene {
         if (errOpen) {
             if (vk == VK_ESCAPE || vk == VK_RETURN) errOpen = false;
             else if (ctrl && vk == 'C') errCopy.click();
+            return;
+        }
+        if (fixOpen) {
+            if (vk == VK_ESCAPE || vk == VK_RETURN) fixOpen = false;
+            else if (vk == VK_DOWN || vk == VK_UP) fixScroll += vk == VK_DOWN ? 40 : -40;
             return;
         }
         if (ctrl && loggedIn() && !modal() && vk >= '1' && vk <= '4') {  // Ctrl+1..4: the sidebar's pages, top to bottom
@@ -5471,7 +5700,7 @@ struct Scene {
             setFocus(nullptr);
     }
     void typed(wchar_t c) {
-        if (errOpen) return;
+        if (errOpen || fixOpen) return;
         if (previewOpen) return;
         if (!focusW && loggedIn() && page == ACCOUNTS && addMode() && c >= 32 && c != 127)
             setFocus(&accNick);  // typing goes into the nickname
@@ -6009,11 +6238,39 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
         check(Doctor::fits("1.21.11", Json::parse("[\"1.20.1\", \"1.21.11\"]")), "a list takes any of its versions");
         check(Doctor::fits("1.21.11-rc.1", Json::of(">=1.21.10-")), "a pre-release with a trailing dash");
         Lang::en = false;
+        auto exists = [&](const wchar_t* n) { return isFile(root / L"mods" / n); };
+        // Fix asks first: what is in the way is named and offered, only an extra copy goes by itself
+        auto asked = Doctor::scan(root / L"mods", "1.21.11", true);
+        for (auto& f : asked.fixed) out += "  ask-mode fixed: " + f + "\n";
+        for (auto& a : asked.asked) out += "  asked: " + a.first + " -> " + a.second + "\n";
+        check(exists(L"forge-mod.jar") && exists(L"broken.jar") && exists(L"breaker.jar") && exists(L"optifabric.jar") &&
+                  exists(L"old-version.jar"),
+              "asking: nothing in the way is switched off");
+        check(asked.offer.size() >= 5, fmt("asking: the mods in the way are offered (%d)", (int)asked.offer.size()));
+        check(exists(L"dupe-1.0.jar.disabled"), "asking: the extra copy still goes");
+        {
+            Fix::Result fr;
+            writeFile(root / L"options.txt", string("\0\0\0\0garbage\0\0", 13));
+            makeDirs(root / L"config");
+            writeFile(root / L"config" / L"zeros.json", string(64, '\0'));
+            writeFile(root / L"config" / L"fine.json", "{\"a\": 1}");
+            Fix::settings(fr, root, Fix::Gpu{});
+            bool opt = false, zeros = false, fine = false;
+            for (auto& f : fr.resetFiles) {
+                opt |= f.filename() == L"options.txt";
+                zeros |= f.filename() == L"zeros.json";
+                fine |= f.filename() == L"fine.json";
+            }
+            check(opt && zeros && !fine, "settings: a damaged options.txt and a zeroed config are found, a good one is left alone");
+            auto done = Fix::act(fr);
+            check(isFile(root / L"options.txt.bak") && isFile(root / L"config" / L"zeros.json.broken") && done.size() == 2,
+                  "settings: the button moves both aside");
+        }
         auto rep = Doctor::scan(root / L"mods", "1.21.11");
         for (auto& f : rep.fixed) out += "  fixed: " + f + "\n";
         for (auto& f : rep.problems) out += "  problem: " + f + "\n";
-        auto exists = [&](const wchar_t* n) { return isFile(root / L"mods" / n); };
         check(exists(L"forge-mod.jar.disabled"), "the Forge mod is off");
+        check(exists(L"optifabric.jar.disabled"), "OptiFabric is off");
         check(exists(L"broken.jar.disabled"), "the broken jar is off");
         check(exists(L"dupe-1.0.jar.disabled") && exists(L"dupe-2.0.jar"), "the older copy is off, the newer stays");
         check(exists(L"old-version.jar.disabled"), "the mod for 1.20.1 is off");
@@ -6414,6 +6671,30 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
                     writeFile(Config::stateDir() / L"watch-state.txt", scene->installState.count("packsmc:watch-test") ? scene->installState["packsmc:watch-test"] : string("none"));
                 }
                 else if (command == "error-card") { scene->showError("Не удалось запустить игру", "Не удалось: HTTP 503", Log::file()); }
+                else if (command == "fix-ok" || command == "fix-fixed" || command == "fix-problems") {  // Fix's report, with made-up findings
+                    Fix::Result r;
+                    r.checked = {Fix::say("компьютер", "computer"), Fix::say("сеть", "network"), "Java 21", Fix::say("файлы игры", "game files"),
+                                 Lang::en ? "14 mods" : "модов: 14", Fix::say("настройки Minecraft", "Minecraft settings")};
+                    if (command != "fix-ok") {
+                        r.fixed = {Fix::say("Не было Java 21 — скачали её", "Java 21 was missing - downloaded it"),
+                                   Fix::say("Повреждённых файлов игры: 3 — скачали заново", "Damaged game files: 3 - downloaded them again"),
+                                   Fix::say("Поставили «Fabric API» — его требует «Sodium Extra»", "Installed \"Fabric API\" - \"Sodium Extra\" needs it")};
+                        r.tips = {{Fix::say("В компьютере 4.0 ГБ памяти — это мало, возможны лаги и вылеты", "The computer has 4.0 GB of memory - that is little, lag and crashes are possible"),
+                                   Fix::say("Закрой браузер и другие программы перед игрой", "Close the browser and other programs before playing")}};
+                    }
+                    if (command == "fix-problems") {
+                        r.problems = {{Fix::say("«OptiFabric» (OptiFine) не работает с Sodium и Arcanic — вместо него уже стоит Sodium", "\"OptiFabric\" (OptiFine) does not work with Sodium and Arcanic - Sodium is already in its place"),
+                                       Fix::say("Удали «optifabric-1.14.jar» из папки mods или выключи его в Библиотеке", "Delete \"optifabric-1.14.jar\" from the mods folder or switch it off in the Library")},
+                                      {Fix::say("Файл настроек Minecraft (options.txt) повреждён", "Minecraft's settings file (options.txt) is damaged"),
+                                       Fix::say("Нажми «Исправить» — лаунчер сбросит настройки игры, старый файл сохранится как options.txt.bak", "Press \"Fix the rest\" - the launcher resets the game's settings, the old file is kept as options.txt.bak")},
+                                      {Fix::say("Нет связи с: Modrinth", "No connection to: Modrinth"),
+                                       Fix::say("Без них не скачать игру и моды. Отключи VPN или прокси, проверь антивирус и брандмауэр или попробуй другую сеть", "The game and mods cannot be downloaded without them. Switch off the VPN or proxy, check the antivirus and firewall, or try another network")}};
+                        r.offer = {Game::modsDir() / L"preview-optifabric.jar"};
+                        r.resetFiles = {Game::dir() / L"preview-options.txt"};
+                        r.modsProblem = true;
+                    }
+                    scene->cur = READY; scene->openPage(HOME); scene->showFix(r);
+                }
                 else if (command == "quit") { PostQuitMessage(0); }
                 else if (command == "localmods") { scene->cur = READY; scene->openPage(MODS); scene->nav[2]->click(); }
                 else if (command == "localpacks") { scene->cur = READY; scene->openPage(PACKS); scene->nav[2]->click(); }

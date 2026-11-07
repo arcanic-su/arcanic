@@ -565,6 +565,23 @@ struct Gfx {
             Path q(d2d);
             q.M(9, 12).L(11.2f, 14.2f).L(15.2f, 9.8f);
             stroke(q, c, sw);
+        } else if (n == "wrench") {  // Fix: a spanner - a round head open to the top right, the handle down to the left
+            const float hx = 15.5f, hy = 8.5f, hr = 5.2f, deg = 3.14159265f / 180;
+            auto rim = [&](float a) { return D2D1::Point2F(hx + hr * cosf(a * deg), hy + hr * sinf(a * deg)); };
+            auto arc = [&](float from, float to) {  // along the head's rim, angles going down
+                for (float a = from - 8; a > to; a -= 8) p.L(rim(a).x, rim(a).y);
+                p.L(rim(to).x, rim(to).y);
+            };
+            p.M(rim(115.92f).x, rim(115.92f).y);
+            arc(115.92f, -27.08f);
+            p.L(17.06f, 9.21f).L(14.79f, 6.95f);  // the jaw
+            p.L(rim(-62.92f).x, rim(-62.92f).y);
+            arc(-62.92f, -205.92f);
+            p.L(4.3f, 17.3f)  // the handle, with a round end
+                .C(3.63f, 17.96f, 3.63f, 19.04f, 4.3f, 19.7f)
+                .C(4.96f, 20.37f, 6.04f, 20.37f, 6.7f, 19.7f)
+                .Z();
+            stroke(p, c, sw);
         } else if (n == "home") {
             p.M(4, 11).L(12, 4).L(20, 11);
             stroke(p, c, sw);
