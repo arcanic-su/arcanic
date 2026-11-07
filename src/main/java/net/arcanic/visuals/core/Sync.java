@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Arrays;
@@ -57,7 +58,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class Sync {
-    private static final String API = System.getProperty("arcanic.api", "https://arcanic.su");
+    // From Russia arcanic.su (behind Cloudflare) often does not answer; ru.arcanic.su is the entry there. The API is
+    // asked the launcher's way at the start: no answer from the main address, and the game uses the entry.
+    private static final String MAIN_API = System.getProperty("arcanic.api", "https://arcanic.su");
+    private static final String ENTRY_API = System.getProperty("arcanic.apiEntry", "https://ru.arcanic.su");
+    private static volatile String API = MAIN_API;
     private static volatile String TOKEN = launcherOrSaved();
     private static final Map<UUID, Remote> REMOTE = new ConcurrentHashMap<>();
     private static final Map<String, Remote> BY_NAME = new ConcurrentHashMap<>();
@@ -99,6 +104,38 @@ public final class Sync {
 
     static String api() {
         return API;
+    }
+
+    private static volatile boolean picked;
+
+    /** Once, in the background: which address answers here. A set -Darcanic.api is taken as it is. */
+    public static void pickApi() {
+        if (picked || System.getProperty("arcanic.api") != null) return;
+        picked = true;
+        Thread.ofVirtual().name("arcanic-api-pick").start(() -> {
+            try {
+                HttpResponse<Void> r = client().send(
+                                HttpRequest.newBuilder(URI.create(MAIN_API + "/api/v1/launcher"))
+                                        .timeout(Duration.ofSeconds(5))
+                                        .GET()
+                                        .build(),
+                                HttpResponse.BodyHandlers.discarding());
+                if (r.statusCode() != 200) useEntry("the main address answered " + r.statusCode());
+            } catch (Exception e) {
+                useEntry("the main address did not answer");
+            }
+        });
+    }
+
+    /** A request to the main address failed outright: the rest of the game goes through the entry. */
+    static void unreachable() {
+        if (API.equals(MAIN_API) && System.getProperty("arcanic.api") == null) useEntry("a request failed");
+    }
+
+    private static void useEntry(String why) {
+        if (API.equals(ENTRY_API)) return;
+        API = ENTRY_API;
+        LOGGER.info("Arcanic API: {}, using {}", why, ENTRY_API);
     }
 
     static String token() {

@@ -91,6 +91,7 @@ public final class ArcanicVisuals implements ClientModInitializer {
     private static KeyMapping acceptKey;
 
     public void onInitializeClient() {
+        Sync.pickApi();
         Config.load();
         OptimizerMod.set(Modules.OPTIMIZER.enabled());
         ClientTickEvents.END_CLIENT_TICK.register(OptimizerMod::guard);

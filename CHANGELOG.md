@@ -2,6 +2,12 @@
 
 All notable changes to Arcanic Visuals are listed here, newest first.
 
+## 1.7
+
+- Premium skins and backpacks work from Russia without a VPN: when arcanic.su does not answer, the game uses the
+  ru.arcanic.su entry, the way the launcher does.
+- Premium files come sealed for the player's own session and are opened only in memory.
+
 ## 1.6.1
 
 - Knife and weapon studio: the left hand has its own offsets and size for each skin, like the right one.

@@ -136,6 +136,7 @@ public final class ArcanicAccount {
                 forget();
                 state = State.SIGNED_OUT;
             } else {
+                if (e != null) Sync.unreachable();
                 state = State.SIGNED_IN; // offline: still signed in, the plan is not known for now
                 say("Сервер недоступен", true);
                 asked = false;
@@ -309,12 +310,28 @@ public final class ArcanicAccount {
     /** A file the API gives any signed-in account, such as the models of the Premium backpacks others wear. */
     public static CompletableFuture<byte[]> accountFile(String path) {
         if (!Sync.signedIn()) return CompletableFuture.completedFuture(null);
-        HttpRequest request = HttpRequest.newBuilder(URI.create(Sync.api() + path))
+        String token = Sync.token();
+        String base = Sync.api();
+        return fetch(base, path, token)
+                .handle((bytes, e) -> {
+                    if (e == null) return CompletableFuture.completedFuture(bytes);
+                    // no answer at all: once more through the entry, if the game is not there already
+                    Sync.unreachable();
+                    return Sync.api().equals(base)
+                            ? CompletableFuture.<byte[]>completedFuture(null)
+                            : fetch(Sync.api(), path, token).exceptionally(x -> null);
+                })
+                .thenCompose(f -> f);
+    }
+
+    private static CompletableFuture<byte[]> fetch(String base, String path, String token) {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(base + path))
                 .timeout(Duration.ofSeconds(30))
-                .header("Authorization", "Bearer " + Sync.token())
+                .header("Authorization", "Bearer " + token)
+                .header("X-Arcanic-Seal", "1")
                 .GET()
                 .build();
         return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
-                .thenApply(r -> r.statusCode() == 200 ? r.body() : null);
+                .thenApply(r -> r.statusCode() == 200 ? Seal.open(r.body(), token) : null);
     }
 }
